@@ -28,10 +28,9 @@
   "author": "Drew Miller <49833875+wwdrew@users.noreply.github.com> (https://github.com/wwdrew/)",
   "license": "MIT",
   "homepage": "https://github.com/wwdrew//expo-spotify-sdk#readme",
-  "dependencies": {},
   "devDependencies": {
     "@types/react": "^18.0.25",
-    "expo-module-scripts": "^3.0.11",
+    "expo-module-scripts": "^3.1.0",
     "expo-modules-core": "^1.5.11"
   },
   "peerDependencies": {
