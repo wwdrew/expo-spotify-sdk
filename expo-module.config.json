@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android", "web"],
+  "ios": {
+    "modules": ["ExpoSpotifySDKModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.spotifysdk.ExpoSpotifySDKModule"]
+  }
+}

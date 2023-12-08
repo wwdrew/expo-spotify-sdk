@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "expo-spotify-sdk": ["../src/index"],
+      "expo-spotify-sdk/*": ["../src/*"]
+    }
+  }
+}
