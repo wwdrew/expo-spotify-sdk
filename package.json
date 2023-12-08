@@ -2,8 +2,8 @@
   "name": "expo-spotify-sdk",
   "version": "0.1.0",
   "description": "Expo Module for native Spotify SDK",
-  "main": "build/ExpoSpotifySDK.js",
-  "types": "build/ExpoSpotifySDK.d.ts",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "scripts": {
     "build": "expo-module build",
     "clean": "expo-module clean",

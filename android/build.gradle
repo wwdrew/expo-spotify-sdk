@@ -86,4 +86,6 @@ repositories {
 dependencies {
   implementation project(':expo-modules-core')
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${getKotlinVersion()}"
+  implementation files("external/SpotifySDK/auth-lib/spotify-auth-release-2.1.0.aar")
+  implementation files("external/SpotifySDK/app-remote-lib/spotify-app-remote-release-0.8.0.aar")
 }
