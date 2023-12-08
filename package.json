@@ -1,0 +1,42 @@
+{
+  "name": "expo-spotify-sdk",
+  "version": "0.1.0",
+  "description": "Expo Module for native Spotify SDK",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "expo-module build",
+    "clean": "expo-module clean",
+    "lint": "expo-module lint",
+    "test": "expo-module test",
+    "prepare": "expo-module prepare",
+    "prepublishOnly": "expo-module prepublishOnly",
+    "expo-module": "expo-module",
+    "open:ios": "open -a \"Xcode\" example/ios",
+    "open:android": "open -a \"Android Studio\" example/android"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-spotify-sdk",
+    "ExpoSpotifySDK"
+  ],
+  "repository": "https://github.com/wwdrew//expo-spotify-sdk",
+  "bugs": {
+    "url": "https://github.com/wwdrew//expo-spotify-sdk/issues"
+  },
+  "author": "Drew Miller <49833875+wwdrew@users.noreply.github.com> (https://github.com/wwdrew/)",
+  "license": "MIT",
+  "homepage": "https://github.com/wwdrew//expo-spotify-sdk#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/react": "^18.0.25",
+    "expo-module-scripts": "^3.0.11",
+    "expo-modules-core": "^1.5.11"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}
