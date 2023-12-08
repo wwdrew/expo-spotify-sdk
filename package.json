@@ -2,8 +2,8 @@
   "name": "expo-spotify-sdk",
   "version": "0.1.0",
   "description": "Expo Module for native Spotify SDK",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
+  "main": "build/ExpoSpotifySDK.js",
+  "types": "build/ExpoSpotifySDK.d.ts",
   "scripts": {
     "build": "expo-module build",
     "clean": "expo-module clean",
@@ -21,6 +21,9 @@
     "expo-spotify-sdk",
     "ExpoSpotifySDK"
   ],
+  "jest": {
+    "preset": "expo-module-scripts"
+  },
   "repository": "https://github.com/wwdrew//expo-spotify-sdk",
   "bugs": {
     "url": "https://github.com/wwdrew//expo-spotify-sdk/issues"
