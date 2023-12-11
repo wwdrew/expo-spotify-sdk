@@ -11,7 +11,6 @@ import {
   ExpoSpotifySDKViewProps,
 } from "./ExpoSpotifySDK.types";
 import ExpoSpotifySDKModule from "./ExpoSpotifySDKModule";
-import ExpoSpotifySDKView from "./ExpoSpotifySDKView";
 
 // Get the native constant value.
 export const PI = ExpoSpotifySDKModule.PI;
@@ -34,4 +33,4 @@ export function addChangeListener(
   return emitter.addListener<ChangeEventPayload>("onChange", listener);
 }
 
-export { ExpoSpotifySDKView, ExpoSpotifySDKViewProps, ChangeEventPayload };
+export { ExpoSpotifySDKViewProps, ChangeEventPayload };
