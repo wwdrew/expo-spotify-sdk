@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.homepage       = package['homepage']
   s.platform       = :ios, '13.0'
   s.swift_version  = '5.4'
-  s.source         = { git: 'https://github.com/wwdrew//expo-spotify-sdk' }
+  s.source         = { git: 'https://github.com/wwdrew/expo-spotify-sdk' }
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
@@ -24,8 +24,6 @@ Pod::Spec.new do |s|
   }
 
   s.source_files = "**/*.{h,m,swift}"
-  s.vendored_frameworks = '../external/ios/SpotifySDK/SpotifyiOS.xcframework'
-  s.preserve_paths = [
-    '../external/ios/SpotifySDK/*.xcframework',
-  ]
+  s.exclude_files = "SpotifySDK/SpotifyiOS.xcframework/**/*.h"
+  s.vendored_frameworks = "SpotifySDK/SpotifyiOS.xcframework"
 end

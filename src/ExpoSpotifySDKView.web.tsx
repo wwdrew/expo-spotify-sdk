@@ -1,6 +1,6 @@
-import * as React from 'react';
+import * as React from "react";
 
-import { ExpoSpotifySDKViewProps } from './ExpoSpotifySDK.types';
+import { ExpoSpotifySDKViewProps } from "./ExpoSpotifySDK.types";
 
 export default function ExpoSpotifySDKView(props: ExpoSpotifySDKViewProps) {
   return (
