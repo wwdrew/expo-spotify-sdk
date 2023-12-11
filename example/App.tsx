@@ -1,10 +1,14 @@
-import * as ExpoSpotifySDK from "expo-spotify-sdk";
+import { authenticatePrompt } from "expo-spotify-sdk";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function App() {
+  function handleAuthenticatePress() {
+    console.log(authenticatePrompt());
+  }
+
   return (
     <View style={styles.container}>
-      <Text>{ExpoSpotifySDK.hello()}</Text>
+      <Text onPress={handleAuthenticatePress}>Authenticate Me</Text>
     </View>
   );
 }
