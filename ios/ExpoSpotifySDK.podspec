@@ -22,6 +22,10 @@ Pod::Spec.new do |s|
     'DEFINES_MODULE' => 'YES',
     'SWIFT_COMPILATION_MODE' => 'wholemodule'
   }
-  
+
   s.source_files = "**/*.{h,m,swift}"
+  s.vendored_frameworks = '../external/ios/SpotifySDK/SpotifyiOS.xcframework'
+  s.preserve_paths = [
+    '../external/ios/SpotifySDK/*.xcframework',
+  ]
 end
