@@ -1,6 +1,3 @@
-[submodule "external/ios/SpotifySDK"]
-	path = external/ios/SpotifySDK
-	url = https://github.com/spotify/ios-sdk.git
 [submodule "external/android/SpotifySDK"]
 	path = external/android/SpotifySDK
 	url = https://github.com/spotify/android-sdk.git
