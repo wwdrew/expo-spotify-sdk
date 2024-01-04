@@ -4,8 +4,12 @@ function isAvailable(): boolean {
   return ExpoSpotifySDKModule.isAvailable();
 }
 
+function authenticate(): string {
+  return ExpoSpotifySDKModule.authenticate();
+}
+
 const Authenticate = {
-  authenticate: ExpoSpotifySDKModule.authenticate,
+  authenticate,
 };
 
 export { isAvailable, Authenticate };
