@@ -1,36 +1,26 @@
-import { ConfigPlugin, withAppBuildGradle } from "@expo/config-plugins";
+import { ConfigPlugin } from "@expo/config-plugins";
 
-interface SpotifyConfig {
-  host: string;
-  scheme: string;
-}
+import { withSpotifyAndroidAppBuildGradle } from "./android/withSpotifyAndroidAppBuildGradle";
+import { withSpotifyQueryScheme } from "./ios/withSpotifyQueryScheme";
+import { SpotifyConfig } from "./types";
+import { withSpotifyConfig } from "./withSpotifyConfig";
 
-const withSpotifyConfigAndroid: ConfigPlugin<SpotifyConfig> = (
-  config,
-  spotifyConfig,
-) => {
-  return withAppBuildGradle(config, (config) => {
-    config.modResults.contents += `
-android {
-    defaultConfig {
-        manifestPlaceholders = [redirectSchemeName: "${spotifyConfig.scheme}", redirectHostName: "${spotifyConfig.host}"]
-    }
-}`;
-
-    return config;
-  });
-};
-
-export const withSpotifyConfig: ConfigPlugin<SpotifyConfig> = (
+export const withSpotifySdkConfig: ConfigPlugin<SpotifyConfig> = (
   config,
   spotifyConfig = {
     host: "host",
     scheme: "scheme",
   },
 ) => {
-  config = withSpotifyConfigAndroid(config, spotifyConfig);
+  config = withSpotifyConfig(config, spotifyConfig);
+
+  // Android specific
+  config = withSpotifyAndroidAppBuildGradle(config, spotifyConfig);
+
+  // iOS specific
+  config = withSpotifyQueryScheme(config, spotifyConfig);
 
   return config;
 };
 
-export default withSpotifyConfig;
+export default withSpotifySdkConfig;
