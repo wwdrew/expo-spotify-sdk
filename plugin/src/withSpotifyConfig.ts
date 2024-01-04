@@ -31,15 +31,19 @@ const withSpotifyConfigAndroid: ConfigPlugin<SpotifyConfig> = (
 const withSpotifyConfigIOS: ConfigPlugin<SpotifyConfig> = (
   config,
   spotifyConfig,
-) => {
-  return withInfoPlist(config, (config) => {
+) =>
+  withInfoPlist(config, (config) => {
+    if (!config.modResults.ExpoSpotifySDK) {
+      config.modResults.ExpoSpotifySDK = {};
+    }
+
     Object.entries(spotifyConfig).forEach(([key, value]) => {
-      config.modResults[key] = value;
+      (config.modResults.ExpoSpotifySDK as { [key: string]: string })[key] =
+        value;
     });
 
     return config;
   });
-};
 
 export const withSpotifyConfig: ConfigPlugin<SpotifyConfig> = (
   config,
