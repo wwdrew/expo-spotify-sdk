@@ -31,7 +31,10 @@
     "plugins": [
       ["../app.plugin.js", {
         "host": "exampleHost",
-        "scheme": "exampleScheme"
+        "scheme": "exampleScheme",
+        "clientID": "exampleClientId",
+        "tokenRefreshURL": "https://tokenRefreshURL.com",
+        "tokenSwapURL": "https://tokenSwapURL.com"
       }]
     ]
   }
