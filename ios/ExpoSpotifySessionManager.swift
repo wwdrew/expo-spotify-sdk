@@ -3,26 +3,45 @@ import SpotifyiOS
 
 final class ExpoSpotifySessionManager: NSObject, SPTSessionManagerDelegate {
     weak var module: ExpoSpotifySDKModule?
-    
+
     static let shared = ExpoSpotifySessionManager()
-    
-    private let SpotifyClientID = "<#ClientID#>"
-    private let SpotifyRedirectURI = URL(string: "spotify-login-sdk-test-app://spotify-login-callback")!
-    
+
+    private var expoSpotifyConfiguration: ExpoSpotifyConfiguration? {
+        if let expoSpotifySdkDict = Bundle.main.object(forInfoDictionaryKey: "ExpoSpotifySDK") as? [String: String],
+           let clientID = expoSpotifySdkDict["clientID"],
+           let host = expoSpotifySdkDict["host"],
+           let scheme = expoSpotifySdkDict["scheme"],
+           let tokenRefreshURLString = expoSpotifySdkDict["tokenRefreshURL"],
+           let tokenRefreshURL = URL(string: tokenRefreshURLString),
+           let tokenSwapURLString = expoSpotifySdkDict["tokenSwapURL"],
+           let tokenSwapURL = URL(string: tokenSwapURLString)
+        {
+            return ExpoSpotifyConfiguration(clientID: clientID, host: host, scheme: scheme, tokenRefreshURL: tokenRefreshURL, tokenSwapURL: tokenSwapURL)
+        } else {
+            return nil
+        }
+    }
+
     lazy var configuration: SPTConfiguration = {
-        let configuration = SPTConfiguration(clientID: SpotifyClientID, redirectURL: SpotifyRedirectURI)
-        // Set these url's to your backend which contains the secret to exchange for an access token
-        // You can use the provided ruby script spotify_token_swap.rb for testing purposes
-        configuration.tokenSwapURL = URL(string: "http://localhost:1234/swap")
-        configuration.tokenRefreshURL = URL(string: "http://localhost:1234/refresh")
-        
+        guard let clientID = expoSpotifyConfiguration?.clientID,
+              let redirectURL = expoSpotifyConfiguration?.redirectURL,
+              let tokenRefreshURL = expoSpotifyConfiguration?.tokenRefreshURL,
+              let tokenSwapURL = expoSpotifyConfiguration?.tokenSwapURL else {
+            fatalError("Invalid Spotify configuration")
+        }
+
+        let configuration = SPTConfiguration(clientID: clientID, redirectURL: redirectURL)
+
+        configuration.tokenSwapURL = tokenRefreshURL
+        configuration.tokenRefreshURL = tokenSwapURL
+
         return configuration
     }()
-    
+
     lazy var sessionManager: SPTSessionManager = {
         return SPTSessionManager(configuration: configuration, delegate: self)
     }()
-    
+
     func spotifyAppInstalled() -> Bool {
         var isInstalled = false
 
@@ -32,13 +51,13 @@ final class ExpoSpotifySessionManager: NSObject, SPTSessionManagerDelegate {
 
         return isInstalled
     }
-    
+
     func sessionManager(manager: SPTSessionManager, didInitiate session: SPTSession) {
-        
+
     }
-    
+
     func sessionManager(manager: SPTSessionManager, didFailWith error: Error) {
-        
+
     }
-    
+
 }
