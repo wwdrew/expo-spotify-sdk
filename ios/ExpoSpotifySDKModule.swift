@@ -3,12 +3,18 @@ import SpotifyiOS
 
 public class ExpoSpotifySDKModule: Module {
 
-  public func definition() -> ModuleDefinition {
+    public func definition() -> ModuleDefinition {
 
-    Name("ExpoSpotifySDK")
+        let spotifySession = ExpoSpotifySessionManager.shared
 
-    Function("authenticatePrompt") {
-      return "authenticate prompt"
+        Name("ExpoSpotifySDK")
+
+        Function("isAvailable") {
+            return spotifySession.spotifyAppInstalled()
+        }
+
+        Function("authenticate") {
+            return "authenticate prompt"
+        }
     }
-  }
 }
