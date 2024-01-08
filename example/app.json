@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "expo-spotify-sdk-example",
+    "scheme": "expo-spotify-sdk-example",
     "slug": "expo-spotify-sdk-example",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -30,11 +31,10 @@
     },
     "plugins": [
       ["../app.plugin.js", {
-        "host": "exampleHost",
-        "scheme": "exampleScheme",
-        "clientID": "exampleClientId",
-        "tokenRefreshURL": "https://tokenRefreshURL.com",
-        "tokenSwapURL": "https://tokenSwapURL.com"
+        "host": "authenticate",
+        "scheme": "expo-spotify-sdk-example",
+        "clientID": "<your-client-id>",
+        "tokenSwapURL": "<your-token-swap-url>"
       }]
     ]
   }

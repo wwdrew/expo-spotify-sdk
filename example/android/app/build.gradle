@@ -181,6 +181,6 @@ applyNativeModulesAppBuildGradle(project)
 
 android {
     defaultConfig {
-        manifestPlaceholders = [redirectSchemeName: "exampleScheme", redirectHostName: "exampleHost"]
+        manifestPlaceholders = [redirectSchemeName: "expo-spotify-sdk-example", redirectHostName: "authenticate"]
     }
 }

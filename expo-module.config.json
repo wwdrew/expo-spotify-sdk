@@ -1,7 +1,8 @@
 {
   "platforms": ["ios", "android", "web"],
   "ios": {
-    "modules": ["ExpoSpotifySDKModule"]
+    "modules": ["ExpoSpotifySDKModule"],
+    "appDelegateSubscribers": ["ExpoSpotifyAuthDelegate"]
   },
   "android": {
     "modules": ["expo.modules.spotifysdk.ExpoSpotifySDKModule"]

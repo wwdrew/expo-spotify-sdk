@@ -1,5 +1,5 @@
 {
-  "name": "expo-spotify-sdk",
+  "name": "@wwdrew/expo-spotify-sdk",
   "version": "0.1.0",
   "description": "Expo Module for native Spotify SDK",
   "main": "build/index.js",
@@ -24,13 +24,13 @@
   "jest": {
     "preset": "expo-module-scripts"
   },
-  "repository": "https://github.com/wwdrew//expo-spotify-sdk",
+  "repository": "https://github.com/wwdrew/expo-spotify-sdk",
   "bugs": {
-    "url": "https://github.com/wwdrew//expo-spotify-sdk/issues"
+    "url": "https://github.com/wwdrew/expo-spotify-sdk/issues"
   },
-  "author": "Drew Miller <49833875+wwdrew@users.noreply.github.com> (https://github.com/wwdrew/)",
+  "author": "Drew Miller <49833875+wwdrew@users.noreply.github.com> (https:/github.com/wwdrew/)",
   "license": "MIT",
-  "homepage": "https://github.com/wwdrew//expo-spotify-sdk#readme",
+  "homepage": "https://github.com/wwdrew/expo-spotify-sdk#readme",
   "devDependencies": {
     "@types/react": "^18.0.25",
     "expo-module-scripts": "^3.1.0",
@@ -40,5 +40,10 @@
     "expo": "*",
     "react": "*",
     "react-native": "*"
+  },
+  "dependencies": {
+    "axios": "^1.6.5",
+    "express": "^4.18.2",
+    "qs": "^6.11.2"
   }
 }
