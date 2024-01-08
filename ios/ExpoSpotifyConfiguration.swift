@@ -1,9 +1,11 @@
+import SpotifyiOS
+
 struct ExpoSpotifyConfiguration: Codable {
     let clientID: String
     let host: String
     let scheme: String
-    let tokenRefreshURL: URL
-    let tokenSwapURL: URL
+    let tokenRefreshURL: URL?
+    let tokenSwapURL: URL?
 
     var redirectURL: URL? {
         return URL(string: "\(scheme)://\(host)")
@@ -12,8 +14,8 @@ struct ExpoSpotifyConfiguration: Codable {
     init(clientID: String = "defaultClientID",
          host: String = "defaultHost",
          scheme: String = "defaultScheme",
-         tokenRefreshURL: URL = URL(string: "http://defaultTokenRefreshURL")!,
-         tokenSwapURL: URL = URL(string: "http://defaultTokenSwapURL")!) {
+         tokenRefreshURL: URL? = nil,
+         tokenSwapURL: URL? = nil) {
         self.clientID = clientID
         self.host = host
         self.scheme = scheme

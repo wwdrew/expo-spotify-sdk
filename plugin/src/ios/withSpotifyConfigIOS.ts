@@ -2,6 +2,10 @@ import { ConfigPlugin, withInfoPlist } from "@expo/config-plugins";
 
 import { SpotifyConfig } from "../types";
 
+interface SpotifySDKConfig {
+  [key: string]: string;
+}
+
 export const withSpotifyConfigIOS: ConfigPlugin<SpotifyConfig> = (
   config,
   spotifyConfig,
@@ -11,9 +15,11 @@ export const withSpotifyConfigIOS: ConfigPlugin<SpotifyConfig> = (
       config.modResults.ExpoSpotifySDK = {};
     }
 
+    const spotifySDKConfig = config.modResults
+      .ExpoSpotifySDK as SpotifySDKConfig;
+
     Object.entries(spotifyConfig).forEach(([key, value]) => {
-      (config.modResults.ExpoSpotifySDK as { [key: string]: string })[key] =
-        value;
+      spotifySDKConfig[key] = value;
     });
 
     return config;

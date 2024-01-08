@@ -1,15 +1,22 @@
 import ExpoSpotifySDKModule from "./ExpoSpotifySDKModule";
 
+interface SpotifySession {
+  accessToken: string;
+  refreshToken: string;
+  expirationDate: number;
+  isExpired: boolean;
+}
+
 function isAvailable(): boolean {
   return ExpoSpotifySDKModule.isAvailable();
 }
 
-function authenticate(): string {
-  return ExpoSpotifySDKModule.authenticate();
+function authenticateAsync(scopes: string[]): Promise<SpotifySession> {
+  return ExpoSpotifySDKModule.authenticate(scopes);
 }
 
 const Authenticate = {
-  authenticate,
+  authenticateAsync,
 };
 
 export { isAvailable, Authenticate };

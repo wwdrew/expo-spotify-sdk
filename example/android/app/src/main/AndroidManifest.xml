@@ -12,6 +12,10 @@
     </intent>
   </queries>
   <application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="true" android:theme="@style/AppTheme">
+    <meta-data android:name="SpotifyClientID" android:value="3ae8bfbc41334809b53a8ccf373ec216"/>
+    <meta-data android:name="SpotifyHost" android:value="authenticate"/>
+    <meta-data android:name="SpotifyScheme" android:value="expo-spotify-sdk-example"/>
+    <meta-data android:name="SpotifyTokenSwapURL" android:value="http://192.168..50.70:3000/swap"/>
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
     <meta-data android:name="expo.modules.updates.EXPO_SDK_VERSION" android:value="49.0.0"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
@@ -25,6 +29,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="expo-spotify-sdk-example"/>
         <data android:scheme="expo.modules.spotifysdk.example"/>
       </intent-filter>
     </activity>
