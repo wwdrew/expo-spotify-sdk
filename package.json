@@ -19,7 +19,16 @@
     "react-native",
     "expo",
     "expo-spotify-sdk",
-    "ExpoSpotifySDK"
+    "ExpoSpotifySDK",
+    "Spotify"
+  ],
+  "files": [
+    "plugin/build",
+    "build",
+    "ios",
+    "app.plugin.js",
+    "expo-module.config.json",
+    "server.js"
   ],
   "jest": {
     "preset": "expo-module-scripts"
