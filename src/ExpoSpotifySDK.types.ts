@@ -5,6 +5,13 @@ export interface SpotifySession {
   isExpired: boolean;
 }
 
+export interface SpotifyConfig {
+  clientId: string;
+  scopes: SpotifyScope[];
+  tokenSwapURL?: string;
+  tokenRefreshURL?: string;
+}
+
 export type SpotifyScope =
   | "ugc-image-upload"
   | "user-read-playback-state"
