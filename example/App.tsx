@@ -9,6 +9,7 @@ export default function App() {
 
   async function handleAuthenticatePress() {
     try {
+      setAuthToken("unknown");
       const session = await authenticateAsync({
         scopes: [
           "ugc-image-upload",
