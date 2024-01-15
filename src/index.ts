@@ -14,7 +14,7 @@ function authenticateAsync(config: SpotifyConfig): Promise<SpotifySession> {
     throw new Error("scopes are required");
   }
 
-  return ExpoSpotifySDKModule.authenticate(config);
+  return ExpoSpotifySDKModule.authenticateAsync(config);
 }
 
 const Authenticate = {

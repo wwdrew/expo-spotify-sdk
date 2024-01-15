@@ -14,7 +14,7 @@ public class ExpoSpotifySDKModule: Module {
             return spotifySession.spotifyAppInstalled()
         }
 
-        AsyncFunction("authenticate") { (scopes: [String], promise: Promise) in
+        AsyncFunction("authenticateAsync") { (scopes: [String], promise: Promise) in
             spotifySession.authenticate(requestedScopes: scopes).done { session in
                 let sessionData: [String: Any] = [
                     "accessToken": session.accessToken,
