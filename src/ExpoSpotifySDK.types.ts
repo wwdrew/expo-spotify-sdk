@@ -6,7 +6,6 @@ export interface SpotifySession {
 }
 
 export interface SpotifyConfig {
-  clientId: string;
   scopes: SpotifyScope[];
   tokenSwapURL?: string;
   tokenRefreshURL?: string;

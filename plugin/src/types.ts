@@ -39,6 +39,7 @@ export type SpotifyScopes =
   | "user-read-private";
 
 export interface SpotifyConfig {
+  clientID: string;
   host: string;
   scheme: string;
 }

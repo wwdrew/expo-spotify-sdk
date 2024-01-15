@@ -3,7 +3,6 @@ import SpotifyiOS
 
 public class ExpoSpotifySDKModule: Module {
     
-    
     public func definition() -> ModuleDefinition {
         
         let spotifySession = ExpoSpotifySessionManager.shared
@@ -15,11 +14,13 @@ public class ExpoSpotifySDKModule: Module {
         }
         
         AsyncFunction("authenticateAsync") { (config: [String: Any], promise: Promise) in
-            guard let clientId = config["clientId"] as? String,
-                  let scopes = config["scopes"] as? [String] else {
+            guard let scopes = config["scopes"] as? [String] else {
                 promise.reject("INVALID_CONFIG", "Invalid SpotifyConfig object")
                 return
             }
+            
+            let tokenSwapURL = config["tokenSwapURL"] as? String
+            let tokenRefreshURL = config["tokenRefreshURL"] as? String
             
             spotifySession.authenticate(requestedScopes: scopes).done { session in
                 let sessionData: [String: Any] = [

@@ -10,7 +10,6 @@ export default function App() {
   async function handleAuthenticatePress() {
     try {
       const session = await authenticateAsync({
-        clientId: "gjkfhgjkdfs",
         scopes: [
           "ugc-image-upload",
           "user-read-playback-state",

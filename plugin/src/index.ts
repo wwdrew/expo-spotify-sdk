@@ -10,8 +10,16 @@ export const withSpotifySdkConfig: ConfigPlugin<SpotifyConfig> = (
   config,
   spotifyConfig,
 ) => {
-  if (!spotifyConfig.host || !spotifyConfig.scheme) {
-    throw new Error("Missing required Spotify config values: host and scheme");
+  if (!spotifyConfig.host) {
+    throw new Error("Missing required Spotify config value: host");
+  }
+
+  if (!spotifyConfig.scheme) {
+    throw new Error("Missing required Spotify config value: scheme");
+  }
+
+  if (!spotifyConfig.clientID) {
+    throw new Error("Missing required Spotify config value: clientID");
   }
 
   config = withSpotifyConfig(config, spotifyConfig);

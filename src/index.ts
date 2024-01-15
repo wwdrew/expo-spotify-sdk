@@ -6,10 +6,6 @@ function isAvailable(): boolean {
 }
 
 function authenticateAsync(config: SpotifyConfig): Promise<SpotifySession> {
-  if (!config.clientId) {
-    throw new Error("clientId is required");
-  }
-
   if (!config.scopes || config.scopes?.length === 0) {
     throw new Error("scopes are required");
   }
