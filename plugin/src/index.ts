@@ -8,14 +8,12 @@ import { withSpotifyConfig } from "./withSpotifyConfig";
 
 export const withSpotifySdkConfig: ConfigPlugin<SpotifyConfig> = (
   config,
-  spotifyConfig = {
-    clientID: "clientID",
-    host: "host",
-    scheme: "scheme",
-    tokenRefreshURL: "tokenRefreshURL",
-    tokenSwapURL: "tokenSwapURL",
-  },
+  spotifyConfig,
 ) => {
+  if (!spotifyConfig.host || !spotifyConfig.scheme) {
+    throw new Error("Missing required Spotify config values: host and scheme");
+  }
+
   config = withSpotifyConfig(config, spotifyConfig);
 
   // Android specific
