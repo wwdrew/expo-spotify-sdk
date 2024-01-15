@@ -12,7 +12,7 @@ app.use(express.json());
 const CLIENT_ID = "<your_client_id>";
 const CLIENT_SECRET = "<your_client_secret>";
 const AUTH_HEADER =
-  "Basic " + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64"); // "CLIENT_ID + ":" + CLIENT_SECRET, "utf8").toString("base64");
+  "Basic " + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64");
 
 const SPOTIFY_ACCOUNTS_ENDPOINT = "https://accounts.spotify.com";
 const CLIENT_CALLBACK_URL = "expo-spotify-sdk-example://authenticate";
