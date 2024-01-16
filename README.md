@@ -24,9 +24,7 @@ Include the `expo-spotify-sdk` plugin in your `app.json/app.config.js` file with
     ["@wwdrew/expo-spotify-sdk", {
       "clientID": "<your-spotify-client-id>",
       "scheme": "expo-spotify-sdk-example",
-      "host": "authenticate",
-      "tokenSwapURL": "http://192.168.0.5:3000/swap",
-      "tokenRefreshURL": "http://192.168.0.5:3000/swap"
+      "host": "authenticate"
     }]
   ],
   ...
@@ -37,23 +35,27 @@ Required:
 - `clientID`: &lt;string&gt; the Spotify Client ID for your application
 - `scheme`: &lt;string&gt; the [URL scheme](https://docs.expo.dev/versions/latest/config/app/#scheme) to link into your app as part of the redirect URI
 - `host`: &lt;string&gt; the path of the redirect URI
-- `tokenSwapURL` (optional): &lt;string&gt; The URL to use for attempting to swap an authorization code for an access token
-- `tokenRefreshURL` (optional): &lt;string&gt; The URL to use for attempting to renew an access token with a refresh token
 
 ## API Reference
 
-`isAvailable(): boolean`
+```typescript
+isAvailable(): boolean`
+```
 
 Determines if the Spotify app is installed on the target device.
 
 ---
 
-`authenticateAsync(scopes: SpotifyScope[]): Promise<SpotifySesson>`
+```typescript
+authenticateAsync(config: SpotifyConfig): Promise<SpotifySession>
+```
 
 Starts the authentication process. Requires an array of OAuth scopes. If the Spotify app is installed on the target device it will interact directly with it, otherwise it will open a web view to authenticate with the Spotify website.
 
 ### Parameters
 
+- `tokenSwapURL` (optional): &lt;string&gt; The URL to use for attempting to swap an authorization code for an access token
+- `tokenRefreshURL` (optional): &lt;string&gt; The URL to use for attempting to renew an access token with a refresh token
 - `scopes`: An array of OAuth scopes that declare how your app wants to access a user's account. See [Spotify Scopes](https://developer.spotify.com/web-api/using-scopes/) for more information.
 
   **Note**: The following scopes are not available to Expo Spotify SDK:
@@ -68,11 +70,18 @@ Starts the authentication process. Requires an array of OAuth scopes. If the Spo
 ### Types
 
 ```typescript
+interface SpotifyConfig {
+  scopes: SpotifyScope[];
+  tokenSwapURL?: string;
+  tokenRefreshURL?: string;
+}
+
 interface SpotifySession {
   accessToken: string;
   refreshToken: string;
   expirationDate: number;
   isExpired: boolean;
+  scopes: SpotifyScopes[];
 }
 
 type SpotifyScopes =
@@ -94,12 +103,11 @@ type SpotifyScopes =
   | "user-library-read"
   | "user-read-email"
   | "user-read-private";
-
 ```
 
 ## Acknowledgments
 
-This project has been heavily inspired by the following projects.
+This project has been heavily inspired by the following projects:
 
 * [react-native-spotify-remote](https://github.com/cjam/react-native-spotify-remote)
 * [expo-spotify](https://github.com/kvbalib/expo-spotify)
