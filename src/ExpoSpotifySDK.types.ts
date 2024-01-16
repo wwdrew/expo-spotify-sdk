@@ -10,6 +10,7 @@ export interface SpotifyConfig {
   scopes: SpotifyScope[];
   tokenSwapURL?: string;
   tokenRefreshURL?: string;
+  shouldRequestAccessToken?: boolean;
 }
 
 export type SpotifyScope =
