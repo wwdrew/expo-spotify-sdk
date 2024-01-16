@@ -2,6 +2,11 @@ import ExpoModulesCore
 import SpotifyiOS
 import PromiseKit
 
+enum AuthenticationResult {
+    case session(SPTSession)
+    case authorizationCode(String)
+}
+
 enum SessionManagerError: Error {
     case notInitialized
     case invalidConfiguration
@@ -9,7 +14,9 @@ enum SessionManagerError: Error {
 
 final class ExpoSpotifySessionManager: NSObject {
     weak var module: ExpoSpotifySDKModule?
-    var authPromiseSeal: Resolver<SPTSession>?
+    var authPromiseSeal: Resolver<AuthenticationResult>?
+    
+    var shouldRequestAccessToken: Bool = true
     
     static let shared = ExpoSpotifySessionManager()
     
@@ -44,7 +51,7 @@ final class ExpoSpotifySessionManager: NSObject {
     }()
     
     
-    func authenticate(scopes: [String], tokenSwapURL: String?, tokenRefreshURL: String?) -> PromiseKit.Promise<SPTSession> {
+    func authenticate(scopes: [String], tokenSwapURL: String?, tokenRefreshURL: String?, shouldRequestAccessToken: Bool = true) -> PromiseKit.Promise<AuthenticationResult> {
         return Promise { seal in
             guard let clientID = expoSpotifyConfiguration?.clientID,
                   let redirectURL = expoSpotifyConfiguration?.redirectURL else {
@@ -53,10 +60,17 @@ final class ExpoSpotifySessionManager: NSObject {
                 return
             }
             let configuration = SPTConfiguration(clientID: clientID, redirectURL: redirectURL)
-
-            configuration.tokenSwapURL = URL(string: tokenSwapURL ?? "")
-            configuration.tokenRefreshURL = URL(string: tokenRefreshURL ?? "")
             
+            if (tokenSwapURL != nil) {
+                configuration.tokenSwapURL = URL(string: tokenSwapURL ?? "")
+            }
+            
+            if (tokenRefreshURL != nil) {
+                configuration.tokenRefreshURL = URL(string: tokenRefreshURL ?? "")
+            }
+            
+            self.shouldRequestAccessToken = shouldRequestAccessToken
+            self.configuration = configuration
             self.sessionManager = SPTSessionManager(configuration: configuration, delegate: self)
             
             self.authPromiseSeal = seal
