@@ -1,6 +1,6 @@
 {
   "name": "@wwdrew/expo-spotify-sdk",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Expo Module for native Spotify SDK",
   "main": "build/index.js",
   "types": "build/index.d.ts",
