@@ -90,7 +90,9 @@ android {
         versionName "1.0.0"
 
         buildConfigField("boolean", "REACT_NATIVE_UNSTABLE_USE_RUNTIME_SCHEDULER_ALWAYS", (findProperty("reactNative.unstable_useRuntimeSchedulerAlways") ?: true).toString())
-    }
+    
+manifestPlaceholders = [redirectSchemeName: "expo-spotify-sdk-example", redirectHostName: "authenticate"]
+}
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -178,9 +180,3 @@ dependencies {
 
 apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json')"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
 applyNativeModulesAppBuildGradle(project)
-
-android {
-    defaultConfig {
-        manifestPlaceholders = [redirectSchemeName: "expo-spotify-sdk-example", redirectHostName: "authenticate"]
-    }
-}
