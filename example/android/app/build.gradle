@@ -91,8 +91,8 @@ android {
 
         buildConfigField("boolean", "REACT_NATIVE_UNSTABLE_USE_RUNTIME_SCHEDULER_ALWAYS", (findProperty("reactNative.unstable_useRuntimeSchedulerAlways") ?: true).toString())
     
-        buildConfigField "String", "SPOTIFY_CLIENT_ID", "your-client-id"
-        buildConfigField "String", "SPOTIFY_REDIRECT_URI", "expo-spotify-sdk-example://authenticate"
+        buildConfigField "String", "SPOTIFY_CLIENT_ID", "\"your-client-id\""
+        buildConfigField "String", "SPOTIFY_REDIRECT_URI", "\"expo-spotify-sdk-example://authenticate\""
 
         manifestPlaceholders = [redirectSchemeName: "expo-spotify-sdk-example", redirectHostName: "authenticate"]
     }

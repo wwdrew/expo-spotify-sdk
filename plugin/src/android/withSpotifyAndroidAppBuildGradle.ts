@@ -9,8 +9,8 @@ export const withSpotifyAndroidAppBuildGradle: ConfigPlugin<SpotifyConfig> = (
   return withAppBuildGradle(config, (config) => {
     const defaultConfigPattern = /(defaultConfig\s*{[\s\S]*?)(})/s;
     const manifestPlaceholders = `
-        buildConfigField "String", "SPOTIFY_CLIENT_ID", "${spotifyConfig.clientID}"
-        buildConfigField "String", "SPOTIFY_REDIRECT_URI", "${spotifyConfig.scheme}://${spotifyConfig.host}"
+        buildConfigField "String", "SPOTIFY_CLIENT_ID", "\\"${spotifyConfig.clientID}\\""
+        buildConfigField "String", "SPOTIFY_REDIRECT_URI", "\\"${spotifyConfig.scheme}://${spotifyConfig.host}\\""
 
         manifestPlaceholders = [redirectSchemeName: "${spotifyConfig.scheme}", redirectHostName: "${spotifyConfig.host}"]
     `;
