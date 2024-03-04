@@ -63,7 +63,7 @@ class ExpoSpotifySDKModule : Module() {
 
         val request = AuthorizationRequest.Builder(
           clientId,
-          AuthorizationResponse.Type.TOKEN,
+          AuthorizationResponse.Type.CODE,
           redirectUri
         )
           .setScopes(config.scopes.toTypedArray())
