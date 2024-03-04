@@ -8,7 +8,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import com.spotify.sdk.android.auth.AuthorizationClient
 import com.spotify.sdk.android.auth.AuthorizationRequest
 import com.spotify.sdk.android.auth.AuthorizationResponse
-import expo.modules.kotlin.ModuleRegistry
+import com.spotify.sdk.android.auth.app.SpotifyNativeAuthUtil
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.records.Field
 import expo.modules.kotlin.records.Record
@@ -38,9 +38,7 @@ class ExpoSpotifySDKModule : Module() {
     Name("ExpoSpotifySDK")
 
     Function("isAvailable") {
-      val packageManager: PackageManager = context.packageManager
-      val intent = packageManager.getLaunchIntentForPackage("com.spotify.music")
-      return@Function intent != null
+      return@Function SpotifyNativeAuthUtil.isSpotifyInstalled(context)
     }
 
     AsyncFunction("authenticateAsync") { config: SpotifyConfigOptions, promise: Promise ->
