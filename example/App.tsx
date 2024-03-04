@@ -43,6 +43,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Text onPress={handleAuthenticatePress}>Authenticate Me</Text>
+      <Text>Spotify app is installed: {isAvailable().toString()}</Text>
       <Text>Auth Token: {authToken}</Text>
     </View>
   );
