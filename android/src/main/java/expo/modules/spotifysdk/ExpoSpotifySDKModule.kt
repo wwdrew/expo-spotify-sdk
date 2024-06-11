@@ -15,13 +15,13 @@ import expo.modules.kotlin.records.Record
 
 class SpotifyConfigOptions : Record {
   @Field
+  val scopes: List<String> = emptyList()
+
+  @Field
   val tokenSwapURL: String? = null
 
   @Field
   val tokenRefreshURL: String? = null
-
-  @Field
-  val scopes: List<String> = emptyList()
 }
 
 class ExpoSpotifySDKModule : Module() {
@@ -59,9 +59,15 @@ class ExpoSpotifySDKModule : Module() {
           return@AsyncFunction
         }
 
+        val responseType = if (config.tokenSwapURL != null || config.tokenRefreshURL != null) {
+          AuthorizationResponse.Type.CODE
+        } else {
+          AuthorizationResponse.Type.TOKEN
+        }
+
         val request = AuthorizationRequest.Builder(
           clientId,
-          AuthorizationResponse.Type.CODE,
+          responseType,
           redirectUri
         )
           .setScopes(config.scopes.toTypedArray())
@@ -83,17 +89,36 @@ class ExpoSpotifySDKModule : Module() {
       if (payload.requestCode == requestCode) {
         val response = AuthorizationClient.getResponse(payload.resultCode, payload.data)
 
-        if (response.type == AuthorizationResponse.Type.TOKEN) {
-          authPromise?.resolve(
-            mapOf(
-              "accessToken" to response.accessToken,
-              "expiresIn" to response.expiresIn,
+        when (response.type) {
+          AuthorizationResponse.Type.TOKEN -> {
+            authPromise?.resolve(
+              mapOf(
+                "type" to response.type.name,
+                "accessToken" to response.accessToken,
+                "expiresIn" to response.expiresIn,
+                "state" to response.state
+              )
             )
-          )
-        } else {
-          authPromise?.reject("ERR_SPOTIFY_AUTH", response.error, null)
-        }
+          }
 
+          AuthorizationResponse.Type.CODE -> {
+            authPromise?.resolve(
+              mapOf(
+                "type" to response.type.name,
+                "code" to response.code,
+                "state" to response.state
+              )
+            )
+          }
+
+          AuthorizationResponse.Type.ERROR -> {
+            authPromise?.reject("ERR_SPOTIFY_AUTH", response.error, null)
+          }
+
+          else -> {
+            authPromise?.reject("ERR_SPOTIFY_AUTH", "Unknown response type", null)
+          }
+        }
         authPromise = null
       }
     }

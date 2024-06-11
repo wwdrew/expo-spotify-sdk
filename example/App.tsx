@@ -12,6 +12,7 @@ export default function App() {
     try {
       setAuthToken("unknown");
       const session = await authenticateAsync({
+        tokenSwapURL: "http://192.168.1.120:3000/swap",
         scopes: [
           "ugc-image-upload",
           "user-read-playback-state",
@@ -35,7 +36,7 @@ export default function App() {
       });
 
       console.log({ session });
-      setAuthToken(session.accessToken);
+      setAuthToken(session["access_token"]);
     } catch (error) {
       console.log({ error });
     }

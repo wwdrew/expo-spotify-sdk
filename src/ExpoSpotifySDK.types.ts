@@ -12,6 +12,10 @@ export interface SpotifyConfig {
   tokenRefreshURL?: string;
 }
 
+// export interface AndroidSpotifyConfig extends SpotifyConfig {
+//   responseType: "token" | "code";
+// }
+
 export type SpotifyScope =
   | "ugc-image-upload"
   | "user-read-playback-state"
