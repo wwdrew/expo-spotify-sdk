@@ -1,10 +1,10 @@
 import { ConfigPlugin } from "@expo/config-plugins";
 
 import { withSpotifyAndroidAppBuildGradle } from "./android/withSpotifyAndroidAppBuildGradle";
+import { withSpotifyConfigValues } from "./ios/withSpotifyConfigValues";
 import { withSpotifyQueryScheme } from "./ios/withSpotifyQueryScheme";
 import { withSpotifyURLScheme } from "./ios/withSpotifyURLScheme";
 import { SpotifyConfig } from "./types";
-import { withSpotifyConfig } from "./withSpotifyConfig";
 
 export const withSpotifySdkConfig: ConfigPlugin<SpotifyConfig> = (
   config,
@@ -22,12 +22,11 @@ export const withSpotifySdkConfig: ConfigPlugin<SpotifyConfig> = (
     throw new Error("Missing required Spotify config value: clientID");
   }
 
-  config = withSpotifyConfig(config, spotifyConfig);
-
   // Android specific
   config = withSpotifyAndroidAppBuildGradle(config, spotifyConfig);
 
   // iOS specific
+  config = withSpotifyConfigValues(config, spotifyConfig);
   config = withSpotifyQueryScheme(config, spotifyConfig);
   config = withSpotifyURLScheme(config, spotifyConfig);
 

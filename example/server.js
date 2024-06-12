@@ -1,27 +1,25 @@
 const axios = require("axios");
-const crypto = require("crypto");
 const express = require("express");
+const { encode } = require("js-base64");
 const qs = require("qs");
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
 
-const CLIENT_ID = "<your_client_id>";
-const CLIENT_SECRET = "<your_client_secret>";
-const AUTH_HEADER =
-  "Basic " + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64");
+// Replace these with your own values
+const CLIENT_ID = "<your-client-id>";
+const CLIENT_SECRET = "<your-client-secret>";
 
 const SPOTIFY_ACCOUNTS_ENDPOINT = "https://accounts.spotify.com";
 const CLIENT_CALLBACK_URL = "expo-spotify-sdk-example://authenticate";
-const ENCRYPTION_SECRET = "<your_encryption_secret>";
+const AUTH_SECRET = encode(`${CLIENT_ID}:${CLIENT_SECRET}`);
+const AUTH_HEADER = `Basic ${AUTH_SECRET}`;
 
 app.post("/swap", async (req, res) => {
-  console.log("WE'VE BEEN HIT!");
-
-  const auth_code = req.body.code;
+  console.log("=== TOKEN SWAP INITIATED ===");
+  const { code } = req.body;
 
   try {
     const response = await axios.post(
@@ -29,7 +27,7 @@ app.post("/swap", async (req, res) => {
       qs.stringify({
         grant_type: "authorization_code",
         redirect_uri: CLIENT_CALLBACK_URL,
-        code: auth_code,
+        code,
       }),
       {
         headers: {
@@ -39,30 +37,22 @@ app.post("/swap", async (req, res) => {
       },
     );
 
-    if (response.status === 200) {
-      const token_data = response.data;
-      const refresh_token = token_data.refresh_token;
-      const cipher = crypto.createCipher("aes-256-cbc", ENCRYPTION_SECRET);
-      let encrypted_token = cipher.update(refresh_token, "utf8", "hex");
-      encrypted_token += cipher.final("hex");
-      token_data.refresh_token = encrypted_token;
-
-      console.log({ token_data });
-
-      res.status(response.status).json(token_data);
-    } else {
-      res.status(response.status).send(response.data);
+    if (response.status !== 200) {
+      console.log("=== TOKEN SWAP FAILED WITH RESPONSE: ", response.data);
+      return res.status(response.status).send(response.data);
     }
+
+    console.log("=== TOKEN SWAP SUCCEEDED WITH RESPONSE: ", response.data);
+    res.status(response.status).json(response.data);
   } catch (error) {
+    console.log({ error });
     res.status(500).send(error.message);
   }
 });
 
 app.post("/refresh", async (req, res) => {
-  const encrypted_token = req.body.refresh_token;
-  const decipher = crypto.createDecipher("aes-256-cbc", ENCRYPTION_SECRET);
-  let refresh_token = decipher.update(encrypted_token, "hex", "utf8");
-  refresh_token += decipher.final("utf8");
+  console.log("=== TOKEN REFRESH INITIATED ===");
+  const { refresh_token } = req.body;
 
   try {
     const response = await axios.post(
@@ -74,16 +64,20 @@ app.post("/refresh", async (req, res) => {
       {
         headers: {
           Authorization: AUTH_HEADER,
-
           "Content-Type": "application/x-www-form-urlencoded",
         },
       },
     );
 
-    console.log({ data: response.data });
+    if (response.status !== 200) {
+      console.log("=== TOKEN REFRESH FAILED WITH RESPONSE: ", response.data);
+      return res.status(response.status).send(response.data);
+    }
 
+    console.log("=== TOKEN REFRESH SUCCEEDED WITH RESPONSE: ", response.data);
     res.status(response.status).send(response.data);
   } catch (error) {
+    console.log({ error });
     res.status(500).send(error.message);
   }
 });
