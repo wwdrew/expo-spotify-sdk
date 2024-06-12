@@ -46,8 +46,8 @@ final class ExpoSpotifySessionManager: NSObject {
 
     func authenticate(scopes: [String], tokenSwapURL: String?, tokenRefreshURL: String?) -> PromiseKit.Promise<SPTSession> {
         return Promise { seal in
-            guard let clientID = expoSpotifyConfiguration?.clientID,
-                  let redirectURL = expoSpotifyConfiguration?.redirectURL else {
+            guard let clientID = self.expoSpotifyConfiguration?.clientID,
+                  let redirectURL = self.expoSpotifyConfiguration?.redirectURL else {
                 NSLog("Invalid Spotify configuration")
                 seal.reject(SessionManagerError.invalidConfiguration)
                 return
@@ -68,7 +68,7 @@ final class ExpoSpotifySessionManager: NSObject {
             self.sessionManager = SPTSessionManager(configuration: configuration, delegate: self)
 
             DispatchQueue.main.sync {
-                sessionManager?.initiateSession(with: SPTScopeSerializer.deserializeScopes(scopes), options: .default)
+                sessionManager?.initiateSession(with: SPTScopeSerializer.deserializeScopes(scopes), options: .default, campaign: nil)
             }
         }
     }
