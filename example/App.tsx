@@ -1,11 +1,11 @@
 import { isAvailable } from "expo-spotify-sdk";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
 import { useSpotifyAuthentication } from "./src/hooks/useSpotifyAuthentication";
 
 export default function App() {
-  const [authToken, setAuthToken] = useState<string>("unknown");
+  const [authToken, setAuthToken] = useState("unknown");
   const { authenticateAsync } = useSpotifyAuthentication();
 
   async function handleAuthenticatePress() {
@@ -35,17 +35,18 @@ export default function App() {
         ],
       });
 
-      console.log({ session });
-      setAuthToken(session["access_token"]);
+      setAuthToken(session.accessToken);
     } catch (error) {
-      console.log({ error });
+      if (error instanceof Error) {
+        Alert.alert("Error", error.message);
+      }
     }
   }
 
   return (
     <View style={styles.container}>
       <Text onPress={handleAuthenticatePress}>Authenticate Me</Text>
-      <Text>Spotify app is installed: {isAvailable().toString()}</Text>
+      <Text>Spotify app is installed: {isAvailable() ? "yes" : "no"}</Text>
       <Text>Auth Token: {authToken}</Text>
     </View>
   );

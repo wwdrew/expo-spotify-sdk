@@ -15,6 +15,7 @@
     "expo-status-bar": "~1.6.0",
     "expo-system-ui": "~2.4.0",
     "express": "^4.18.2",
+    "js-base64": "^3.7.7",
     "qs": "^6.11.2",
     "react": "18.2.0",
     "react-native": "0.72.6"

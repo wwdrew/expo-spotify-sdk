@@ -2,7 +2,6 @@ export interface SpotifySession {
   accessToken: string;
   refreshToken: string;
   expirationDate: number;
-  isExpired: boolean;
   scopes: SpotifyScope[];
 }
 

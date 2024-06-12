@@ -27,13 +27,11 @@ public class ExpoSpotifySDKModule: Module {
                     "accessToken": session.accessToken,
                     "refreshToken": session.refreshToken,
                     "expirationDate": Int(session.expirationDate.timeIntervalSince1970 * 1000),
-                    "scopes": SPTScopeSerializer.serializeScopes(session.scope),
-                    "isExpired": session.isExpired
+                    "scopes": SPTScopeSerializer.serializeScopes(session.scope)
                 ])
             }.catch { error in
                 promise.reject(error)
             }
         }
-
     }
 }
