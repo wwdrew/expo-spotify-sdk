@@ -2,7 +2,6 @@ export interface SpotifySession {
   accessToken: string;
   refreshToken: string;
   expirationDate: number;
-  isExpired: boolean;
   scopes: SpotifyScope[];
 }
 
@@ -11,6 +10,10 @@ export interface SpotifyConfig {
   tokenSwapURL?: string;
   tokenRefreshURL?: string;
 }
+
+// export interface AndroidSpotifyConfig extends SpotifyConfig {
+//   responseType: "token" | "code";
+// }
 
 export type SpotifyScope =
   | "ugc-image-upload"

@@ -52,13 +52,15 @@ authenticateAsync(config: SpotifyConfig): Promise<SpotifySession>
 
 Starts the authentication process. Requires an array of OAuth scopes. If the Spotify app is installed on the target device it will interact directly with it, otherwise it will open a web view to authenticate with the Spotify website.
 
+**Note for Android:** If not providing a token swap or refresh URL, the Spotify session response access token will expire after 60 minutes and will not include a refresh token. This is due to a limitation in the Android Spotify SDK. It's generally recommended to [implement a token swap endpoint](#token-swap) for this reason.
+
 ### Parameters
 
 - `tokenSwapURL` (optional): &lt;string&gt; The URL to use for attempting to swap an authorization code for an access token
 - `tokenRefreshURL` (optional): &lt;string&gt; The URL to use for attempting to renew an access token with a refresh token
 - `scopes`: An array of OAuth scopes that declare how your app wants to access a user's account. See [Spotify Scopes](https://developer.spotify.com/web-api/using-scopes/) for more information.
 
-  **Note**: The following scopes are not available to Expo Spotify SDK:
+**Note:** The following scopes are not available to Expo Spotify SDK:
 
   - user-read-playback-position
   - user-soa-link
@@ -78,9 +80,8 @@ interface SpotifyConfig {
 
 interface SpotifySession {
   accessToken: string;
-  refreshToken: string;
+  refreshToken: string | null;
   expirationDate: number;
-  isExpired: boolean;
   scopes: SpotifyScopes[];
 }
 
@@ -104,6 +105,38 @@ type SpotifyScopes =
   | "user-read-email"
   | "user-read-private";
 ```
+
+## Token Swap Example
+
+An example token swap endpoint has been provided in the `example` project. For it to work it needs your Spotify client details to be included.
+
+1. Open the `server.js` file and add your client details:
+
+```javascript
+const CLIENT_ID = "<your-client-id>";
+const CLIENT_SECRET = "<your-client-secret>";
+```
+
+These values can be found in your [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). You will need an existing Spotify app for this.
+
+2. Run the server
+
+```sh
+node server.js
+```
+
+3. Set the `tokenSwapURL` value in your `authenticateAsync` call:
+
+```javascript
+const session = await authenticateAsync({
+  tokenSwapURL: "http://192.168.1.120:3000/swap",
+  scopes: [
+    ...
+  ]
+});
+```
+
+All authentication requests will now be sent through the token swap server.
 
 ## Acknowledgments
 

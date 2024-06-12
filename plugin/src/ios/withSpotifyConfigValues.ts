@@ -6,7 +6,7 @@ interface SpotifySDKConfig {
   [key: string]: string;
 }
 
-export const withSpotifyConfigIOS: ConfigPlugin<SpotifyConfig> = (
+export const withSpotifyConfigValues: ConfigPlugin<SpotifyConfig> = (
   config,
   spotifyConfig,
 ) =>
