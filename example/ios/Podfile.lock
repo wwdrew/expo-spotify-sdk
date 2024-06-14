@@ -3,9 +3,9 @@ PODS:
   - DoubleConversion (1.1.6)
   - EXConstants (16.0.2):
     - ExpoModulesCore
-  - Expo (51.0.13):
+  - Expo (51.0.14):
     - ExpoModulesCore
-  - ExpoAsset (10.0.8):
+  - ExpoAsset (10.0.9):
     - ExpoModulesCore
   - ExpoFileSystem (17.0.1):
     - ExpoModulesCore
@@ -13,7 +13,7 @@ PODS:
     - ExpoModulesCore
   - ExpoKeepAwake (13.0.2):
     - ExpoModulesCore
-  - ExpoModulesCore (1.12.14):
+  - ExpoModulesCore (1.12.15):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -36,7 +36,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - ExpoSpotifySDK (0.3.1):
+  - ExpoSpotifySDK (0.4.0):
     - ExpoModulesCore
     - PromiseKit (~> 6.8)
   - ExpoSystemUI (3.0.6):
@@ -1446,13 +1446,13 @@ SPEC CHECKSUMS:
   boost: d3f49c53809116a5d38da093a8aa78bf551aed09
   DoubleConversion: 76ab83afb40bddeeee456813d9c04f67f78771b5
   EXConstants: 409690fbfd5afea964e5e9d6c4eb2c2b59222c59
-  Expo: 5fb0613e7cfc806c500400eabb96b1a75473be1b
-  ExpoAsset: 100b840e5dc1e1619df2d7c76441d33fb84a3202
+  Expo: 9c87c876b45a6934894ba5e9353ee94fdba48125
+  ExpoAsset: 39e60dc31b16e204a9949caf3edb6dcda322e667
   ExpoFileSystem: 80bfe850b1f9922c16905822ecbf97acd711dc51
   ExpoFont: 43b69559cef3d773db57c7ae7edd3cb0aa0dc610
   ExpoKeepAwake: 3b8815d9dd1d419ee474df004021c69fdd316d08
-  ExpoModulesCore: d7b31b6d68b2ba815c46660d86018c789178fdb9
-  ExpoSpotifySDK: 8b8acc8e4989ed17309e8668014ced81799229a1
+  ExpoModulesCore: 54c85b57000a2a82e5212d5e42cd7a36524be4ac
+  ExpoSpotifySDK: 50a998cb577c3229a974ff41b7802df9cb33031d
   ExpoSystemUI: 65007dd0537cb38649ee55b4670a6ed222769b3a
   EXSplashScreen: fbf0ec78e9cee911df188bf17b4fe51d15a84b87
   FBLazyVector: 4bc164e5b5e6cfc288d2b5ff28643ea15fa1a589
