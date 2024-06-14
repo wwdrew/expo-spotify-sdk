@@ -1,6 +1,6 @@
 {
   "name": "@wwdrew/expo-spotify-sdk",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Expo Module for native Spotify SDK",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -28,7 +28,8 @@
     "ios",
     "app.plugin.js",
     "expo-module.config.json",
-    "server.js"
+    "server.js",
+    "external/android/SpotifySDK/auth-lib/spotify-auth-release-2.1.0.aar"
   ],
   "jest": {
     "preset": "expo-module-scripts"
