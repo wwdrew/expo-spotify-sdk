@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "axios": "^1.7.2",
-    "expo": "^51.0.13",
+    "expo": "~51.0.14",
     "expo-splash-screen": "~0.27.5",
     "expo-status-bar": "~1.12.1",
     "expo-system-ui": "~3.0.6",
