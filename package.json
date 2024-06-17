@@ -25,11 +25,12 @@
   "files": [
     "plugin/build",
     "build",
+    "android",
+    "external/android/SpotifySDK/auth-lib/spotify-auth-release-2.1.0.aar",
     "ios",
     "app.plugin.js",
     "expo-module.config.json",
-    "server.js",
-    "external/android/SpotifySDK/auth-lib/spotify-auth-release-2.1.0.aar"
+    "server.js"
   ],
   "jest": {
     "preset": "expo-module-scripts"
