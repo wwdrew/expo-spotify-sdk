@@ -4,7 +4,7 @@ An Expo Module for the native [iOS](https://github.com/spotify/ios-sdk/) and [An
 
 ## Supported Features
 
-- Authentication (currently iOS only, Android coming soon)
+- Authentication
 
 More to come...
 
@@ -52,7 +52,7 @@ authenticateAsync(config: SpotifyConfig): Promise<SpotifySession>
 
 Starts the authentication process. Requires an array of OAuth scopes. If the Spotify app is installed on the target device it will interact directly with it, otherwise it will open a web view to authenticate with the Spotify website.
 
-**Note for Android:** If not providing a token swap or refresh URL, the Spotify session response access token will expire after 60 minutes and will not include a refresh token. This is due to a limitation in the Android Spotify SDK. It's generally recommended to [implement a token swap endpoint](#token-swap) for this reason.
+**Note for Android:** If not providing a token swap or refresh URL, the Spotify session response access token will expire after 60 minutes and will not include a refresh token. This is due to a limitation in the Android Spotify SDK. It's recommended to [implement a token swap endpoint](#token-swap) for this reason.
 
 ### Parameters
 
