@@ -36,7 +36,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - ExpoSpotifySDK (0.4.0):
+  - ExpoSpotifySDK (0.4.1):
     - ExpoModulesCore
     - PromiseKit (~> 6.8)
   - ExpoSystemUI (3.0.6):
@@ -1452,7 +1452,7 @@ SPEC CHECKSUMS:
   ExpoFont: 43b69559cef3d773db57c7ae7edd3cb0aa0dc610
   ExpoKeepAwake: 3b8815d9dd1d419ee474df004021c69fdd316d08
   ExpoModulesCore: 54c85b57000a2a82e5212d5e42cd7a36524be4ac
-  ExpoSpotifySDK: 50a998cb577c3229a974ff41b7802df9cb33031d
+  ExpoSpotifySDK: f4245ffce2011e8ec4460d0867f709b81fc69005
   ExpoSystemUI: 65007dd0537cb38649ee55b4670a6ed222769b3a
   EXSplashScreen: fbf0ec78e9cee911df188bf17b4fe51d15a84b87
   FBLazyVector: 4bc164e5b5e6cfc288d2b5ff28643ea15fa1a589
