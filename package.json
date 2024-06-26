@@ -26,7 +26,6 @@
     "plugin/build",
     "build",
     "android",
-    "external/android/SpotifySDK/auth-lib/spotify-auth-release-2.1.0.aar",
     "ios",
     "app.plugin.js",
     "expo-module.config.json",
