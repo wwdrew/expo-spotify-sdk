@@ -56,9 +56,9 @@ class ExpoSpotifySDKModule : Module() {
         val packageInfo =
           context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_META_DATA)
         val applicationInfo = packageInfo.applicationInfo
-        val metaData = applicationInfo.metaData
-        val clientId = metaData.getString("spotifyClientId")
-        val redirectUri = metaData.getString("spotifyRedirectUri")
+        val metaData = applicationInfo?.metaData
+        val clientId = metaData?.getString("spotifyClientId")
+        val redirectUri = metaData?.getString("spotifyRedirectUri")
 
         requestConfig = config
 
