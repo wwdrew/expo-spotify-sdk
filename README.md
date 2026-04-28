@@ -337,12 +337,16 @@ Return a non-2xx HTTP status with a JSON body for structured error propagation. 
 
 ### Reference implementation
 
-A minimal Node.js reference server is in [`example/server.js`](example/server.js). Configure it with environment variables and run it locally during development:
+The example app uses [Expo Router API routes](https://docs.expo.dev/router/reference/api-routes/) for the swap and refresh endpoints, so there is no separate server to run. Copy `.env.local.example` to `.env.local`, fill in your credentials, and start the app normally:
 
 ```sh
 cd example
-SPOTIFY_CLIENT_ID=xxx SPOTIFY_CLIENT_SECRET=yyy node server.js
+cp .env.local.example .env.local
+# edit .env.local with your credentials
+npx expo start
 ```
+
+The `/swap` and `/refresh` routes are served by the Expo dev server alongside the app. `Constants.expoConfig.hostUri` is used to auto-detect the correct URL on any device or simulator.
 
 ## Troubleshooting
 

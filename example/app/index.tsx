@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import {
   addSessionChangeListener,
   authenticateAsync,
@@ -13,21 +14,20 @@ import {
   Image,
   SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
-// ── Configuration ─────────────────────────────────────────────────────────────
-// Start the token swap server before running the app:
-//   SPOTIFY_CLIENT_ID=xxx SPOTIFY_CLIENT_SECRET=yyy node server.js
-//
-// On iOS Simulator "localhost" works. On Android Emulator use "10.0.2.2".
-// On a physical device use your machine's LAN IP (e.g. "192.168.1.10").
-const TOKEN_SWAP_URL = "http://localhost:3000/swap";
-const TOKEN_REFRESH_URL = "http://localhost:3000/refresh";
+// ── API route URLs ────────────────────────────────────────────────────────────
+// Expo Router API routes are served by the Expo dev server.
+// Constants.expoConfig.hostUri auto-detects the correct host for the current
+// device/simulator — no manual URL configuration needed.
+// Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env.local.
+const DEV_HOST = Constants.expoConfig?.hostUri ?? "127.0.0.1:8081";
+const TOKEN_SWAP_URL = `http://${DEV_HOST}/swap`;
+const TOKEN_REFRESH_URL = `http://${DEV_HOST}/refresh`;
 
 const SCOPES: SpotifyScope[] = [
   "user-read-email",
@@ -79,22 +79,18 @@ async function fetchProfile(accessToken: string): Promise<SpotifyProfile> {
   return res.json() as Promise<SpotifyProfile>;
 }
 
-// ── App ───────────────────────────────────────────────────────────────────────
-export default function App() {
+// ── Screen ────────────────────────────────────────────────────────────────────
+export default function HomeScreen() {
   const [session, setSession] = useState<SpotifySession | null>(null);
   const [profile, setProfile] = useState<SpotifyProfile | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Demonstrate addSessionChangeListener — log failures from any call site.
+  // Subscribe to session lifecycle events — useful for centralised state stores.
   useEffect(() => {
     const sub = addSessionChangeListener((event) => {
       if (event.type === "didFail") {
-        console.warn(
-          "[SpotifySDK event]",
-          event.error.code,
-          event.error.message,
-        );
+        console.warn("[SpotifySDK]", event.error.code, event.error.message);
       }
     });
     return () => sub.remove();
@@ -160,7 +156,6 @@ export default function App() {
 
   return (
     <SafeAreaView style={s.root}>
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
       <ScrollView contentContainerStyle={s.scroll} bounces={false}>
         {/* Header */}
         <View style={s.header}>
@@ -191,10 +186,8 @@ export default function App() {
         )}
 
         {session === null ? (
-          /* Unauthenticated */
           <ConnectButton onPress={handleConnect} loading={busy === "auth"} />
         ) : (
-          /* Authenticated */
           <>
             {busy === "profile" ? (
               <ActivityIndicator
@@ -240,7 +233,7 @@ function ConnectButton({
 }) {
   return (
     <TouchableOpacity
-      style={[s.connectBtn, loading && s.disabled]}
+      style={[s.connectBtn, loading && s.disabledOpacity]}
       onPress={onPress}
       disabled={loading}
       activeOpacity={0.8}
@@ -327,11 +320,19 @@ function Btn({
         ? C.border
         : C.green;
   const textColor =
-    variant === "destructive" ? C.error : variant === "secondary" ? C.white : C.bg;
+    variant === "destructive"
+      ? C.error
+      : variant === "secondary"
+        ? C.white
+        : C.bg;
 
   return (
     <TouchableOpacity
-      style={[s.btn, { backgroundColor: bg, borderColor }, disabled && s.disabled]}
+      style={[
+        s.btn,
+        { backgroundColor: bg, borderColor },
+        disabled && s.disabledOpacity,
+      ]}
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.8}
@@ -412,7 +413,7 @@ const s = StyleSheet.create({
   cardTitle: {
     color: C.white,
     fontWeight: "700",
-    fontSize: 14,
+    fontSize: 13,
     alignSelf: "flex-start",
     marginBottom: 8,
     textTransform: "uppercase",
@@ -439,5 +440,5 @@ const s = StyleSheet.create({
   },
   btnText: { fontWeight: "600", fontSize: 15 },
 
-  disabled: { opacity: 0.5 },
+  disabledOpacity: { opacity: 0.5 },
 });

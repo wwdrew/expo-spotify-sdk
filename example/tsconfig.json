@@ -6,5 +6,11 @@
       "expo-spotify-sdk": ["../src/index"],
       "expo-spotify-sdk/*": ["../src/*"]
     }
-  }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.d.ts",
+    "expo-env.d.ts"
+  ]
 }

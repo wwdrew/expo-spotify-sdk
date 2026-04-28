@@ -28,7 +28,9 @@
       "package": "expo.modules.spotifysdk.example"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "server"
     },
     "plugins": [
       [
@@ -39,7 +41,8 @@
           "clientID": "your-client-id",
           "redirectPathPattern": ".*"
         }
-      ]
+      ],
+      "expo-router"
     ]
   }
 }
