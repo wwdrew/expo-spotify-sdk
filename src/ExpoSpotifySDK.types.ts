@@ -22,6 +22,16 @@ export interface SpotifySession {
 }
 
 /**
+ * Configuration accepted by `refreshSessionAsync`.
+ */
+export interface SpotifyRefreshConfig {
+  /** The refresh token from a previous `authenticateAsync` call. */
+  refreshToken: string;
+  /** URL of your token refresh server endpoint. */
+  tokenRefreshURL: string;
+}
+
+/**
  * Configuration accepted by `authenticateAsync`.
  */
 export interface SpotifyConfig {
@@ -78,6 +88,18 @@ export type SpotifyErrorCode =
   | "SPOTIFY_NOT_INSTALLED"
   | "AUTH_ERROR"
   | "UNKNOWN";
+
+/**
+ * Payload delivered to `addSessionChangeListener` subscribers.
+ *
+ * - `didInitiate` — a new session was created by `authenticateAsync`
+ * - `didRenew`    — an existing session was refreshed by `refreshSessionAsync`
+ * - `didFail`     — an auth or refresh attempt failed
+ */
+export type SpotifySessionChangeEvent =
+  | { type: "didInitiate"; session: SpotifySession }
+  | { type: "didRenew"; session: SpotifySession }
+  | { type: "didFail"; error: { code: SpotifyErrorCode; message: string } };
 
 /**
  * Error subclass thrown by `authenticateAsync` and `refreshSessionAsync`

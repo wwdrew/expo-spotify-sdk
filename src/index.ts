@@ -1,10 +1,12 @@
-import { Platform } from "react-native";
+import { EventSubscription, Platform } from "expo-modules-core";
 
 import {
   SpotifyConfig,
   SpotifyError,
   SpotifyErrorCode,
+  SpotifyRefreshConfig,
   SpotifySession,
+  SpotifySessionChangeEvent,
 } from "./ExpoSpotifySDK.types";
 import ExpoSpotifySDKModule from "./ExpoSpotifySDKModule";
 
@@ -81,6 +83,56 @@ function normaliseSession(raw: unknown): SpotifySession {
   return { accessToken, refreshToken, expirationDate, scopes };
 }
 
+/**
+ * Exchanges a refresh token for a new access token via your token refresh
+ * server. Resolves with a fresh {@link SpotifySession}; rejects with a
+ * {@link SpotifyError}.
+ */
+function refreshSessionAsync(config: SpotifyRefreshConfig): Promise<SpotifySession> {
+  if (!config.refreshToken) {
+    return Promise.reject(
+      new SpotifyError("INVALID_CONFIG", "refreshToken is required"),
+    );
+  }
+  if (!config.tokenRefreshURL) {
+    return Promise.reject(
+      new SpotifyError("INVALID_CONFIG", "tokenRefreshURL is required"),
+    );
+  }
+  return ExpoSpotifySDKModule.refreshSessionAsync(config)
+    .then(normaliseSession)
+    .catch(rethrowAsSpotifyError);
+}
+
+/**
+ * Subscribes to session lifecycle events emitted by the native module.
+ *
+ * Events are fired for every `authenticateAsync` and `refreshSessionAsync`
+ * call, regardless of whether the call was awaited. Useful for persisting
+ * tokens in a central store without coupling the store to the call sites.
+ *
+ * Returns a {@link Subscription} — call `.remove()` to unsubscribe.
+ *
+ * @example
+ * ```ts
+ * const sub = addSessionChangeListener((event) => {
+ *   if (event.type === "didInitiate" || event.type === "didRenew") {
+ *     store.setSession(event.session);
+ *   }
+ * });
+ * // later:
+ * sub.remove();
+ * ```
+ */
+function addSessionChangeListener(
+  listener: (event: SpotifySessionChangeEvent) => void,
+): EventSubscription {
+  return ExpoSpotifySDKModule.addListener(
+    "onSessionChange",
+    listener,
+  ) as EventSubscription;
+}
+
 const ERROR_PREFIX_RE = /^([A-Z_][A-Z0-9_]*):\s*(.*)$/s;
 
 const VALID_CODES: ReadonlySet<SpotifyErrorCode> = new Set<SpotifyErrorCode>([
@@ -115,10 +167,19 @@ const Authenticate = {
   authenticateAsync,
 };
 
-export { isAvailable, authenticateAsync, Authenticate, SpotifyError };
+export {
+  isAvailable,
+  authenticateAsync,
+  refreshSessionAsync,
+  addSessionChangeListener,
+  Authenticate,
+  SpotifyError,
+};
 export type {
   SpotifyConfig,
+  SpotifyRefreshConfig,
   SpotifySession,
+  SpotifySessionChangeEvent,
   SpotifyErrorCode,
   SpotifyScope,
 } from "./ExpoSpotifySDK.types";

@@ -134,6 +134,8 @@ The redirect URI registered in your [Spotify Developer Dashboard](https://develo
 import {
   isAvailable,
   authenticateAsync,
+  refreshSessionAsync,
+  addSessionChangeListener,
   SpotifyError,
 } from "@wwdrew/expo-spotify-sdk";
 
@@ -216,6 +218,41 @@ Exchanges a refresh token for a new access token via your token refresh server.
 | `tokenRefreshURL` | `string` | URL of your token refresh server endpoint.                  |
 
 **Returns** a fresh `SpotifySession` with an updated `accessToken` and `expirationDate`. If the server rotates the refresh token the new one is returned in `refreshToken`; otherwise the original token is returned so you can continue refreshing.
+
+---
+
+### `addSessionChangeListener(listener): Subscription`
+
+Subscribes to session lifecycle events emitted by the native module. Events fire for every `authenticateAsync` and `refreshSessionAsync` call — including ones you didn't directly `await` — making this the right place to persist tokens in a central store.
+
+Returns a `Subscription` object; call `.remove()` to unsubscribe.
+
+```ts
+import { addSessionChangeListener } from "@wwdrew/expo-spotify-sdk";
+
+const sub = addSessionChangeListener((event) => {
+  switch (event.type) {
+    case "didInitiate":
+    case "didRenew":
+      store.setSession(event.session); // { accessToken, refreshToken, expirationDate, scopes }
+      break;
+    case "didFail":
+      console.error(`[${event.error.code}] ${event.error.message}`);
+      break;
+  }
+});
+
+// When the subscribing component unmounts:
+sub.remove();
+```
+
+**Event types (`SpotifySessionChangeEvent`):**
+
+| `type` | Payload | Fired when |
+|---|---|---|
+| `"didInitiate"` | `{ session: SpotifySession }` | `authenticateAsync` succeeded |
+| `"didRenew"` | `{ session: SpotifySession }` | `refreshSessionAsync` succeeded |
+| `"didFail"` | `{ error: { code, message } }` | Either function rejected |
 
 ---
 
