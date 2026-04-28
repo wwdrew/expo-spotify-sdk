@@ -8,9 +8,18 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Replace these with your own values
-const CLIENT_ID = "<your-client-id>";
-const CLIENT_SECRET = "<your-client-secret>";
+// Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in your environment.
+// Never commit real credentials to source control.
+const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
+const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
+
+if (!CLIENT_ID || !CLIENT_SECRET) {
+  console.error(
+    "Error: SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET must be set.\n" +
+      "Example: SPOTIFY_CLIENT_ID=xxx SPOTIFY_CLIENT_SECRET=yyy node server.js",
+  );
+  process.exit(1);
+}
 
 const SPOTIFY_ACCOUNTS_ENDPOINT = "https://accounts.spotify.com";
 const CLIENT_CALLBACK_URL = "expo-spotify-sdk-example://authenticate";

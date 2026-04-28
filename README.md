@@ -1,154 +1,334 @@
 # expo-spotify-sdk
 
-An Expo Module for the native [iOS](https://github.com/spotify/ios-sdk/) and [Android](https://github.com/spotify/android-sdk/) Spotify SDK
+[![npm version](https://img.shields.io/npm/v/@wwdrew/expo-spotify-sdk)](https://www.npmjs.com/package/@wwdrew/expo-spotify-sdk)
+[![CI](https://img.shields.io/github/actions/workflow/status/wwdrew/expo-spotify-sdk/ci.yml?label=CI)](https://github.com/wwdrew/expo-spotify-sdk/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/wwdrew/expo-spotify-sdk)](LICENSE)
 
-## Supported Features
+An Expo module that wraps the native [Spotify iOS SDK](https://github.com/spotify/ios-sdk) (v5.0.1) and [Spotify Android SDK](https://github.com/spotify/android-sdk) (v4.0.1) to provide OAuth authentication in Expo and React Native apps.
 
-- Authentication
+**Why this exists:** Spotify ships native SDKs for iOS and Android that enable authentication via the installed Spotify app (no browser redirect, better UX) but there is no maintained Expo module for them. This library fills that gap.
 
-More to come...
+## Platform support
 
-## Installation
+| Feature                                       | iOS | Android      | Web                 |
+| --------------------------------------------- | --- | ------------ | ------------------- |
+| `isAvailable()`                               | ✅  | ✅           | ✅ (always `false`) |
+| `authenticateAsync` — CODE flow (recommended) | ✅  | ✅           | —                   |
+| `authenticateAsync` — TOKEN flow (implicit)   | ✅  | ⚠️ see below | —                   |
+| `refreshSessionAsync`                         | ✅  | ✅           | —                   |
+| Auth via installed Spotify app                | ✅  | ✅           | —                   |
+| Auth via Spotify web fallback                 | ✅  | ✅           | —                   |
+
+## Quick start (Expo)
 
 ```sh
+# 1. Install
 npx expo install @wwdrew/expo-spotify-sdk
+
+# 2. Add the config plugin to app.config.ts / app.json  (see Configuration below)
+# 3. Regenerate native projects
+npx expo prebuild
 ```
+
+For bare React Native (no Expo CLI), see [Installation in bare React Native](#installation-in-bare-react-native).
+
+## Installation in bare React Native
+
+This library is an [Expo Module](https://docs.expo.dev/modules/overview/) and therefore requires `expo-modules-core` as a peer. If your project does not use the Expo managed workflow you will need to set this up manually.
+
+### 1. Install
+
+```sh
+npm install @wwdrew/expo-spotify-sdk expo-modules-core
+# or
+yarn add @wwdrew/expo-spotify-sdk expo-modules-core
+```
+
+### 2. iOS
+
+Add the pod to your `Podfile`:
+
+```ruby
+pod 'ExpoSpotifySDK', :path => '../node_modules/@wwdrew/expo-spotify-sdk'
+```
+
+Then install pods:
+
+```sh
+cd ios && pod install
+```
+
+If you have not already bootstrapped `expo-modules-core` in your AppDelegate, follow the [Expo Modules integration guide](https://docs.expo.dev/bare/installing-expo-modules/) first — in particular, your `AppDelegate` must inherit from `ExpoAppDelegate` (or call `ExpoModulesAppDelegateSubscriber`) so that the Spotify redirect URL is handled correctly.
+
+Finally, register your URL scheme. In Xcode open **Info → URL Types** and add a new entry with:
+
+- **Identifier:** `$(PRODUCT_BUNDLE_IDENTIFIER)`
+- **URL Schemes:** the value you'll pass as `scheme` in the plugin config (e.g. `myapp`)
+
+### 3. Android
+
+You do **not** need to modify `AndroidManifest.xml`. The module's own manifest (merged by Gradle at build time) already contributes the `<queries>` block for package-visibility and the `<meta-data>` placeholders. The Spotify Auth SDK's AAR brings in its own activities the same way.
+
+The only manual step is in `android/app/build.gradle`. Add the Spotify Auth SDK dependency and populate the manifest placeholders that the module expects:
+
+```groovy
+android {
+    defaultConfig {
+        // ...
+        manifestPlaceholders = [
+            spotifyClientId:       "your-spotify-client-id",
+            spotifyRedirectUri:    "myapp://spotify-auth",
+            redirectSchemeName:    "myapp",
+            redirectHostName:      "spotify-auth",
+            redirectPathPattern:   "/.*"
+        ]
+    }
+}
+
+dependencies {
+    // ...
+    implementation 'com.spotify.android:auth:4.0.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0' // required for token swap/refresh
+}
+```
+
+Replace `myapp`, `spotify-auth`, and `your-spotify-client-id` with your own values. Make sure the redirect URI matches what is registered in your [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
 
 ## Configuration
 
-Include the `expo-spotify-sdk` plugin in your `app.json/app.config.js` file with its required configuration:
+Add the plugin to your `app.config.ts` (or `app.json`):
 
-```javascript
-  ...
-  "plugins": [
-    ["@wwdrew/expo-spotify-sdk", {
-      "clientID": "<your-spotify-client-id>",
-      "scheme": "expo-spotify-sdk-example",
-      "host": "authenticate"
-    }]
+```ts
+export default {
+  plugins: [
+    [
+      "@wwdrew/expo-spotify-sdk",
+      {
+        clientID: "your-spotify-client-id",
+        scheme: "myapp",
+        host: "spotify-auth",
+        // Optional: path pattern accepted by the Spotify Android SDK redirect.
+        // Defaults to "/.*" (matches any path). Change this only if you have a
+        // specific redirect path registered in your Spotify app settings.
+        redirectPathPattern: "/.*",
+      },
+    ],
   ],
-  ...
+};
 ```
 
-Required:
+### Plugin options
 
-- `clientID`: &lt;string&gt; the Spotify Client ID for your application
-- `scheme`: &lt;string&gt; the [URL scheme](https://docs.expo.dev/versions/latest/config/app/#scheme) to link into your app as part of the redirect URI
-- `host`: &lt;string&gt; the path of the redirect URI
+| Option                | Type     | Required | Description                                                |
+| --------------------- | -------- | -------- | ---------------------------------------------------------- |
+| `clientID`            | `string` | ✅       | Your Spotify application's Client ID                       |
+| `scheme`              | `string` | ✅       | URL scheme registered for your app (e.g. `"myapp"`)        |
+| `host`                | `string` | ✅       | Host component of the redirect URI (e.g. `"spotify-auth"`) |
+| `redirectPathPattern` | `string` | —        | Android redirect path regex. Defaults to `"/.*"`           |
 
-## API Reference
+The redirect URI registered in your [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) must match `{scheme}://{host}` exactly (e.g. `myapp://spotify-auth`).
 
-```typescript
-isAvailable(): boolean`
-```
+## Usage
 
-Determines if the Spotify app is installed on the target device.
+```ts
+import {
+  isAvailable,
+  authenticateAsync,
+  SpotifyError,
+} from "@wwdrew/expo-spotify-sdk";
 
----
+// Check whether the Spotify app is installed
+const spotifyInstalled = isAvailable();
 
-```typescript
-authenticateAsync(config: SpotifyConfig): Promise<SpotifySession>
-```
+// Authenticate
+try {
+  const session = await authenticateAsync({
+    scopes: ["user-read-email", "streaming"],
+    tokenSwapURL: "https://your-server.example.com/swap",
+    tokenRefreshURL: "https://your-server.example.com/refresh",
+  });
 
-Starts the authentication process. Requires an array of OAuth scopes. If the Spotify app is installed on the target device it will interact directly with it, otherwise it will open a web view to authenticate with the Spotify website.
-
-**Note for Android:** If not providing a token swap or refresh URL, the Spotify session response access token will expire after 60 minutes and will not include a refresh token. This is due to a limitation in the Android Spotify SDK. It's recommended to [implement a token swap endpoint](#token-swap) for this reason.
-
-### Parameters
-
-- `tokenSwapURL` (optional): &lt;string&gt; The URL to use for attempting to swap an authorization code for an access token
-- `tokenRefreshURL` (optional): &lt;string&gt; The URL to use for attempting to renew an access token with a refresh token
-- `scopes`: An array of OAuth scopes that declare how your app wants to access a user's account. See [Spotify Scopes](https://developer.spotify.com/web-api/using-scopes/) for more information.
-
-**Note:** The following scopes are not available to Expo Spotify SDK:
-
-  - user-read-playback-position
-  - user-soa-link
-  - user-soa-unlink
-  - user-manage-entitlements
-  - user-manage-partner
-  - user-create-partner
-
-### Types
-
-```typescript
-interface SpotifyConfig {
-  scopes: SpotifyScope[];
-  tokenSwapURL?: string;
-  tokenRefreshURL?: string;
+  console.log(session.accessToken); // use with Spotify Web API
+  console.log(session.refreshToken); // store securely for later refresh
+  console.log(session.expirationDate); // Unix epoch milliseconds
+  console.log(session.scopes); // granted scopes
+} catch (e) {
+  if (e instanceof SpotifyError) {
+    if (e.code === "USER_CANCELLED") return; // user backed out — benign
+    console.error(`[${e.code}] ${e.message}`);
+  }
 }
-
-interface SpotifySession {
-  accessToken: string;
-  refreshToken: string | null;
-  expirationDate: number;
-  scopes: SpotifyScopes[];
-}
-
-type SpotifyScopes =
-  | "ugc-image-upload"
-  | "user-read-playback-state"
-  | "user-modify-playback-state"
-  | "user-read-currently-playing"
-  | "app-remote-control"
-  | "streaming"
-  | "playlist-read-private"
-  | "playlist-read-collaborative"
-  | "playlist-modify-private"
-  | "playlist-modify-public"
-  | "user-follow-modify"
-  | "user-follow-read"
-  | "user-top-read"
-  | "user-read-recently-played"
-  | "user-library-modify"
-  | "user-library-read"
-  | "user-read-email"
-  | "user-read-private";
 ```
 
-## Token Swap Example
+### Refresh a session
 
-An example token swap endpoint has been provided in the `example` project. For it to work it needs your Spotify client details to be included.
+```ts
+import { refreshSessionAsync } from "@wwdrew/expo-spotify-sdk";
 
-1. Open the `server.js` file and add your client details:
-
-```javascript
-const CLIENT_ID = "<your-client-id>";
-const CLIENT_SECRET = "<your-client-secret>";
-```
-
-These values can be found in your [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). You will need an existing Spotify app for this.
-
-2. Run the server
-
-```sh
-node server.js
-```
-
-3. Set the `tokenSwapURL` value in your `authenticateAsync` call:
-
-```javascript
-const session = await authenticateAsync({
-  tokenSwapURL: "http://192.168.1.120:3000/swap",
-  scopes: [
-    ...
-  ]
+const refreshed = await refreshSessionAsync({
+  refreshToken: storedRefreshToken,
+  tokenRefreshURL: "https://your-server.example.com/refresh",
 });
 ```
 
-All authentication requests will now be sent through the token swap server.
+## API reference
 
-## Acknowledgments
+### `isAvailable(): boolean`
 
-This project has been heavily inspired by the following projects:
+Returns `true` if the Spotify app is installed on the device. Always returns `false` on web. Does not throw.
 
-* [react-native-spotify-remote](https://github.com/cjam/react-native-spotify-remote)
-* [expo-spotify](https://github.com/kvbalib/expo-spotify)
+---
 
-## Contribute
+### `authenticateAsync(config: SpotifyConfig): Promise<SpotifySession>`
 
-Contributions are welcome!
+Starts a Spotify OAuth flow. If the Spotify app is installed it authenticates natively; otherwise it falls back to the Spotify web login page.
+
+**Throws [`SpotifyError`](#spotifyerror)** on failure.
+
+**Parameters (`SpotifyConfig`):**
+
+| Field             | Type             | Required | Description                                                                                                                |
+| ----------------- | ---------------- | -------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `scopes`          | `SpotifyScope[]` | ✅       | OAuth scopes to request. Must contain at least one entry.                                                                  |
+| `tokenSwapURL`    | `string`         | —        | URL of your token swap server endpoint. Triggers CODE flow (recommended). Required on Android to receive a `refreshToken`. |
+| `tokenRefreshURL` | `string`         | —        | URL of your token refresh server endpoint. Used by iOS SDK natively and by `refreshSessionAsync` on both platforms.        |
+
+**Returns (`SpotifySession`):**
+
+| Field            | Type             | Description                                                                                                                                         |
+| ---------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `accessToken`    | `string`         | OAuth access token. Use as `Authorization: Bearer <token>` with the Spotify Web API.                                                                |
+| `refreshToken`   | `string \| null` | Refresh token. `null` on Android when no `tokenSwapURL` is provided — see [Android implicit flow](#android-implicit-token-flow-is-not-recommended). |
+| `expirationDate` | `number`         | Token expiry as Unix epoch **milliseconds**.                                                                                                        |
+| `scopes`         | `SpotifyScope[]` | Granted scopes. On Android TOKEN flow, reflects requested scopes (Spotify does not expose granted scopes in the implicit flow).                     |
+
+---
+
+### `refreshSessionAsync(options): Promise<SpotifySession>`
+
+Exchanges a refresh token for a new access token via your token refresh server.
+
+**Parameters:**
+
+| Field             | Type     | Description                                                 |
+| ----------------- | -------- | ----------------------------------------------------------- |
+| `refreshToken`    | `string` | The refresh token from a previous `authenticateAsync` call. |
+| `tokenRefreshURL` | `string` | URL of your token refresh server endpoint.                  |
+
+**Returns** a fresh `SpotifySession` with an updated `accessToken` and `expirationDate`. If the server rotates the refresh token the new one is returned in `refreshToken`; otherwise the original token is returned so you can continue refreshing.
+
+---
+
+### `SpotifyError`
+
+All rejections from `authenticateAsync` and `refreshSessionAsync` are instances of `SpotifyError`:
+
+```ts
+import { SpotifyError } from "@wwdrew/expo-spotify-sdk";
+
+try {
+  await authenticateAsync({ scopes: ["streaming"] });
+} catch (e) {
+  if (e instanceof SpotifyError) {
+    switch (e.code) {
+      case "USER_CANCELLED": // user closed the auth screen — benign
+      case "AUTH_IN_PROGRESS": // concurrent call — benign
+        return;
+      case "INVALID_CONFIG": // missing clientID / scopes / tokenSwapURL
+      case "NETWORK_ERROR": // connectivity failure during token swap
+      case "TOKEN_SWAP_FAILED": // swap server returned non-2xx (e.message has status + body)
+      case "TOKEN_SWAP_PARSE_ERROR": // swap server returned invalid JSON
+      case "SPOTIFY_NOT_INSTALLED": // Spotify app not found (rare — most flows fall back to web)
+      case "AUTH_ERROR": // Spotify returned an error (e.message has detail)
+      case "UNKNOWN": // unexpected failure
+        reportError(e);
+    }
+  }
+}
+```
+
+## Android implicit (TOKEN) flow is not recommended
+
+When `authenticateAsync` is called on Android **without** a `tokenSwapURL`, the Spotify Android SDK uses the implicit (TOKEN) flow. This flow has two hard limitations that **will not be fixed** — Spotify has deprecated it:
+
+1. **No `refreshToken`.** The Android SDK does not expose a refresh token for implicit grants. `session.refreshToken` will always be `null`.
+2. **`scopes` reflects what was requested, not what was granted.** The Android SDK does not return the actual granted scope list for TOKEN responses.
+
+The library emits a one-time `console.warn` at runtime when this path is taken.
+
+**The fix:** provide a `tokenSwapURL` to use the Authorization Code flow, which returns a full `refreshToken` and the actual granted `scopes` on both platforms.
+
+See [Spotify's migration guide](https://developer.spotify.com/documentation/android/tutorials/migration-token-code) for context, and the [token swap server section](#token-swap-server) below for a reference implementation.
+
+## Token swap server
+
+The `tokenSwapURL` / `tokenRefreshURL` endpoints must be a server you control — **never** put your Spotify `CLIENT_SECRET` in the app bundle.
+
+### Swap endpoint (`POST {tokenSwapURL}`)
+
+The native module sends a `application/x-www-form-urlencoded` body:
+
+```
+code=<authorization-code>&redirect_uri=<redirect-uri>&client_id=<client-id>
+```
+
+Your server POSTs these to `https://accounts.spotify.com/api/token` with `grant_type=authorization_code` and your `CLIENT_SECRET` in the `Authorization` header, then returns Spotify's response verbatim as `application/json`:
+
+```json
+{
+  "access_token": "BQA...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "AQA...",
+  "scope": "user-read-email streaming"
+}
+```
+
+### Refresh endpoint (`POST {tokenRefreshURL}`)
+
+The native module sends:
+
+```
+refresh_token=<token>&client_id=<client-id>
+```
+
+Your server POSTs to `https://accounts.spotify.com/api/token` with `grant_type=refresh_token`. Return Spotify's response verbatim. If Spotify rotates the refresh token the response will contain a new `refresh_token`; if not, the field is absent — the library handles both cases correctly.
+
+### Error responses
+
+Return a non-2xx HTTP status with a JSON body for structured error propagation. The library will reject with `TOKEN_SWAP_FAILED` and include the status code and (truncated) response body in `e.message`.
+
+### Reference implementation
+
+A minimal Node.js reference server is in [`example/server.js`](example/server.js). Configure it with environment variables and run it locally during development:
+
+```sh
+cd example
+SPOTIFY_CLIENT_ID=xxx SPOTIFY_CLIENT_SECRET=yyy node server.js
+```
+
+## Troubleshooting
+
+**`INVALID_CONFIG: Missing meta-data 'spotifyClientId'`**
+Run `expo prebuild` after adding the plugin to your config. The plugin injects the required `AndroidManifest.xml` entries.
+
+**`isAvailable()` returns `false` on Android 11+ release builds**
+Android 11+ requires a `<queries>` element to inspect other apps' package names. The module ships this in its `AndroidManifest.xml`; make sure you are not merging a custom manifest that removes it.
+
+**iOS: authentication never returns**
+Ensure your app's URL scheme is registered in Xcode under **Info → URL Types** and that it matches the `scheme` in the plugin config. The `expo prebuild` step does this automatically; if you have a bare workflow, check `CFBundleURLSchemes` in `Info.plist`.
+
+**`AUTH_IN_PROGRESS`**
+`authenticateAsync` was called while a previous call was still pending. Wait for the first call to resolve or reject before calling again.
+
+## Acknowledgements
+
+Inspired by [react-native-spotify-remote](https://github.com/cjam/react-native-spotify-remote) and [expo-spotify](https://github.com/kvbalib/expo-spotify).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
