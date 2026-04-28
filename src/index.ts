@@ -115,7 +115,7 @@ const Authenticate = {
   authenticateAsync,
 };
 
-export { isAvailable, Authenticate, SpotifyError };
+export { isAvailable, authenticateAsync, Authenticate, SpotifyError };
 export type {
   SpotifyConfig,
   SpotifySession,
