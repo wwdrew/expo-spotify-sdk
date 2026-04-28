@@ -1,11 +1,10 @@
 package expo.modules.spotifysdk
 
 import android.content.pm.PackageManager
-import androidx.activity.result.ActivityResultLauncher
-import com.spotify.sdk.android.auth.AuthorizationClient
-import com.spotify.sdk.android.auth.AuthorizationRequest
 import com.spotify.sdk.android.auth.AuthorizationResponse
+import expo.modules.kotlin.activityresult.AppContextActivityResultLauncher
 import expo.modules.kotlin.exception.Exceptions
+import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -14,7 +13,7 @@ private const val EVENT_SESSION_CHANGE = "onSessionChange"
 
 class ExpoSpotifySDKModule : Module() {
 
-  private lateinit var authLauncher: ActivityResultLauncher<AuthorizationRequest>
+  private lateinit var authLauncher: AppContextActivityResultLauncher<SpotifyAuthInput, AuthorizationResponse>
   private val coordinator = SpotifyAuthCoordinator()
 
   private val context
@@ -43,20 +42,13 @@ class ExpoSpotifySDKModule : Module() {
     return SpotifyManifestConfig(clientId = clientId, redirectUri = redirectUri)
   }
 
-  private fun buildAuthorizationRequest(
-    config: SpotifyAuthenticateOptions,
-    manifest: SpotifyManifestConfig,
-  ): AuthorizationRequest {
-    val responseType =
-      if (config.tokenSwapURL != null) AuthorizationResponse.Type.CODE
-      else AuthorizationResponse.Type.TOKEN
-    return AuthorizationRequest.Builder(
-      manifest.clientId,
-      responseType,
-      manifest.redirectUri,
-    )
-      .setScopes(config.scopes.toTypedArray())
-      .build()
+  private fun isSpotifyInstalled(): Boolean {
+    return try {
+      context.packageManager.getPackageInfo("com.spotify.music", 0)
+      true
+    } catch (_: PackageManager.NameNotFoundException) {
+      false
+    }
   }
 
   private fun emitSession(type: String, payload: SpotifySessionPayload) {
@@ -79,13 +71,11 @@ class ExpoSpotifySDKModule : Module() {
     Events(EVENT_SESSION_CHANGE)
 
     Function("isAvailable") {
-      AuthorizationClient.isSpotifyInstalled(context)
+      isSpotifyInstalled()
     }
 
     RegisterActivityContracts {
-      authLauncher = registerForActivityResult(SpotifyAuthorizationContract()) { _, response ->
-        coordinator.deliverResult(response)
-      }
+      authLauncher = registerForActivityResult(SpotifyAuthorizationContract())
     }
 
     AsyncFunction("authenticateAsync") Coroutine { config: SpotifyAuthenticateOptions ->
@@ -94,8 +84,19 @@ class ExpoSpotifySDKModule : Module() {
           throw InvalidConfigException("`scopes` must contain at least one entry")
         }
         val manifest = readManifestConfig()
-        val request = buildAuthorizationRequest(config, manifest)
-        val response = coordinator.authenticate(authLauncher, request)
+
+        val responseType =
+          if (config.tokenSwapURL != null) AuthorizationResponse.Type.CODE
+          else AuthorizationResponse.Type.TOKEN
+
+        val input = SpotifyAuthInput(
+          clientId = manifest.clientId,
+          redirectUri = manifest.redirectUri,
+          responseType = responseType,
+          scopes = config.scopes.toTypedArray(),
+        )
+
+        val response = coordinator.authenticate(authLauncher, input)
 
         val payload = when (response.type) {
           AuthorizationResponse.Type.TOKEN -> SpotifySessionPayload(

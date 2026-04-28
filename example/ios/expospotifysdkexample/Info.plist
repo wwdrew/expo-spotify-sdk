@@ -31,30 +31,24 @@
           <string>expo.modules.spotifysdk.example</string>
         </array>
       </dict>
-      <dict>
-        <key>CFBundleURLName</key>
-        <string>expo.modules.spotifysdk.example</string>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>expo-spotify-sdk-example</string>
-        </array>
-      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>ExpoSpotifySDK</key>
     <dict>
+      <key>clientID</key>
+      <string>your-client-id</string>
       <key>host</key>
       <string>authenticate</string>
       <key>scheme</key>
       <string>expo-spotify-sdk-example</string>
-      <key>clientID</key>
-      <string>your-client-id</string>
     </dict>
     <key>LSApplicationQueriesSchemes</key>
     <array>
       <string>spotify</string>
     </array>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSAppTransportSecurity</key>
@@ -64,6 +58,8 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>RCTNewArchEnabled</key>
+    <true/>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

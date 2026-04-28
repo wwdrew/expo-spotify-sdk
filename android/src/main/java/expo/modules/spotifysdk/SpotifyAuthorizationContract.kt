@@ -3,30 +3,43 @@ package expo.modules.spotifysdk
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import androidx.activity.result.contract.ActivityResultContract
 import com.spotify.sdk.android.auth.AuthorizationClient
 import com.spotify.sdk.android.auth.AuthorizationRequest
 import com.spotify.sdk.android.auth.AuthorizationResponse
+import expo.modules.kotlin.activityresult.AppContextActivityResultContract
 
 /**
- * Type-safe wrapper around Spotify's `AuthorizationClient` so the auth flow
- * can be launched and observed via the modern AndroidX `ActivityResultContract`
- * APIs registered through Expo's `RegisterActivityContracts` block.
+ * Expo-compatible wrapper around Spotify's auth flow.
  *
- * `createIntent` requires an `Activity` (not a plain `Context`); when the
- * platform invokes `createIntent` it passes the host activity, so we cast.
+ * `AppContextActivityResultContract<I, O>` is the Expo Modules Core version of
+ * AndroidX's `ActivityResultContract`. The key difference is that:
+ *  - `I` must implement `Serializable` (for state preservation across process death)
+ *  - `parseResult` receives the original `input` as its first argument
+ *
+ * We use `SpotifyAuthInput` as our serializable input type to work around
+ * `AuthorizationRequest` only implementing `Parcelable`.
  */
 class SpotifyAuthorizationContract :
-  ActivityResultContract<AuthorizationRequest, AuthorizationResponse>() {
+  AppContextActivityResultContract<SpotifyAuthInput, AuthorizationResponse> {
 
-  override fun createIntent(context: Context, input: AuthorizationRequest): Intent {
+  override fun createIntent(context: Context, input: SpotifyAuthInput): Intent {
     val activity = context as? Activity
       ?: throw IllegalStateException(
         "SpotifyAuthorizationContract requires an Activity context, got ${context.javaClass.name}"
       )
-    return AuthorizationClient.createLoginActivityIntent(activity, input)
+    val request = AuthorizationRequest.Builder(
+      input.clientId,
+      input.responseType,
+      input.redirectUri,
+    )
+      .setScopes(input.scopes)
+      .build()
+    return AuthorizationClient.createLoginActivityIntent(activity, request)
   }
 
-  override fun parseResult(resultCode: Int, intent: Intent?): AuthorizationResponse =
-    AuthorizationClient.getResponse(resultCode, intent)
+  override fun parseResult(
+    input: SpotifyAuthInput,
+    resultCode: Int,
+    intent: Intent?,
+  ): AuthorizationResponse = AuthorizationClient.getResponse(resultCode, intent)
 }

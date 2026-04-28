@@ -37,11 +37,13 @@ enum SpotifyError: Error {
 actor SpotifyAuthCoordinator {
   static let shared: SpotifyAuthCoordinator? = SpotifyAuthCoordinator.create()
 
+  private let sptConfiguration: SPTConfiguration
   private let sessionManager: SPTSessionManager
   private let bridge: SpotifySessionDelegateBridge
   private var pending: CheckedContinuation<SPTSession, Error>?
 
-  private init(sessionManager: SPTSessionManager, bridge: SpotifySessionDelegateBridge) {
+  private init(sptConfiguration: SPTConfiguration, sessionManager: SPTSessionManager, bridge: SpotifySessionDelegateBridge) {
+    self.sptConfiguration = sptConfiguration
     self.sessionManager = sessionManager
     self.bridge = bridge
     bridge.coordinator = self
@@ -57,7 +59,7 @@ actor SpotifyAuthCoordinator {
     }
     let bridge = SpotifySessionDelegateBridge()
     let manager = SPTSessionManager(configuration: sptConfig, delegate: bridge)
-    return SpotifyAuthCoordinator(sessionManager: manager, bridge: bridge)
+    return SpotifyAuthCoordinator(sptConfiguration: sptConfig, sessionManager: manager, bridge: bridge)
   }
 
   /// Synchronous getter used by the module's `Function("isAvailable")`. Safe
@@ -80,8 +82,10 @@ actor SpotifyAuthCoordinator {
   ) async throws -> SPTSession {
     guard pending == nil else { throw SpotifyError.authInProgress }
 
-    sessionManager.configuration.tokenSwapURL = tokenSwapURL
-    sessionManager.configuration.tokenRefreshURL = tokenRefreshURL
+    // SPTConfiguration is a reference type shared with the session manager, so
+    // mutating it here takes effect for the upcoming initiateSession call.
+    sptConfiguration.tokenSwapURL = tokenSwapURL
+    sptConfiguration.tokenRefreshURL = tokenRefreshURL
 
     return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<SPTSession, Error>) in
       self.pending = cont
