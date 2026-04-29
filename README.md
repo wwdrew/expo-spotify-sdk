@@ -194,6 +194,7 @@ Starts a Spotify OAuth flow. If the Spotify app is installed it authenticates na
 | `scopes`          | `SpotifyScope[]` | ✅       | OAuth scopes to request. Must contain at least one entry.                                                                  |
 | `tokenSwapURL`    | `string`         | —        | URL of your token swap server endpoint. Triggers CODE flow (recommended). Required on Android to receive a `refreshToken`. |
 | `tokenRefreshURL` | `string`         | —        | URL of your token refresh server endpoint. Used by iOS SDK natively and by `refreshSessionAsync` on both platforms.        |
+| `showDialog`      | `boolean`        | —        | Force Spotify to show the authorization dialog even when the user already has an active session. Defaults to `false`. Useful during development; avoid in production.        |
 
 **Returns (`SpotifySession`):**
 
