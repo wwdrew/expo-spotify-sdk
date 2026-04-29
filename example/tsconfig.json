@@ -3,14 +3,17 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "expo-spotify-sdk": ["../src/index"],
-      "expo-spotify-sdk/*": ["../src/*"]
+      "expo-spotify-sdk": [
+        "../src/index"
+      ],
+      "expo-spotify-sdk/*": [
+        "../src/*"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.d.ts",
-    "expo-env.d.ts"
+    ".expo/types/**/*.d.ts"
   ]
 }

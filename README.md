@@ -337,16 +337,41 @@ Return a non-2xx HTTP status with a JSON body for structured error propagation. 
 
 ### Reference implementation
 
-The example app uses [Expo Router API routes](https://docs.expo.dev/router/reference/api-routes/) for the swap and refresh endpoints, so there is no separate server to run. Copy `.env.local.example` to `.env.local`, fill in your credentials, and start the app normally:
+The example app uses [Expo Router API routes](https://docs.expo.dev/router/reference/api-routes/) for the swap and refresh endpoints — no separate server process needed.
+
+**Before running the example, you need a Spotify app:**
+
+1. Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) and create an app (or use an existing one).
+2. In the app settings, under **APIs used**, enable **Web API** (required for the `/v1/me` profile call).
+3. Under **Redirect URIs**, add `expo-spotify-sdk-example://authenticate` exactly and save.
+
+**Then populate the credentials:**
 
 ```sh
 cd example
 cp .env.local.example .env.local
-# edit .env.local with your credentials
+```
+
+Edit `.env.local` — all three values are required:
+
+```sh
+# From your Spotify app's dashboard page
+SPOTIFY_CLIENT_ID=your_client_id_here
+SPOTIFY_CLIENT_SECRET=your_client_secret_here
+
+# Must match the redirect URI you registered in the Spotify Dashboard
+SPOTIFY_REDIRECT_URI=expo-spotify-sdk-example://authenticate
+```
+
+`SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` are shown on your app's dashboard page. `SPOTIFY_CLIENT_SECRET` is revealed by clicking **View client secret**.
+
+**Then run the app:**
+
+```sh
 npx expo start
 ```
 
-The `/swap` and `/refresh` routes are served by the Expo dev server alongside the app. `Constants.expoConfig.hostUri` is used to auto-detect the correct URL on any device or simulator.
+The `/swap` and `/refresh` API routes are served by the Expo dev server alongside the app. `Constants.expoConfig.hostUri` auto-detects the correct server URL for any device or simulator — no manual IP configuration needed.
 
 ## Troubleshooting
 

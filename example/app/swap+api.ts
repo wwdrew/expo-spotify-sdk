@@ -31,10 +31,23 @@ export async function POST(request: Request): Promise<Response> {
   let redirectUri: string | null;
 
   try {
-    const body = await request.formData();
-    code = body.get("code") as string | null;
-    redirectUri = body.get("redirect_uri") as string | null;
-  } catch {
+    const contentType = request.headers.get("content-type") ?? "";
+    let body: URLSearchParams;
+
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      body = new URLSearchParams(await request.text());
+    } else {
+      const fd = await request.formData();
+      body = new URLSearchParams(
+        [...fd.entries()].map(([k, v]) => [k, v.toString()]),
+      );
+    }
+
+    code = body.get("code");
+    redirectUri = body.get("redirect_uri");
+    console.log("[swap] received body:", Object.fromEntries(body.entries()));
+  } catch (e) {
+    console.error("[swap] failed to parse request body:", e);
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }
 
@@ -44,6 +57,20 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400 },
     );
   }
+
+  // The iOS SPTSessionManager does not include redirect_uri in its swap
+  // request body — fall back to the env var when the SDK omits it.
+  const effectiveRedirectUri =
+    redirectUri ?? process.env.SPOTIFY_REDIRECT_URI ?? "";
+
+  if (!effectiveRedirectUri) {
+    return Response.json(
+      { error: "redirect_uri missing from request and SPOTIFY_REDIRECT_URI env var is not set" },
+      { status: 400 },
+    );
+  }
+
+  console.log("[swap] exchanging code for tokens, redirect_uri:", effectiveRedirectUri);
 
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
     "base64",
@@ -57,11 +84,12 @@ export async function POST(request: Request): Promise<Response> {
     },
     body: new URLSearchParams({
       grant_type: "authorization_code",
-      redirect_uri: redirectUri ?? "",
+      redirect_uri: effectiveRedirectUri,
       code,
     }).toString(),
   });
 
   const data = await tokenRes.json();
+  console.log("[swap] Spotify response:", tokenRes.status, data);
   return Response.json(data, { status: tokenRes.status });
 }

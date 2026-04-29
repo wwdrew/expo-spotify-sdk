@@ -71,10 +71,20 @@ function formatExpiry(ms: number): string {
   return hours > 0 ? `${hours}h ${mins % 60}m` : `${mins}m`;
 }
 
-async function fetchProfile(accessToken: string): Promise<SpotifyProfile> {
+async function fetchProfile(
+  accessToken: string,
+): Promise<SpotifyProfile | null> {
   const res = await fetch("https://api.spotify.com/v1/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+  if (res.status === 403) {
+    // Web API not enabled for this Spotify app. Enable it in the Dashboard
+    // under Edit Settings → APIs used → Web API.
+    console.warn(
+      "[example] /v1/me returned 403 — enable the Web API for your Spotify app in the Developer Dashboard.",
+    );
+    return null;
+  }
   if (!res.ok) throw new Error(`Spotify Web API returned ${res.status}`);
   return res.json() as Promise<SpotifyProfile>;
 }
@@ -99,9 +109,11 @@ export default function HomeScreen() {
   const loadProfile = useCallback(async (token: string) => {
     setBusy("profile");
     try {
-      setProfile(await fetchProfile(token));
+      const p = await fetchProfile(token);
+      if (p !== null) setProfile(p);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      // Non-fatal — session is valid even if profile fetch fails.
+      console.warn("[example] profile fetch failed:", e);
     } finally {
       setBusy(null);
     }
