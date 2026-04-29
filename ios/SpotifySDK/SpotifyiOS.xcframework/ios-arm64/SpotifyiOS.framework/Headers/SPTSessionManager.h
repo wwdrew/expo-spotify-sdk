@@ -8,11 +8,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Options for determining the most suitable method for authorization
 typedef NS_OPTIONS(NSUInteger, SPTAuthorizationOptions) {
-    /// Authorize using a suitable method. If Spotify is installed the app will be used instead of a web view
+    /// Authorize using a suitable method. If Spotify is installed the app will be used instead of ASWebAuthentication.
     SPTDefaultAuthorizationOption NS_SWIFT_NAME(default) = (0),
-    /// Authorize using only the Spotify client. If Spotify is not installed authorization will fail.
-    SPTClientAuthorizationOption NS_SWIFT_NAME(clientOnly) = (1 << 0),
-} NS_SWIFT_NAME(AuthorizationOptions);
+        /// Authorize using only the Spotify client. If Spotify is not installed authorization will fail.
+        SPTClientAuthorizationOption NS_SWIFT_NAME(clientOnly) = (1 << 0),
+            /// Use this option if you have reached the limit of `LSApplicationQueriesSchemes` in your Info.plist
+            /// Attempt to open Spotify app directly without using `canOpenURL`. Falls back to ASWebAuthentication if
+            /// opening fails.
+            SPTSpotifySchemeNotRegisteredAuthorizationOption NS_SWIFT_NAME(spotifySchemeNotRegistered) = (1 << 1),
+        } NS_SWIFT_NAME(AuthorizationOptions);
 
 typedef NSString *const SPTAuthorizationCode;
 

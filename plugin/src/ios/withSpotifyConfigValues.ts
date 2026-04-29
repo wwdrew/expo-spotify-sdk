@@ -2,25 +2,27 @@ import { ConfigPlugin, withInfoPlist } from "@expo/config-plugins";
 
 import { SpotifyConfig } from "../types";
 
-interface SpotifySDKConfig {
-  [key: string]: string;
-}
+const IOS_KEYS: ReadonlyArray<keyof SpotifyConfig> = [
+  "clientID",
+  "host",
+  "scheme",
+];
 
 export const withSpotifyConfigValues: ConfigPlugin<SpotifyConfig> = (
   config,
   spotifyConfig,
 ) =>
   withInfoPlist(config, (config) => {
-    if (!config.modResults.ExpoSpotifySDK) {
-      config.modResults.ExpoSpotifySDK = {};
+    const existing = (config.modResults.ExpoSpotifySDK ?? {}) as Record<
+      string,
+      string
+    >;
+    for (const key of IOS_KEYS) {
+      const value = spotifyConfig[key];
+      if (typeof value === "string" && value.length > 0) {
+        existing[key] = value;
+      }
     }
-
-    const spotifySDKConfig = config.modResults
-      .ExpoSpotifySDK as SpotifySDKConfig;
-
-    Object.entries(spotifyConfig).forEach(([key, value]) => {
-      spotifySDKConfig[key] = value;
-    });
-
+    config.modResults.ExpoSpotifySDK = existing;
     return config;
   });

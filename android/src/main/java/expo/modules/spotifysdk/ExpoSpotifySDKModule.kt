@@ -1,179 +1,164 @@
 package expo.modules.spotifysdk
 
 import android.content.pm.PackageManager
-import expo.modules.kotlin.Promise
+import com.spotify.sdk.android.auth.AuthorizationResponse
+import expo.modules.kotlin.activityresult.AppContextActivityResultLauncher
+import expo.modules.kotlin.exception.Exceptions
+import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import com.spotify.sdk.android.auth.AuthorizationClient
-import com.spotify.sdk.android.auth.AuthorizationRequest
-import com.spotify.sdk.android.auth.AuthorizationResponse
-import com.spotify.sdk.android.auth.app.SpotifyNativeAuthUtil
-import expo.modules.kotlin.exception.Exceptions
-import expo.modules.kotlin.records.Field
-import expo.modules.kotlin.records.Record
 
-import okhttp3.OkHttpClient
-import okhttp3.FormBody
-import okhttp3.Request
-import okhttp3.Callback
-import okhttp3.Call
-import okhttp3.Response
-
-import java.io.IOException
-import org.json.JSONObject
-
-class SpotifyConfigOptions : Record {
-  @Field
-  val scopes: List<String> = emptyList()
-
-  @Field
-  val tokenSwapURL: String? = null
-
-  @Field
-  val tokenRefreshURL: String? = null
-}
+private const val SDK_VERSION = "0.5.0"
+private const val EVENT_SESSION_CHANGE = "onSessionChange"
 
 class ExpoSpotifySDKModule : Module() {
 
-  private val requestCode = 2095
-  private var requestConfig: SpotifyConfigOptions? = null
-  private var authPromise: Promise? = null
+  private lateinit var authLauncher: AppContextActivityResultLauncher<SpotifyAuthInput, AuthorizationResponse>
+  private val coordinator = SpotifyAuthCoordinator()
+
   private val context
     get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
-  private val currentActivity
-    get() = appContext.currentActivity ?: throw Exceptions.MissingActivity()
+
+  private fun readManifestConfig(): SpotifyManifestConfig {
+    val packageInfo = try {
+      context.packageManager.getPackageInfo(
+        context.packageName,
+        PackageManager.GET_META_DATA,
+      )
+    } catch (e: PackageManager.NameNotFoundException) {
+      throw InvalidConfigException("Failed to read application meta-data", e)
+    }
+    val metaData = packageInfo.applicationInfo?.metaData
+      ?: throw InvalidConfigException("Application meta-data is missing")
+    val clientId = metaData.getString("spotifyClientId")
+      ?: throw InvalidConfigException(
+        "Missing meta-data 'spotifyClientId' in AndroidManifest.xml. " +
+          "Did you add @wwdrew/expo-spotify-sdk to your Expo plugins?",
+      )
+    val redirectUri = metaData.getString("spotifyRedirectUri")
+      ?: throw InvalidConfigException(
+        "Missing meta-data 'spotifyRedirectUri' in AndroidManifest.xml.",
+      )
+    return SpotifyManifestConfig(clientId = clientId, redirectUri = redirectUri)
+  }
+
+  private fun isSpotifyInstalled(): Boolean {
+    return try {
+      context.packageManager.getPackageInfo("com.spotify.music", 0)
+      true
+    } catch (_: PackageManager.NameNotFoundException) {
+      false
+    }
+  }
+
+  private fun emitSession(type: String, payload: SpotifySessionPayload) {
+    sendEvent(
+      EVENT_SESSION_CHANGE,
+      mapOf("type" to type, "session" to payload.toMap()),
+    )
+  }
+
+  private fun emitError(type: String, code: String, message: String) {
+    sendEvent(
+      EVENT_SESSION_CHANGE,
+      mapOf("type" to type, "error" to mapOf("code" to code, "message" to message)),
+    )
+  }
 
   override fun definition() = ModuleDefinition {
-
     Name("ExpoSpotifySDK")
 
+    Events(EVENT_SESSION_CHANGE)
+
     Function("isAvailable") {
-      return@Function SpotifyNativeAuthUtil.isSpotifyInstalled(context)
+      isSpotifyInstalled()
     }
 
-    AsyncFunction("authenticateAsync") { config: SpotifyConfigOptions, promise: Promise ->
+    RegisterActivityContracts {
+      authLauncher = registerForActivityResult(SpotifyAuthorizationContract())
+    }
+
+    AsyncFunction("authenticateAsync") Coroutine { config: SpotifyAuthenticateOptions ->
       try {
-        val packageInfo =
-          context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_META_DATA)
-        val applicationInfo = packageInfo.applicationInfo
-        val metaData = applicationInfo?.metaData
-        val clientId = metaData?.getString("spotifyClientId")
-        val redirectUri = metaData?.getString("spotifyRedirectUri")
+        if (config.scopes.isEmpty()) {
+          throw InvalidConfigException("`scopes` must contain at least one entry")
+        }
+        val manifest = readManifestConfig()
 
-        requestConfig = config
+        val responseType =
+          if (config.tokenSwapURL != null) AuthorizationResponse.Type.CODE
+          else AuthorizationResponse.Type.TOKEN
 
-        if (clientId == null || redirectUri == null) {
-          promise.reject(
-            "ERR_EXPO_SPOTIFY_SDK",
-            "Missing Spotify configuration in AndroidManifest.xml. Ensure SPOTIFY_CLIENT_ID and SPOTIFY_REDIRECT_URI are set.",
-            null
+        val input = SpotifyAuthInput(
+          clientId = manifest.clientId,
+          redirectUri = manifest.redirectUri,
+          responseType = responseType,
+          scopes = config.scopes.toTypedArray(),
+        )
+
+        val response = coordinator.authenticate(authLauncher, input)
+
+        val payload = when (response.type) {
+          AuthorizationResponse.Type.TOKEN -> SpotifySessionPayload(
+            accessToken = response.accessToken
+              ?: throw TokenSwapParseException("Spotify returned TOKEN without an access token"),
+            refreshToken = null,
+            expirationDate = System.currentTimeMillis() + response.expiresIn * 1000L,
+            scopes = config.scopes,
           )
-          return@AsyncFunction
+          AuthorizationResponse.Type.CODE -> {
+            val swapURL = config.tokenSwapURL
+              ?: throw InvalidConfigException(
+                "Received CODE response but no tokenSwapURL was configured",
+              )
+            val client = SpotifyTokenSwapClient(SDK_VERSION, manifest.clientId)
+            client.swap(
+              code = response.code
+                ?: throw TokenSwapParseException("Spotify returned CODE without a code"),
+              redirectUri = manifest.redirectUri,
+              tokenSwapURL = swapURL,
+              requestedScopes = config.scopes,
+            )
+          }
+          AuthorizationResponse.Type.CANCELLED -> throw UserCancelledException()
+          AuthorizationResponse.Type.EMPTY -> throw UnknownSpotifyException(
+            "Spotify returned an empty response (auth activity may have been killed)",
+          )
+          AuthorizationResponse.Type.ERROR -> throw SpotifyAuthErrorException(
+            response.error ?: "Spotify returned an unspecified error",
+          )
+          AuthorizationResponse.Type.UNKNOWN, null -> throw UnknownSpotifyException(
+            "Unknown Spotify authorization response type",
+          )
         }
-
-        val responseType = if (config.tokenSwapURL != null || config.tokenRefreshURL != null) {
-          AuthorizationResponse.Type.CODE
-        } else {
-          AuthorizationResponse.Type.TOKEN
-        }
-
-        val request = AuthorizationRequest.Builder(
-          clientId,
-          responseType,
-          redirectUri
-        )
-          .setScopes(config.scopes.toTypedArray())
-          .build()
-
-        authPromise = promise
-        AuthorizationClient.openLoginActivity(currentActivity, requestCode, request)
-
-      } catch (e: PackageManager.NameNotFoundException) {
-        promise.reject(
-          "ERR_EXPO_SPOTIFY_SDK",
-          "Missing Spotify configuration in AndroidManifest.xml",
-          e
-        )
+        emitSession("didInitiate", payload)
+        payload.toMap()
+      } catch (e: expo.modules.kotlin.exception.CodedException) {
+        emitError("didFail", e.code ?: "UNKNOWN", e.localizedMessage ?: e.code ?: "Unknown error")
+        throw e
       }
     }
 
-    OnActivityResult { _, payload ->
-      if (payload.requestCode == requestCode) {
-        val authResponse = AuthorizationClient.getResponse(payload.resultCode, payload.data)
-
-        when (authResponse.type) {
-          AuthorizationResponse.Type.TOKEN -> {
-            val expirationDate = System.currentTimeMillis() + authResponse.expiresIn * 1000
-
-            authPromise?.resolve(
-              mapOf(
-                "accessToken" to authResponse.accessToken,
-                "refreshToken" to null, // Spotify SDK does not return refresh token
-                "expirationDate" to expirationDate,
-                "scope" to requestConfig?.scopes
-              )
-            )
-          }
-
-          AuthorizationResponse.Type.CODE -> {
-            val client = OkHttpClient()
-            val requestBody = FormBody.Builder()
-              .add("code", authResponse.code)
-              .build()
-
-            val request = Request.Builder()
-              .url(requestConfig?.tokenSwapURL!!)
-              .post(requestBody)
-              .header("Content-Type", "application/x-www-form-urlencoded")
-              .build()
-
-            client.newCall(request).enqueue(object : Callback {
-              override fun onFailure(call: Call, e: IOException) {
-                authPromise?.reject("ERR_EXPO_SPOTIFY_SDK", e.message, e)
-                authPromise = null
-              }
-
-              override fun onResponse(call: Call, response: Response) {
-                if (!response.isSuccessful) {
-                  authPromise?.reject("ERR_EXPO_SPOTIFY_SDK", "Failed to swap code for token", null)
-                  authPromise = null
-                  return
-                }
-
-                response.body?.string()?.let { body ->
-                  val json = JSONObject(body)
-                  val accessToken = json.getString("access_token")
-                  val refreshToken = json.getString("refresh_token")
-                  val expiresIn = json.getInt("expires_in")
-                  val scope = json.getString("scope")
-                  val expirationDate = System.currentTimeMillis() + expiresIn * 1000
-
-                  authPromise?.resolve(
-                    mapOf(
-                      "accessToken" to accessToken,
-                      "refreshToken" to refreshToken,
-                      "expirationDate" to expirationDate,
-                      "scope" to scope.split(' ')
-                    )
-                  )
-                } ?: run {
-                  authPromise?.reject("ERR_EXPO_SPOTIFY_SDK", "Empty response body", null)
-                }
-                authPromise = null
-              }
-            })
-          }
-
-          AuthorizationResponse.Type.ERROR -> {
-            authPromise?.reject("ERR_EXPO_SPOTIFY_SDK", authResponse.error, null)
-            authPromise = null
-          }
-
-          else -> {
-            authPromise?.reject("ERR_EXPO_SPOTIFY_SDK", "Unknown response type", null)
-            authPromise = null
-          }
+    AsyncFunction("refreshSessionAsync") Coroutine { options: SpotifyRefreshOptions ->
+      try {
+        if (options.refreshToken.isBlank()) {
+          throw InvalidConfigException("`refreshToken` is required")
         }
+        if (options.tokenRefreshURL.isBlank()) {
+          throw InvalidConfigException("`tokenRefreshURL` is required")
+        }
+        val manifest = readManifestConfig()
+        val client = SpotifyTokenSwapClient(SDK_VERSION, manifest.clientId)
+        val payload = client.refresh(
+          refreshToken = options.refreshToken,
+          tokenRefreshURL = options.tokenRefreshURL,
+          previousScopes = emptyList(),
+        )
+        emitSession("didRenew", payload)
+        payload.toMap()
+      } catch (e: expo.modules.kotlin.exception.CodedException) {
+        emitError("didFail", e.code ?: "UNKNOWN", e.localizedMessage ?: e.code ?: "Unknown error")
+        throw e
       }
     }
   }

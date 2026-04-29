@@ -1,44 +1,45 @@
+import Foundation
 import SpotifyiOS
 
-class SPTScopeSerializer {
-    static let scopeMap: [String: SPTScope] = [
-        "playlist-read-private": .playlistReadPrivate,
-        "playlist-read-collaborative": .playlistReadCollaborative,
-        "playlist-modify-public": .playlistModifyPublic,
-        "playlist-modify-private": .playlistModifyPrivate,
-        "user-follow-read": .userFollowRead,
-        "user-follow-modify": .userFollowModify,
-        "user-library-read": .userLibraryRead,
-        "user-library-modify": .userLibraryModify,
-        "user-read-email": .userReadEmail,
-        "user-read-private": .userReadPrivate,
-        "user-top-read": .userTopRead,
-        "ugc-image-upload": .ugcImageUpload,
-        "streaming": .streaming,
-        "app-remote-control": .appRemoteControl,
-        "user-read-playback-state": .userReadPlaybackState,
-        "user-modify-playback-state": .userModifyPlaybackState,
-        "user-read-currently-playing": .userReadCurrentlyPlaying,
-        "user-read-recently-played": .userReadRecentlyPlayed,
-    ]
-    
-    static func serializeScopes(_ scopes: SPTScope) -> [String] {
-        var serializedScopes = [String]()
-        for (scopeString, scopeValue) in scopeMap {
-            if scopes.contains(scopeValue) {
-                serializedScopes.append(scopeString)
-            }
-        }
-        return serializedScopes
+enum SPTScopeSerializer {
+  /// Single source of truth for the string ↔ SPTScope mapping. Order is
+  /// preserved on round-trip via `serialize` (sorted alphabetically) so output
+  /// is deterministic.
+  static let scopeMap: [(String, SPTScope)] = [
+    ("app-remote-control", .appRemoteControl),
+    ("playlist-modify-private", .playlistModifyPrivate),
+    ("playlist-modify-public", .playlistModifyPublic),
+    ("playlist-read-collaborative", .playlistReadCollaborative),
+    ("playlist-read-private", .playlistReadPrivate),
+    ("streaming", .streaming),
+    ("ugc-image-upload", .ugcImageUpload),
+    ("user-follow-modify", .userFollowModify),
+    ("user-follow-read", .userFollowRead),
+    ("user-library-modify", .userLibraryModify),
+    ("user-library-read", .userLibraryRead),
+    ("user-modify-playback-state", .userModifyPlaybackState),
+    ("user-read-currently-playing", .userReadCurrentlyPlaying),
+    ("user-read-email", .userReadEmail),
+    ("user-read-playback-state", .userReadPlaybackState),
+    ("user-read-private", .userReadPrivate),
+    ("user-read-recently-played", .userReadRecentlyPlayed),
+    ("user-top-read", .userTopRead),
+  ]
+
+  static func serialize(_ scopes: SPTScope) -> [String] {
+    scopeMap.compactMap { (string, value) in
+      scopes.contains(value) ? string : nil
     }
-    
-    static func deserializeScopes(_ scopes: [String]) -> SPTScope {
-        var deserializedScopes: SPTScope = []
-        for scopeString in scopes {
-            if let scopeValue = scopeMap[scopeString] {
-                deserializedScopes.insert(scopeValue)
-            }
-        }
-        return deserializedScopes
+  }
+
+  static func deserialize(_ scopes: [String]) -> SPTScope {
+    var result: SPTScope = []
+    let lookup = Dictionary(uniqueKeysWithValues: scopeMap)
+    for string in scopes {
+      if let value = lookup[string] {
+        result.insert(value)
+      }
     }
+    return result
+  }
 }

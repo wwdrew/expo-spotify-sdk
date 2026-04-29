@@ -30,42 +30,46 @@
 typedef NS_OPTIONS(NSUInteger, SPTScope) {
     /// Read access to user's private playlists.
     SPTPlaylistReadPrivateScope NS_SWIFT_NAME(playlistReadPrivate) = (1 << 0),
-    /// Include collaborative playlists when requesting a user's playlists.
-    SPTPlaylistReadCollaborativeScope NS_SWIFT_NAME(playlistReadCollaborative) = (1 << 1),
-    /// Write access to a user's public playlists.
-    SPTPlaylistModifyPublicScope NS_SWIFT_NAME(playlistModifyPublic) = (1 << 2),
-    /// Write access to a user's private playlists.
-    SPTPlaylistModifyPrivateScope NS_SWIFT_NAME(playlistModifyPrivate) = (1 << 3),
-    /// Read access to the list of artists and other users that the user follows.
-    SPTUserFollowReadScope NS_SWIFT_NAME(userFollowRead) = (1 << 4),
-    /// Write/delete access to the list of artists and other users that the user follows.
-    SPTUserFollowModifyScope NS_SWIFT_NAME(userFollowModify) = (1 << 5),
-    /// Read access to a user's "Your Music" library.
-    SPTUserLibraryReadScope NS_SWIFT_NAME(userLibraryRead) = (1 << 6),
-    /// Write/delete access to a user's "Your Music" library.
-    SPTUserLibraryModifyScope NS_SWIFT_NAME(userLibraryModify) = (1 << 7),
-    /// Read access to the user's birthdate.
-    SPTUserReadBirthDateScope NS_SWIFT_NAME(userReadBirthDate) = (1 << 8),
-    /// Read access to user’s email address.
-    SPTUserReadEmailScope NS_SWIFT_NAME(userReadEmail) = (1 << 9),
-    /// Read access to user’s subscription details (type of user account).
-    SPTUserReadPrivateScope NS_SWIFT_NAME(userReadPrivate) = (1 << 10),
-    /// Read access to a user's top artists and tracks.
-    SPTUserTopReadScope NS_SWIFT_NAME(userTopRead) = (1 << 11),
-    /// Upload user generated content images
-    SPTUGCImageUploadScope NS_SWIFT_NAME(ugcImageUpload) = (1 << 12),
-    /// Control playback of a Spotify track.
-    SPTStreamingScope NS_SWIFT_NAME(streaming) = (1 << 13),
-    /// Use App Remote to control playback in the Spotify app
-    SPTAppRemoteControlScope NS_SWIFT_NAME(appRemoteControl) = (1 << 14),
-    /// Read access to a user’s player state.
-    SPTUserReadPlaybackStateScope NS_SWIFT_NAME(userReadPlaybackState) = (1 << 15),
-    /// Write access to a user’s playback state
-    SPTUserModifyPlaybackStateScope NS_SWIFT_NAME(userModifyPlaybackState) = (1 << 16),
-    /// Read access to a user’s currently playing track
-    SPTUserReadCurrentlyPlayingScope NS_SWIFT_NAME(userReadCurrentlyPlaying) = (1 << 17),
-    /// Read access to a user’s currently playing track
-    SPTUserReadRecentlyPlayedScope NS_SWIFT_NAME(userReadRecentlyPlayed) = (1 << 18),
-    /// Indicate that the application intends to use OIDC to verify the user's identity
-    SPTOpenIdScope NS_SWIFT_NAME(openid) = (1 << 19),
-};
+        /// Include collaborative playlists when requesting a user's playlists.
+        SPTPlaylistReadCollaborativeScope NS_SWIFT_NAME(playlistReadCollaborative) = (1 << 1),
+            /// Write access to a user's public playlists.
+            SPTPlaylistModifyPublicScope NS_SWIFT_NAME(playlistModifyPublic) = (1 << 2),
+                /// Write access to a user's private playlists.
+                SPTPlaylistModifyPrivateScope NS_SWIFT_NAME(playlistModifyPrivate) = (1 << 3),
+                    /// Read access to the list of artists and other users that the user follows.
+                    SPTUserFollowReadScope NS_SWIFT_NAME(userFollowRead) = (1 << 4),
+                        /// Write/delete access to the list of artists and other users that the user follows.
+                        SPTUserFollowModifyScope NS_SWIFT_NAME(userFollowModify) = (1 << 5),
+                            /// Read access to a user's "Your Music" library.
+                            SPTUserLibraryReadScope NS_SWIFT_NAME(userLibraryRead) = (1 << 6),
+                                /// Write/delete access to a user's "Your Music" library.
+                                SPTUserLibraryModifyScope NS_SWIFT_NAME(userLibraryModify) = (1 << 7),
+                                    /// Read access to the user's birthdate.
+                                    SPTUserReadBirthDateScope NS_SWIFT_NAME(userReadBirthDate) = (1 << 8),
+                                        /// Read access to user’s email address.
+                                        SPTUserReadEmailScope NS_SWIFT_NAME(userReadEmail) = (1 << 9),
+                                            /// Read access to user’s subscription details (type of user account).
+                                            SPTUserReadPrivateScope NS_SWIFT_NAME(userReadPrivate) = (1 << 10),
+                                                /// Read access to a user's top artists and tracks.
+                                                SPTUserTopReadScope NS_SWIFT_NAME(userTopRead) = (1 << 11),
+                                                    /// Upload user generated content images
+                                                    SPTUGCImageUploadScope NS_SWIFT_NAME(ugcImageUpload) = (1 << 12),
+                                                        /// Control playback of a Spotify track.
+                                                        SPTStreamingScope NS_SWIFT_NAME(streaming) = (1 << 13),
+                                                            /// Use App Remote to control playback in the Spotify app
+                                                            SPTAppRemoteControlScope NS_SWIFT_NAME(appRemoteControl) = (1 << 14),
+                                                                /// Read access to a user’s player state.
+                                                                SPTUserReadPlaybackStateScope NS_SWIFT_NAME(userReadPlaybackState) = (1 << 15),
+                                                                    /// Write access to a user’s playback state
+                                                                    SPTUserModifyPlaybackStateScope NS_SWIFT_NAME(userModifyPlaybackState) = (1 << 16),
+                                                                        /// Read access to a user’s currently playing
+                                                                        /// track
+                                                                        SPTUserReadCurrentlyPlayingScope NS_SWIFT_NAME(userReadCurrentlyPlaying) = (1 << 17),
+                                                                            /// Read access to a user’s currently
+                                                                            /// playing track
+                                                                            SPTUserReadRecentlyPlayedScope NS_SWIFT_NAME(userReadRecentlyPlayed) = (1 << 18),
+                                                                                /// Indicate that the application
+                                                                                /// intends to use OIDC to verify the
+                                                                                /// user's identity
+                                                                                SPTOpenIdScope NS_SWIFT_NAME(openid) = (1 << 19),
+                                                                            };

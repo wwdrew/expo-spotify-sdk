@@ -1,23 +1,8 @@
-/*
-
-List of Scopes:  https://developer.spotify.com/documentation/web-api/concepts/scopes
-
-Note: these scopes are not currently available in the iOS SDK:
-
-- user-read-playback-position
-- user-soa-link
-- user-soa-unlink
-- user-manage-entitlements
-- user-manage-partner
-- user-create-partner
-
-Also, although these scopes exist in the iOS SDK, they are not valid:
-
-- user-read-birthdate
-- openid
-
-*/
-
+/**
+ * Spotify scopes that are valid in Spotify's iOS, Android and Web auth APIs.
+ *
+ * See: https://developer.spotify.com/documentation/web-api/concepts/scopes
+ */
 export type SpotifyScopes =
   | "ugc-image-upload"
   | "user-read-playback-state"
@@ -38,8 +23,38 @@ export type SpotifyScopes =
   | "user-read-email"
   | "user-read-private";
 
+/**
+ * Configuration accepted by the `@wwdrew/expo-spotify-sdk` Expo config plugin.
+ *
+ * @example
+ * // app.config.ts
+ * export default {
+ *   plugins: [
+ *     ["@wwdrew/expo-spotify-sdk", {
+ *       clientID: "<spotify-client-id>",
+ *       scheme: "myapp",
+ *       host: "spotify-auth",
+ *       redirectPathPattern: "/.*"
+ *     }]
+ *   ]
+ * }
+ */
 export interface SpotifyConfig {
+  /** Spotify Client ID for your application. */
   clientID: string;
+  /** Path component of the redirect URI (e.g. `"spotify-auth"`). */
   host: string;
+  /**
+   * URL scheme registered for your app, used as the redirect URI scheme
+   * (e.g. `"myapp"`). Must match your Expo app's `scheme`.
+   */
   scheme: string;
+  /**
+   * Path pattern Spotify will accept on the redirect URI. Required by the
+   * Spotify Android Auth SDK from version 3.0.0 onwards. Defaults to `"/.*"`
+   * which matches any path (preserving pre-3.0.0 SDK behaviour).
+   *
+   * See: https://developer.android.com/guide/topics/manifest/data-element#path
+   */
+  redirectPathPattern?: string;
 }
