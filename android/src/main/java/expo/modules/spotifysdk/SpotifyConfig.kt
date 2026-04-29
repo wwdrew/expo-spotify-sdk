@@ -12,6 +12,7 @@ class SpotifyAuthenticateOptions : Record {
   @Field val scopes: List<String> = emptyList()
   @Field val tokenSwapURL: String? = null
   @Field val tokenRefreshURL: String? = null
+  @Field val showDialog: Boolean = false
 }
 
 /**
@@ -60,6 +61,7 @@ data class SpotifyAuthInput(
   val redirectUri: String,
   val responseType: AuthorizationResponse.Type,
   val scopes: Array<String>,
+  val showDialog: Boolean,
 ) : Serializable {
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
@@ -67,7 +69,8 @@ data class SpotifyAuthInput(
     return clientId == other.clientId &&
       redirectUri == other.redirectUri &&
       responseType == other.responseType &&
-      scopes.contentEquals(other.scopes)
+      scopes.contentEquals(other.scopes) &&
+      showDialog == other.showDialog
   }
 
   override fun hashCode(): Int {
@@ -75,6 +78,7 @@ data class SpotifyAuthInput(
     result = 31 * result + redirectUri.hashCode()
     result = 31 * result + responseType.hashCode()
     result = 31 * result + scopes.contentHashCode()
+    result = 31 * result + showDialog.hashCode()
     return result
   }
 }

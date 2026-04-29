@@ -78,7 +78,8 @@ actor SpotifyAuthCoordinator {
   func authenticate(
     scopes: SPTScope,
     tokenSwapURL: URL?,
-    tokenRefreshURL: URL?
+    tokenRefreshURL: URL?,
+    showDialog: Bool = false
   ) async throws -> SPTSession {
     guard pending == nil else { throw SpotifyError.authInProgress }
 
@@ -86,6 +87,17 @@ actor SpotifyAuthCoordinator {
     // mutating it here takes effect for the upcoming initiateSession call.
     sptConfiguration.tokenSwapURL = tokenSwapURL
     sptConfiguration.tokenRefreshURL = tokenRefreshURL
+    // alwaysShowAuthorizationDialog is a property on SPTSessionManager, not an
+    // SPTAuthorizationOptions flag (the options enum has no such case).
+    sessionManager.alwaysShowAuthorizationDialog = showDialog
+
+    NSLog(
+      "[ExpoSpotifySDK] initiateSession redirectURL=%@ tokenSwapURL=%@ tokenRefreshURL=%@ showDialog=%d",
+      sptConfiguration.redirectURL.absoluteString,
+      tokenSwapURL?.absoluteString ?? "nil",
+      tokenRefreshURL?.absoluteString ?? "nil",
+      showDialog ? 1 : 0
+    )
 
     return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<SPTSession, Error>) in
       self.pending = cont
@@ -109,15 +121,28 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
   weak var coordinator: SpotifyAuthCoordinator?
 
   func sessionManager(manager _: SPTSessionManager, didInitiate session: SPTSession) {
+    NSLog(
+      "[ExpoSpotifySDK] didInitiate accessToken.length=%d refreshToken.length=%d expirationDate=%@ scope=%lu",
+      session.accessToken.count,
+      session.refreshToken.count,
+      session.expirationDate as NSDate,
+      session.scope.rawValue
+    )
     Task { await coordinator?.deliver(.success(session)) }
   }
 
   func sessionManager(manager _: SPTSessionManager, didFailWith error: Error) {
     let mapped: Error = mapSDKError(error)
+    NSLog("[ExpoSpotifySDK] didFailWithError %@", String(describing: error))
     Task { await coordinator?.deliver(.failure(mapped)) }
   }
 
   func sessionManager(manager _: SPTSessionManager, didRenew session: SPTSession) {
+    NSLog(
+      "[ExpoSpotifySDK] didRenew accessToken.length=%d refreshToken.length=%d",
+      session.accessToken.count,
+      session.refreshToken.count
+    )
     Task { await coordinator?.deliver(.success(session)) }
   }
 
@@ -128,6 +153,34 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
     if description.contains("cancel") {
       return SpotifyError.userCancelled
     }
-    return SpotifyError.underlying(error)
+    return SpotifyError.underlying(NSError(
+      domain: nsError.domain,
+      code: nsError.code,
+      userInfo: [NSLocalizedDescriptionKey: describeError(nsError)]
+    ))
+  }
+
+  /// Build a diagnostic string from an NSError that includes the domain,
+  /// code, localized description, and the full chain of underlying errors.
+  /// Used because `SPTError` (and many `URLSession` errors it wraps) often
+  /// have an empty `localizedDescription`, surfacing as "undefined reason"
+  /// in JS without this expansion.
+  private func describeError(_ error: NSError) -> String {
+    var parts: [String] = []
+    parts.append("\(error.domain) code \(error.code)")
+    let desc = error.localizedDescription
+    if !desc.isEmpty {
+      parts.append("\"\(desc)\"")
+    }
+    var ui = error.userInfo
+    ui.removeValue(forKey: NSUnderlyingErrorKey)
+    ui.removeValue(forKey: NSLocalizedDescriptionKey)
+    if !ui.isEmpty {
+      parts.append("userInfo=\(ui)")
+    }
+    if let underlying = error.userInfo[NSUnderlyingErrorKey] as? NSError {
+      parts.append("→ underlying: \(describeError(underlying))")
+    }
+    return parts.joined(separator: " ")
   }
 }

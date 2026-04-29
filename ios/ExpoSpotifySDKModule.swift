@@ -28,7 +28,8 @@ public class ExpoSpotifySDKModule: Module {
         let session = try await coordinator.authenticate(
           scopes: scopes,
           tokenSwapURL: config.tokenSwapURL.flatMap(URL.init),
-          tokenRefreshURL: config.tokenRefreshURL.flatMap(URL.init)
+          tokenRefreshURL: config.tokenRefreshURL.flatMap(URL.init),
+          showDialog: config.showDialog
         )
         let map = self.sessionToMap(session)
         self.sendEvent(EVENT_SESSION_CHANGE, ["type": "didInitiate", "session": map])
@@ -99,6 +100,7 @@ struct AuthenticateOptions: Record {
   @Field var scopes: [String] = []
   @Field var tokenSwapURL: String? = nil
   @Field var tokenRefreshURL: String? = nil
+  @Field var showDialog: Bool = false
 }
 
 struct RefreshOptions: Record {

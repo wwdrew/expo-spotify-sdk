@@ -33,6 +33,7 @@ class SpotifyAuthorizationContract :
       input.redirectUri,
     )
       .setScopes(input.scopes)
+      .setShowDialog(input.showDialog)
       .build()
     return AuthorizationClient.createLoginActivityIntent(activity, request)
   }

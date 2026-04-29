@@ -48,6 +48,14 @@ export interface SpotifyConfig {
    * `refreshSessionAsync` on both platforms.
    */
   tokenRefreshURL?: string;
+  /**
+   * If `true`, forces Spotify to show the authorization dialog even when
+   * the user already has an active session. Defaults to `false`.
+   *
+   * Maps to `SPTSessionManager.alwaysShowAuthorizationDialog` on iOS and
+   * `AuthorizationRequest.Builder.setShowDialog(true)` on Android.
+   */
+  showDialog?: boolean;
 }
 
 /**
