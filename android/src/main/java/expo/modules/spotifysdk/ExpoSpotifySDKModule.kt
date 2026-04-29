@@ -94,6 +94,7 @@ class ExpoSpotifySDKModule : Module() {
           redirectUri = manifest.redirectUri,
           responseType = responseType,
           scopes = config.scopes.toTypedArray(),
+          showDialog = config.showDialog,
         )
 
         val response = coordinator.authenticate(authLauncher, input)
