@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v0.6.0...expo-spotify-sdk-v0.7.0) (2026-04-29)
+
+
+### Features
+
+* add showDialog option to authenticateAsync ([#18](https://github.com/wwdrew/expo-spotify-sdk/issues/18)) ([5014798](https://github.com/wwdrew/expo-spotify-sdk/commit/5014798d7d2f1e154de7acb548beec45f3819f7e))
+
 ## [0.6.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v0.5.0...expo-spotify-sdk-v0.6.0) (2026-04-29)
 
 
