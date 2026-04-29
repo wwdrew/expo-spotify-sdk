@@ -341,9 +341,12 @@ The example app uses [Expo Router API routes](https://docs.expo.dev/router/refer
 
 **Before running the example, you need a Spotify app:**
 
+> **Note (February 2026 onwards):** Spotify now requires the app owner to have an active **Spotify Premium** subscription to use Development Mode apps. Development Mode apps are also limited to **5 test users** — each user must be explicitly added in your Dashboard under **User Management**. See [Spotify's February 2026 migration guide](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide) for details.
+
 1. Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) and create an app (or use an existing one).
 2. In the app settings, under **APIs used**, enable **Web API** (required for the `/v1/me` profile call).
 3. Under **Redirect URIs**, add `expo-spotify-sdk-example://authenticate` exactly and save.
+4. Under **User Management**, add the Spotify accounts that will test the app (up to 5 in Development Mode).
 
 **Then populate the credentials:**
 
