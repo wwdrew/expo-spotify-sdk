@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/types.ts","./src/android/withspotifyandroidappbuildgradle.ts","./src/ios/withspotifyconfigvalues.ts","./src/ios/withspotifyqueryscheme.ts","./src/ios/withspotifyurlscheme.ts"],"version":"5.9.3"}

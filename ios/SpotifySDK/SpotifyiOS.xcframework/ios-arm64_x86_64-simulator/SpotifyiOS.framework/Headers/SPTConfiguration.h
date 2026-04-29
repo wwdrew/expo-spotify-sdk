@@ -51,7 +51,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithClientID:(NSString *)clientID redirectURL:(NSURL *)redirectURL NS_DESIGNATED_INITIALIZER;
 
 /**
- Convenience intializer for `SPtConfiguration`
+ Convenience initializer for `SPTConfiguration`
 
  @param clientID Your client ID obtained from developer.spotify.com
  @param redirectURL Your redirect URL for Spotify to open your app again after authorization

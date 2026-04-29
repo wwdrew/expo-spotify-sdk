@@ -1,13 +1,26 @@
-import { EventEmitter } from "expo-modules-core";
+import { SpotifyError } from "./ExpoSpotifySDK.types";
 
-const emitter = new EventEmitter({} as any);
+function notImplementedReject(method: string): SpotifyError {
+  return new SpotifyError(
+    "INVALID_CONFIG",
+    `expo-spotify-sdk: ${method} is not implemented on web yet (planned for v0.7.0).`,
+  );
+}
 
 export default {
-  PI: Math.PI,
-  async setValueAsync(value: string): Promise<void> {
-    emitter.emit("onChange", { value });
+  isAvailable(): boolean {
+    return false;
   },
-  hello() {
-    return "Hello world! 👋";
+  authenticateAsync(): Promise<never> {
+    return Promise.reject(notImplementedReject("authenticateAsync"));
+  },
+  refreshSessionAsync(): Promise<never> {
+    return Promise.reject(notImplementedReject("refreshSessionAsync"));
+  },
+  addListener(): { remove(): void } {
+    return { remove() {} };
+  },
+  removeListeners(): void {
+    /* no-op */
   },
 };
