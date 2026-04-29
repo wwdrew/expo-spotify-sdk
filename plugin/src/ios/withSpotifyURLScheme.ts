@@ -1,4 +1,4 @@
-import { ConfigPlugin, withInfoPlist } from "expo/config-plugins";
+import { ConfigPlugin, withInfoPlist } from "@expo/config-plugins";
 
 import { SpotifyConfig } from "../types";
 
@@ -8,16 +8,19 @@ export const withSpotifyURLScheme: ConfigPlugin<SpotifyConfig> = (
 ) => {
   return withInfoPlist(config, (config) => {
     const bundleId = config.ios?.bundleIdentifier;
-    const urlType = {
-      CFBundleURLName: bundleId,
-      CFBundleURLSchemes: [scheme],
-    };
+    const urlTypes = config.modResults.CFBundleURLTypes ?? [];
 
-    if (!config.modResults.CFBundleURLTypes) {
-      config.modResults.CFBundleURLTypes = [];
+    const alreadyDeclared = urlTypes.some((entry) =>
+      entry.CFBundleURLSchemes?.includes(scheme),
+    );
+
+    if (!alreadyDeclared) {
+      urlTypes.push({
+        CFBundleURLName: bundleId ?? "",
+        CFBundleURLSchemes: [scheme],
+      });
+      config.modResults.CFBundleURLTypes = urlTypes;
     }
-
-    config.modResults.CFBundleURLTypes.push(urlType);
 
     return config;
   });

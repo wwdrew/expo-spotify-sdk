@@ -7,14 +7,13 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "expo.modules.spotifysdk.example"
@@ -27,14 +26,21 @@
       "package": "expo.modules.spotifysdk.example"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "server"
     },
     "plugins": [
-      ["../app.plugin.js", {
-        "host": "authenticate",
-        "scheme": "expo-spotify-sdk-example",
-        "clientID": "your-client-id"
-      }]
+      [
+        "../app.plugin.js",
+        {
+          "host": "authenticate",
+          "scheme": "expo-spotify-sdk-example",
+          "clientID": "your-client-id",
+          "redirectPathPattern": ".*"
+        }
+      ],
+      "expo-router"
     ]
   }
 }
