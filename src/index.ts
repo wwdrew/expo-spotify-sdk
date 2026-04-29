@@ -88,7 +88,9 @@ function normaliseSession(raw: unknown): SpotifySession {
  * server. Resolves with a fresh {@link SpotifySession}; rejects with a
  * {@link SpotifyError}.
  */
-function refreshSessionAsync(config: SpotifyRefreshConfig): Promise<SpotifySession> {
+function refreshSessionAsync(
+  config: SpotifyRefreshConfig,
+): Promise<SpotifySession> {
   if (!config.refreshToken) {
     return Promise.reject(
       new SpotifyError("INVALID_CONFIG", "refreshToken is required"),
