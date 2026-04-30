@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v0.7.0...expo-spotify-sdk-v0.7.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* **plugin:** change default redirectPathPattern from "/.*" to ".*" ([#20](https://github.com/wwdrew/expo-spotify-sdk/issues/20)) ([af77084](https://github.com/wwdrew/expo-spotify-sdk/commit/af7708491796b0b7bdc8b6b7afb908200564ae6e))
+
 ## [0.7.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v0.6.0...expo-spotify-sdk-v0.7.0) (2026-04-29)
 
 
