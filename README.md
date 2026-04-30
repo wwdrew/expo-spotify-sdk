@@ -80,7 +80,7 @@ android {
             spotifyRedirectUri:    "myapp://spotify-auth",
             redirectSchemeName:    "myapp",
             redirectHostName:      "spotify-auth",
-            redirectPathPattern:   "/.*"
+            redirectPathPattern:   ".*"
         ]
     }
 }
@@ -107,14 +107,21 @@ export default {
         clientID: "your-spotify-client-id",
         scheme: "myapp",
         host: "spotify-auth",
-        // Optional: path pattern accepted by the Spotify Android SDK redirect.
-        // Defaults to "/.*" (matches any path). Change this only if you have a
-        // specific redirect path registered in your Spotify app settings.
-        redirectPathPattern: "/.*",
       },
     ],
   ],
 };
+```
+
+`redirectPathPattern` is optional and defaults to `".*"`, which matches every redirect URI shape Spotify will hand back. Only set it if you have a specific path registered in your Spotify app settings:
+
+```ts
+{
+  clientID: "your-spotify-client-id",
+  scheme: "myapp",
+  host: "spotify-auth",
+  redirectPathPattern: "/auth/.*",
+}
 ```
 
 ### Plugin options
@@ -124,7 +131,7 @@ export default {
 | `clientID`            | `string` | ✅       | Your Spotify application's Client ID                       |
 | `scheme`              | `string` | ✅       | URL scheme registered for your app (e.g. `"myapp"`)        |
 | `host`                | `string` | ✅       | Host component of the redirect URI (e.g. `"spotify-auth"`) |
-| `redirectPathPattern` | `string` | —        | Android redirect path regex. Defaults to `"/.*"`           |
+| `redirectPathPattern` | `string` | —        | Android redirect path regex. Defaults to `".*"`            |
 
 The redirect URI registered in your [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) must match `{scheme}://{host}` exactly (e.g. `myapp://spotify-auth`).
 
