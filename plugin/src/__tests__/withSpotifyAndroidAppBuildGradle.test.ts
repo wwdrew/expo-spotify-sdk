@@ -111,9 +111,9 @@ describe("withSpotifyAndroidAppBuildGradle", () => {
       expect(result).toContain('redirectHostName: "callback"');
     });
 
-    it("uses the default redirectPathPattern /.*", () => {
+    it("uses the default redirectPathPattern .*", () => {
       const result = applyPlugin(GRADLE_WITH_DEFAULT_CONFIG);
-      expect(result).toContain('redirectPathPattern: "/.*"');
+      expect(result).toContain('redirectPathPattern: ".*"');
     });
 
     it("uses a custom redirectPathPattern when provided", () => {

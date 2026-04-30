@@ -3,7 +3,7 @@ import { ConfigPlugin, withAppBuildGradle } from "@expo/config-plugins";
 import { SpotifyConfig } from "../types";
 
 const SENTINEL_KEY = "spotifyClientId";
-const DEFAULT_REDIRECT_PATH_PATTERN = "/.*";
+const DEFAULT_REDIRECT_PATH_PATTERN = ".*";
 
 export const withSpotifyAndroidAppBuildGradle: ConfigPlugin<SpotifyConfig> = (
   config,
