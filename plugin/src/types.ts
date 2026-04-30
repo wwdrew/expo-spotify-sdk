@@ -34,7 +34,7 @@ export type SpotifyScopes =
  *       clientID: "<spotify-client-id>",
  *       scheme: "myapp",
  *       host: "spotify-auth",
- *       redirectPathPattern: "/.*"
+ *       redirectPathPattern: ".*"
  *     }]
  *   ]
  * }
@@ -51,8 +51,11 @@ export interface SpotifyConfig {
   scheme: string;
   /**
    * Path pattern Spotify will accept on the redirect URI. Required by the
-   * Spotify Android Auth SDK from version 3.0.0 onwards. Defaults to `"/.*"`
-   * which matches any path (preserving pre-3.0.0 SDK behaviour).
+   * Spotify Android Auth SDK from version 3.0.0 onwards. Defaults to `".*"`
+   * which matches any path including the empty string, so it works for both
+   * `scheme://host` and `scheme://host/path` redirect URIs. Use a more
+   * specific pattern (e.g. `"/auth/.*"`) only if you have a specific path
+   * registered in your Spotify app settings.
    *
    * See: https://developer.android.com/guide/topics/manifest/data-element#path
    */
