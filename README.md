@@ -247,12 +247,23 @@ Exchanges a refresh token for a new access token via your token refresh server.
 
 **Parameters:**
 
-| Field             | Type     | Description                                                 |
-| ----------------- | -------- | ----------------------------------------------------------- |
-| `refreshToken`    | `string` | The refresh token from a previous `authenticateAsync` call. |
-| `tokenRefreshURL` | `string` | URL of your token refresh server endpoint.                  |
+| Field             | Type             | Required | Description                                                                                                                                                                              |
+| ----------------- | ---------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `refreshToken`    | `string`         | ✅       | The refresh token from a previous `authenticateAsync` call.                                                                                                                              |
+| `tokenRefreshURL` | `string`         | ✅       | URL of your token refresh server endpoint.                                                                                                                                               |
+| `scopes`          | `SpotifyScope[]` | —        | Previously-granted scopes. Used as a fallback when the refresh response omits the `scope` field. **Pass through the previous session's `scopes`** to avoid silently losing scope info.   |
 
 **Returns** a fresh `SpotifySession` with an updated `accessToken` and `expirationDate`. If the server rotates the refresh token the new one is returned in `refreshToken`; otherwise the original token is returned so you can continue refreshing.
+
+**Why pass `scopes`:** Spotify's refresh endpoint only returns `scope` when the granted scope set has changed since the last issuance — most refresh responses omit it. Without `scopes` plumbed through, the returned session's `scopes` will be `[]` on every refresh that doesn't include the field, even though the access token itself still carries the same scopes.
+
+```ts
+const refreshed = await refreshSessionAsync({
+  refreshToken: previous.refreshToken,
+  tokenRefreshURL: "https://your-server.example.com/refresh",
+  scopes: previous.scopes,
+});
+```
 
 ---
 

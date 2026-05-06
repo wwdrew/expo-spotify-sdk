@@ -64,7 +64,7 @@ public class ExpoSpotifySDKModule: Module {
         let result = try await client.refresh(
           refreshToken: options.refreshToken,
           tokenRefreshURL: options.tokenRefreshURL,
-          previousScopes: []
+          previousScopes: options.scopes
         )
         let map: [String: Any?] = [
           "accessToken": result.accessToken,
@@ -110,4 +110,5 @@ struct AuthenticateOptions: Record {
 struct RefreshOptions: Record {
   @Field var refreshToken: String = ""
   @Field var tokenRefreshURL: String = ""
+  @Field var scopes: [String] = []
 }
