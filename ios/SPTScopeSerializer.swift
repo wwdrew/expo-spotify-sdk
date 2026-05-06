@@ -38,6 +38,11 @@ enum SPTScopeSerializer {
     for string in scopes {
       if let value = lookup[string] {
         result.insert(value)
+      } else {
+        // Unknown scope strings are silently dropped by the Spotify iOS SDK,
+        // which can quietly change the meaning of a caller's request. Surface
+        // it so it's debuggable from the device console.
+        NSLog("[ExpoSpotifySDK] Unknown scope dropped: %@", string)
       }
     }
     return result
