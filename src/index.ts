@@ -53,6 +53,26 @@ function authenticateAsync(config: SpotifyConfig): Promise<SpotifySession> {
     .catch(rethrowAsSpotifyError);
 }
 
+/**
+ * Forcibly cancel any in-flight `authenticateAsync` call. Resolves once the
+ * native coordinator's pending continuation has been cleared. No-op when
+ * nothing is in flight, and a no-op on Android (the Android coordinator
+ * self-cleans via structured concurrency).
+ *
+ * Recovery hatch for the iOS coordinator's stuck-state class of bugs: the
+ * SPTSessionManager delegate callbacks are not guaranteed to fire — e.g. when
+ * Spotify never redirects back to the host app — leaving the coordinator's
+ * `pending` continuation set forever and every subsequent `authenticateAsync`
+ * rejecting with `AUTH_IN_PROGRESS` until the process restarts. Call this
+ * before `authenticateAsync` to defensively clear any leaked state.
+ */
+function cancelPendingAuthAsync(): Promise<void> {
+  if (Platform.OS !== "ios") {
+    return Promise.resolve();
+  }
+  return ExpoSpotifySDKModule.cancelPendingAuthAsync();
+}
+
 function normaliseSession(raw: unknown): SpotifySession {
   if (!raw || typeof raw !== "object") {
     throw new SpotifyError(
@@ -172,6 +192,7 @@ const Authenticate = {
 export {
   isAvailable,
   authenticateAsync,
+  cancelPendingAuthAsync,
   refreshSessionAsync,
   addSessionChangeListener,
   Authenticate,
