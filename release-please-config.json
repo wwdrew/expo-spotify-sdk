@@ -4,6 +4,16 @@
     ".": {
       "release-type": "node",
       "package-name": "@wwdrew/expo-spotify-sdk",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "ios/ExpoSpotifySDKModule.swift"
+        },
+        {
+          "type": "generic",
+          "path": "android/src/main/java/expo/modules/spotifysdk/ExpoSpotifySDKModule.kt"
+        }
+      ],
       "changelog-sections": [
         { "type": "feat",     "section": "Features"         },
         { "type": "fix",      "section": "Bug Fixes"        },
