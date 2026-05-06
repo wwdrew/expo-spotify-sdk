@@ -113,6 +113,9 @@ struct SpotifyTokenRefreshClient {
   private func formURLEncoded(_ pairs: [String: String]) -> String {
     var components = URLComponents()
     components.queryItems = pairs.map { URLQueryItem(name: $0.key, value: $0.value) }
-    return components.percentEncodedQuery ?? ""
+    // `URLComponents.percentEncodedQuery` does NOT escape `+`, but in
+    // `application/x-www-form-urlencoded` bodies `+` means space. Replace it
+    // explicitly so refresh tokens containing `+` survive the round-trip.
+    return (components.percentEncodedQuery ?? "").replacingOccurrences(of: "+", with: "%2B")
   }
 }
