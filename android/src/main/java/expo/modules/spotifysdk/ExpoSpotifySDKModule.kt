@@ -122,8 +122,8 @@ class ExpoSpotifySDKModule : Module() {
             )
           }
           AuthorizationResponse.Type.CANCELLED -> throw UserCancelledException()
-          AuthorizationResponse.Type.EMPTY -> throw UnknownSpotifyException(
-            "Spotify returned an empty response (auth activity may have been killed)",
+          AuthorizationResponse.Type.EMPTY -> throw UserCancelledException(
+            "Spotify returned an empty response (auth activity dismissed before completion)",
           )
           AuthorizationResponse.Type.ERROR -> throw SpotifyAuthErrorException(
             response.error ?: "Spotify returned an unspecified error",
@@ -153,7 +153,7 @@ class ExpoSpotifySDKModule : Module() {
         val payload = client.refresh(
           refreshToken = options.refreshToken,
           tokenRefreshURL = options.tokenRefreshURL,
-          previousScopes = emptyList(),
+          previousScopes = options.scopes,
         )
         emitSession("didRenew", payload)
         payload.toMap()
