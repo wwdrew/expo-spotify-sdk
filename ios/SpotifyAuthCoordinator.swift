@@ -112,6 +112,20 @@ actor SpotifyAuthCoordinator {
     pending = nil
     cont?.resume(with: result)
   }
+
+  /// Forcibly cancel any in-flight authenticate() call. The pending
+  /// continuation (if any) is resumed with `userCancelled` and `pending` is
+  /// cleared. Safe to call when nothing is in flight (no-op).
+  ///
+  /// Needed because the SPTSessionManager delegate callbacks are not
+  /// guaranteed to fire — e.g. when Spotify never redirects back to the host
+  /// app — leaving `pending` set forever and every subsequent authenticate()
+  /// rejecting with `authInProgress`.
+  func cancelPending() {
+    guard let cont = pending else { return }
+    pending = nil
+    cont.resume(throwing: SpotifyError.userCancelled)
+  }
 }
 
 /// `SPTSessionManagerDelegate` requires NSObject conformance, which an actor

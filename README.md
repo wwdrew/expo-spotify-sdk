@@ -15,6 +15,7 @@ An Expo module that wraps the native [Spotify iOS SDK](https://github.com/spotif
 | `isAvailable()`                               | ✅  | ✅           | ✅ (always `false`) |
 | `authenticateAsync` — CODE flow (recommended) | ✅  | ✅           | —                   |
 | `authenticateAsync` — TOKEN flow (implicit)   | ✅  | ⚠️ see below | —                   |
+| `cancelPendingAuthAsync()`                    | ✅  | no-op        | no-op               |
 | `refreshSessionAsync`                         | ✅  | ✅           | —                   |
 | Auth via installed Spotify app                | ✅  | ✅           | —                   |
 | Auth via Spotify web fallback                 | ✅  | ✅           | —                   |
@@ -214,6 +215,32 @@ Starts a Spotify OAuth flow. If the Spotify app is installed it authenticates na
 
 ---
 
+### `cancelPendingAuthAsync(): Promise<void>`
+
+Forcibly cancels any in-flight `authenticateAsync` call. Resolves once the native coordinator's pending state is cleared. No-op when nothing is in flight.
+
+**Why this exists:** the iOS `SPTSessionManager` delegate callbacks (`didInitiate` / `didFailWith`) are not guaranteed to fire — for example when Spotify never redirects back to the host app, or the host process is backgrounded mid-flow. When that happens the coordinator's pending continuation leaks and every subsequent `authenticateAsync` rejects immediately with `AUTH_IN_PROGRESS` until the process restarts.
+
+**When to call it:** defensively, before each `authenticateAsync`, so retries always start from a clean slate. The cost is one cheap async hop when nothing is leaked.
+
+```ts
+import {
+  authenticateAsync,
+  cancelPendingAuthAsync,
+} from "@wwdrew/expo-spotify-sdk";
+
+async function login() {
+  await cancelPendingAuthAsync();
+  return authenticateAsync({ scopes: ["user-read-email", "streaming"] });
+}
+```
+
+If a pending call is cancelled this way, its original `authenticateAsync` promise rejects with `SpotifyError` `code: "USER_CANCELLED"`.
+
+**Platform notes:** no-op on Android (the Kotlin coordinator self-cleans via structured concurrency) and on web. Safe to call unconditionally.
+
+---
+
 ### `refreshSessionAsync(options): Promise<SpotifySession>`
 
 Exchanges a refresh token for a new access token via your token refresh server.
@@ -277,7 +304,7 @@ try {
   if (e instanceof SpotifyError) {
     switch (e.code) {
       case "USER_CANCELLED": // user closed the auth screen — benign
-      case "AUTH_IN_PROGRESS": // concurrent call — benign
+      case "AUTH_IN_PROGRESS": // concurrent call, or iOS stuck state — see cancelPendingAuthAsync
         return;
       case "INVALID_CONFIG": // missing clientID / scopes / tokenSwapURL
       case "NETWORK_ERROR": // connectivity failure during token swap
@@ -396,7 +423,9 @@ Android 11+ requires a `<queries>` element to inspect other apps' package names.
 Ensure your app's URL scheme is registered in Xcode under **Info → URL Types** and that it matches the `scheme` in the plugin config. The `expo prebuild` step does this automatically; if you have a bare workflow, check `CFBundleURLSchemes` in `Info.plist`.
 
 **`AUTH_IN_PROGRESS`**
-`authenticateAsync` was called while a previous call was still pending. Wait for the first call to resolve or reject before calling again.
+`authenticateAsync` was called while a previous call was still pending. Usually this means a concurrent call — wait for the first one to resolve.
+
+On iOS this can also be a stuck state: the SPTSessionManager delegate callbacks aren't guaranteed to fire (e.g. Spotify never redirected back to the app), so the previous call's continuation leaks and every retry rejects immediately. Call [`cancelPendingAuthAsync()`](#cancelpendingauthasync-promisevoid) before retrying — or, defensively, before every `authenticateAsync`.
 
 ## Acknowledgements
 

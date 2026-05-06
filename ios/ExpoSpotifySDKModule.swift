@@ -13,6 +13,10 @@ public class ExpoSpotifySDKModule: Module {
       SpotifyAuthCoordinator.shared?.isSpotifyAppInstalled() ?? false
     }
 
+    AsyncFunction("cancelPendingAuthAsync") { () async -> Void in
+      await SpotifyAuthCoordinator.shared?.cancelPending()
+    }
+
     AsyncFunction("authenticateAsync") { (config: AuthenticateOptions) async throws -> [String: Any?] in
       do {
         guard let coordinator = SpotifyAuthCoordinator.shared else {
