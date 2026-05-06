@@ -22,6 +22,7 @@ class SpotifyAuthenticateOptions : Record {
 class SpotifyRefreshOptions : Record {
   @Field val refreshToken: String = ""
   @Field val tokenRefreshURL: String = ""
+  @Field val scopes: List<String> = emptyList()
 }
 
 /**
