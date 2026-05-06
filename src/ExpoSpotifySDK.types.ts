@@ -29,6 +29,18 @@ export interface SpotifyRefreshConfig {
   refreshToken: string;
   /** URL of your token refresh server endpoint. */
   tokenRefreshURL: string;
+  /**
+   * Scopes that were granted by the previous session. Used as a fallback
+   * when the refresh response omits the `scope` field (which most
+   * `accounts.spotify.com` refresh responses do — Spotify only returns
+   * `scope` when the granted scope set has changed).
+   *
+   * If omitted, the returned `SpotifySession.scopes` will be `[]` whenever
+   * the refresh response also omits `scope` — silently losing scope
+   * information you held a moment ago. Pass through the previous session's
+   * `scopes` to avoid that.
+   */
+  scopes?: SpotifyScope[];
 }
 
 /**
