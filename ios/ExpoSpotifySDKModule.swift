@@ -1,7 +1,7 @@
 import ExpoModulesCore
 import SpotifyiOS
 
-private let SDK_VERSION = "0.5.0"
+private let SDK_VERSION = "0.7.1" // x-release-please-version
 private let EVENT_SESSION_CHANGE = "onSessionChange"
 
 public class ExpoSpotifySDKModule: Module {
