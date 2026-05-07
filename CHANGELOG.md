@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.8.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v0.7.1...expo-spotify-sdk-v0.8.0) (2026-05-07)
+
+
+### Features
+
+* add cancelPendingAuthAsync to recover from leaked auth continuations ([#24](https://github.com/wwdrew/expo-spotify-sdk/issues/24)) ([a649523](https://github.com/wwdrew/expo-spotify-sdk/commit/a649523cc8d63bf7b451a394215e17577485c091))
+
+
+### Bug Fixes
+
+* classify Android EMPTY auth response as USER_CANCELLED ([#26](https://github.com/wwdrew/expo-spotify-sdk/issues/26)) ([d3f73be](https://github.com/wwdrew/expo-spotify-sdk/commit/d3f73beaa9600c560aef83ce3d245e419e10491e))
+* correct SDK_VERSION drift and auto-sync on future releases ([#22](https://github.com/wwdrew/expo-spotify-sdk/issues/22)) ([1eb6123](https://github.com/wwdrew/expo-spotify-sdk/commit/1eb6123e2a3ea88556bb7cd249d0489fed4c12bc))
+* **ios:** escape "+" in form-encoded refresh token bodies ([#27](https://github.com/wwdrew/expo-spotify-sdk/issues/27)) ([eff0ecb](https://github.com/wwdrew/expo-spotify-sdk/commit/eff0ecb4c73cbffefe450802e4b0d25e4e843a39))
+* **ios:** log unknown scope strings instead of silently dropping them ([#28](https://github.com/wwdrew/expo-spotify-sdk/issues/28)) ([5b77ce7](https://github.com/wwdrew/expo-spotify-sdk/commit/5b77ce78b9640326f4a7bc09b9b76e6e7fedc748))
+* plumb previous scopes through refreshSessionAsync ([#25](https://github.com/wwdrew/expo-spotify-sdk/issues/25)) ([4fa1374](https://github.com/wwdrew/expo-spotify-sdk/commit/4fa1374571e7d6a7d56093b909bf3ed222c9d08c))
+
+
+### Documentation
+
+* add AGENTS.md and agent skills configuration ([#29](https://github.com/wwdrew/expo-spotify-sdk/issues/29)) ([5cb6910](https://github.com/wwdrew/expo-spotify-sdk/commit/5cb6910a3dda20ca2ba42be652fbe4aa9f2c5f3b))
+
 ## [0.7.1](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v0.7.0...expo-spotify-sdk-v0.7.1) (2026-04-30)
 
 
