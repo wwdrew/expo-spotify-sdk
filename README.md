@@ -323,12 +323,31 @@ try {
       case "TOKEN_SWAP_PARSE_ERROR": // swap server returned invalid JSON
       case "SPOTIFY_NOT_INSTALLED": // Spotify app not found (rare — most flows fall back to web)
       case "AUTH_ERROR": // Spotify returned an error (e.message has detail)
-      case "UNKNOWN": // unexpected failure
+      case "UNKNOWN": // unexpected failure — e.message has full diagnostics
         reportError(e);
     }
   }
 }
 ```
+
+`e.message` is the structured reason from the native module (not the
+expo-modules-core function-call wrapper text). For `UNKNOWN` failures on
+iOS, the message is the underlying `NSError` chain rendered as
+`"<domain> code <n> \"<localizedDescription>\" → underlying: <…>"`,
+covering the common-but-historically-opaque cases:
+
+- `NSURLErrorDomain` code `-1200` — TLS handshake failure (e.g. an
+  HTTPS-intercepting debug proxy without a trusted root cert) to your
+  `tokenSwapURL`.
+- `SPTErrorDomain` codes — surfaced by the Spotify iOS SDK itself.
+- `kCFErrorDomainCFNetwork` codes — lower-level networking errors.
+
+The original `NSError` is also attached as `e.cause` so Sentry / debug
+breadcrumbs see the full underlying chain, not just the rendered string.
+
+On Android the same field carries the `CodedException`'s `localizedMessage`
+from the corresponding cause path (e.g. `IOException` from the token
+swap call).
 
 ## Android implicit (TOKEN) flow is not recommended
 

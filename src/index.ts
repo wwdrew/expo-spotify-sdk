@@ -155,8 +155,6 @@ function addSessionChangeListener(
   ) as EventSubscription;
 }
 
-const ERROR_PREFIX_RE = /^([A-Z_][A-Z0-9_]*):\s*(.*)$/s;
-
 const VALID_CODES: ReadonlySet<SpotifyErrorCode> = new Set<SpotifyErrorCode>([
   "USER_CANCELLED",
   "AUTH_IN_PROGRESS",
@@ -169,18 +167,38 @@ const VALID_CODES: ReadonlySet<SpotifyErrorCode> = new Set<SpotifyErrorCode>([
   "UNKNOWN",
 ]);
 
+// expo-modules-core wraps both iOS `Exception`s and Android `CodedException`s
+// in a function-call-level decorator that prepends a platform-specific
+// prefix (e.g. "Calling the 'authenticateAsync' function has failed" on iOS,
+// "Call to function 'ExpoSpotifySDK.authenticateAsync' has been rejected." on
+// Android) and joins the original reason with the canonical "→ Caused by: "
+// separator. Strip the wrapper so JS consumers see only the native module's
+// own reason — `code` is preserved structurally either way.
+const CAUSE_SEPARATOR = "→ Caused by: ";
+
+// Legacy fallback for native modules that don't propagate `code` — pre-0.9
+// iOS shipped `GenericException("<CODE>: <msg>")`, surfacing as a literal
+// "CODE: message" prefix in `err.message` with no structured code.
+const LEGACY_CODE_PREFIX_RE = /^([A-Z_][A-Z0-9_]*):\s*(.*)$/s;
+
+function unwrapReason(message: string): string {
+  const idx = message.lastIndexOf(CAUSE_SEPARATOR);
+  return idx === -1 ? message : message.slice(idx + CAUSE_SEPARATOR.length);
+}
+
 function rethrowAsSpotifyError(err: unknown): never {
   if (err instanceof SpotifyError) throw err;
   if (err instanceof Error) {
-    const m = err.message.match(ERROR_PREFIX_RE);
+    const reason = unwrapReason(err.message);
+    const maybeCode = (err as Error & { code?: string }).code;
+    if (maybeCode && VALID_CODES.has(maybeCode as SpotifyErrorCode)) {
+      throw new SpotifyError(maybeCode as SpotifyErrorCode, reason);
+    }
+    const m = reason.match(LEGACY_CODE_PREFIX_RE);
     if (m && VALID_CODES.has(m[1] as SpotifyErrorCode)) {
       throw new SpotifyError(m[1] as SpotifyErrorCode, m[2]);
     }
-    const maybeCode = (err as Error & { code?: string }).code;
-    if (maybeCode && VALID_CODES.has(maybeCode as SpotifyErrorCode)) {
-      throw new SpotifyError(maybeCode as SpotifyErrorCode, err.message);
-    }
-    throw new SpotifyError("UNKNOWN", err.message);
+    throw new SpotifyError("UNKNOWN", reason);
   }
   throw new SpotifyError("UNKNOWN", String(err));
 }
