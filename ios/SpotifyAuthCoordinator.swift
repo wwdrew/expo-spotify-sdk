@@ -1,3 +1,4 @@
+import ExpoModulesCore
 import Foundation
 import SpotifyiOS
 
@@ -9,7 +10,7 @@ enum SpotifyError: Error {
   case authInProgress
   case userCancelled
   case spotifyNotInstalled
-  case underlying(Error)
+  case underlying(message: String, cause: Error)
 
   var code: String {
     switch self {
@@ -23,13 +24,45 @@ enum SpotifyError: Error {
 
   var message: String {
     switch self {
-    case .invalidConfiguration(let m): return m
-    case .authInProgress:              return "Another authentication request is already in progress"
-    case .userCancelled:               return "Authentication was cancelled by the user"
-    case .spotifyNotInstalled:         return "The Spotify app is not installed on this device"
-    case .underlying(let err):         return err.localizedDescription
+    case .invalidConfiguration(let m):     return m
+    case .authInProgress:                  return "Another authentication request is already in progress"
+    case .userCancelled:                   return "Authentication was cancelled by the user"
+    case .spotifyNotInstalled:             return "The Spotify app is not installed on this device"
+    case .underlying(let message, _):      return message
     }
   }
+
+  /// The original error that caused this failure, if any. Surfaced as the
+  /// JS-facing exception's `cause` so debugging / Sentry breadcrumbs keep the
+  /// full chain rather than collapsing into "undefined reason".
+  var underlyingCause: Error? {
+    switch self {
+    case .underlying(_, let cause): return cause
+    default:                        return nil
+    }
+  }
+}
+
+/// `Exception` subclass that projects a `SpotifyError`'s `code` and `message`
+/// through `expo-modules-core`'s exception bridge so JS receives the structured
+/// code and a meaningful reason — not the default "undefined reason" placeholder.
+///
+/// Without this wrapper an `AsyncFunction` rejection collapses to
+/// `FunctionCallException` → `cause.reason = "undefined reason"` because the
+/// previously-used `GenericException<String>` does not override `reason`.
+final class SpotifyAuthException: Exception, @unchecked Sendable {
+  private let spotifyCode: String
+  private let spotifyMessage: String
+
+  init(_ error: SpotifyError, file: String = #fileID, line: UInt = #line, function: String = #function) {
+    self.spotifyCode = error.code
+    self.spotifyMessage = error.message
+    super.init(file: file, line: line, function: function)
+    self.cause = error.underlyingCause
+  }
+
+  override var code: String { spotifyCode }
+  override var reason: String { spotifyMessage }
 }
 
 /// `actor` ensures `pending` is mutated only on the actor's serial executor;
@@ -167,11 +200,10 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
     if description.contains("cancel") {
       return SpotifyError.userCancelled
     }
-    return SpotifyError.underlying(NSError(
-      domain: nsError.domain,
-      code: nsError.code,
-      userInfo: [NSLocalizedDescriptionKey: describeError(nsError)]
-    ))
+    // Keep the original NSError as `cause` so the structured underlying-chain
+    // is preserved (Sentry, debug breadcrumbs); the rendered string goes to
+    // `message` so JS callers get a single human-readable line.
+    return SpotifyError.underlying(message: describeError(nsError), cause: nsError)
   }
 
   /// Build a diagnostic string from an NSError that includes the domain,

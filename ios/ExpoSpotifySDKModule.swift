@@ -43,7 +43,7 @@ public class ExpoSpotifySDKModule: Module {
           "type": "didFail",
           "error": ["code": error.code, "message": error.message],
         ])
-        throw GenericException("\(error.code): \(error.message)")
+        throw SpotifyAuthException(error)
       }
     }
 
@@ -79,13 +79,13 @@ public class ExpoSpotifySDKModule: Module {
           "type": "didFail",
           "error": ["code": error.code, "message": error.message],
         ])
-        throw GenericException("\(error.code): \(error.message)")
+        throw SpotifyAuthException(error)
       } catch let error as SpotifyRefreshError {
         self.sendEvent(EVENT_SESSION_CHANGE, [
           "type": "didFail",
           "error": ["code": error.code, "message": error.message],
         ])
-        throw GenericException("\(error.code): \(error.message)")
+        throw SpotifyRefreshException(error)
       }
     }
   }
