@@ -1,3 +1,4 @@
+import ExpoModulesCore
 import Foundation
 
 enum SpotifyRefreshError: Error {
@@ -28,6 +29,33 @@ enum SpotifyRefreshError: Error {
       return m
     }
   }
+
+  /// The original error that caused this failure, if any. Surfaced as the
+  /// JS-facing exception's `cause`.
+  var underlyingCause: Error? {
+    switch self {
+    case .network(let err): return err
+    default:                return nil
+    }
+  }
+}
+
+/// `Exception` subclass that projects a `SpotifyRefreshError`'s `code` and
+/// `message` through `expo-modules-core` so JS sees the structured taxonomy
+/// instead of "undefined reason". Mirrors `SpotifyAuthException`.
+final class SpotifyRefreshException: Exception, @unchecked Sendable {
+  private let spotifyCode: String
+  private let spotifyMessage: String
+
+  init(_ error: SpotifyRefreshError, file: String = #fileID, line: UInt = #line, function: String = #function) {
+    self.spotifyCode = error.code
+    self.spotifyMessage = error.message
+    super.init(file: file, line: line, function: function)
+    self.cause = error.underlyingCause
+  }
+
+  override var code: String { spotifyCode }
+  override var reason: String { spotifyMessage }
 }
 
 struct SpotifyRefreshResult {
