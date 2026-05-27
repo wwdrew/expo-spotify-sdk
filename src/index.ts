@@ -9,6 +9,8 @@ export {
   useCurrentTrack,
   useIsPlaying,
   usePlaybackPosition,
+  useCapabilities,
+  useLibraryState,
 } from "./hooks";
 
 // ---------------------------------------------------------------------------
@@ -89,6 +91,12 @@ export type {
   PlayerState,
   CrossfadeState,
 } from "./player";
+
+// ---------------------------------------------------------------------------
+// User types
+// ---------------------------------------------------------------------------
+
+export type { Capabilities, LibraryState } from "./user";
 
 // ---------------------------------------------------------------------------
 // v0.x backward-compatible exports (deprecated — remove at v2.0.0)

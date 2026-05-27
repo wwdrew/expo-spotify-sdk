@@ -95,6 +95,50 @@ final class PlayerException: Exception, @unchecked Sendable {
   override var reason: String { playerMessage }
 }
 
+// MARK: — User error types
+
+enum NativeUserError: Error {
+  case notConnected(String)
+  case connectionLost(String)
+  case invalidURI(String)
+  case operationNotAllowed(String)
+  case unknown(String)
+
+  var code: String {
+    switch self {
+    case .notConnected:      return "NOT_CONNECTED"
+    case .connectionLost:    return "CONNECTION_LOST"
+    case .invalidURI:        return "INVALID_URI"
+    case .operationNotAllowed: return "OPERATION_NOT_ALLOWED"
+    case .unknown:           return "UNKNOWN"
+    }
+  }
+
+  var message: String {
+    switch self {
+    case .notConnected(let m):      return m
+    case .connectionLost(let m):    return m
+    case .invalidURI(let m):        return m
+    case .operationNotAllowed(let m): return m
+    case .unknown(let m):           return m
+    }
+  }
+}
+
+final class UserException: Exception, @unchecked Sendable {
+  private let userCode: String
+  private let userMessage: String
+
+  init(_ error: NativeUserError, file: String = #fileID, line: UInt = #line, function: String = #function) {
+    self.userCode = error.code
+    self.userMessage = error.message
+    super.init(file: file, line: line, function: function)
+  }
+
+  override var code: String { userCode }
+  override var reason: String { userMessage }
+}
+
 // MARK: — Coordinator
 
 /// Manages the `SPTAppRemote` singleton, the IPC connection lifecycle, and all
@@ -114,6 +158,7 @@ actor SpotifyAppRemoteCoordinator {
   private let sptConfiguration: SPTConfiguration
   private let connectionBridge: SpotifyAppRemoteDelegateBridge
   private let playerStateBridge: SpotifyPlayerStateDelegateBridge
+  private let userCapabilitiesBridge: SpotifyUserCapabilitiesDelegateBridge
   private var appRemote: SPTAppRemote?
   private var connectContinuation: CheckedContinuation<Void, Error>?
 
@@ -122,13 +167,16 @@ actor SpotifyAppRemoteCoordinator {
   var onConnectionStateChange: ((String) -> Void)?
   var onConnectionError: ((String, String) -> Void)?
   var onPlayerStateChange: (([String: Any]) -> Void)?
+  var onCapabilitiesChange: (([String: Any]) -> Void)?
 
   private init(sptConfiguration: SPTConfiguration) {
     self.sptConfiguration = sptConfiguration
     self.connectionBridge = SpotifyAppRemoteDelegateBridge()
     self.playerStateBridge = SpotifyPlayerStateDelegateBridge()
+    self.userCapabilitiesBridge = SpotifyUserCapabilitiesDelegateBridge()
     connectionBridge.coordinator = self
     playerStateBridge.coordinator = self
+    userCapabilitiesBridge.coordinator = self
   }
 
   private static func create() -> SpotifyAppRemoteCoordinator? {
@@ -177,6 +225,7 @@ actor SpotifyAppRemoteCoordinator {
       cont.resume(throwing: AppRemoteError.connectionFailed("Disconnected before connection completed"))
     }
     teardownPlayerSubscription()
+    teardownCapabilitiesSubscription()
     appRemote?.disconnect()
     appRemote = nil
     transitionState("disconnected")
@@ -195,6 +244,7 @@ actor SpotifyAppRemoteCoordinator {
   func didConnect() {
     transitionState("connected")
     setupPlayerSubscription()
+    setupCapabilitiesSubscription()
     let cont = connectContinuation
     connectContinuation = nil
     cont?.resume()
@@ -237,6 +287,25 @@ actor SpotifyAppRemoteCoordinator {
   /// Called by `SpotifyPlayerStateDelegateBridge` when a state update arrives.
   func playerStateDidChange(_ state: any SPTAppRemotePlayerState) {
     onPlayerStateChange?(Self.playerStateToMap(state))
+  }
+
+  // MARK: — User subscription
+
+  private func setupCapabilitiesSubscription() {
+    guard let userAPI = appRemote?.userAPI else { return }
+    userAPI.delegate = userCapabilitiesBridge
+    userAPI.subscribeToCapabilityChanges { _, _ in }
+  }
+
+  private func teardownCapabilitiesSubscription() {
+    guard let userAPI = appRemote?.userAPI else { return }
+    userAPI.delegate = nil
+    userAPI.unsubscribeToCapabilityChanges { _, _ in }
+  }
+
+  /// Called by `SpotifyUserCapabilitiesDelegateBridge` on each capabilities update.
+  func userCapabilitiesDidChange(_ capabilities: any SPTAppRemoteUserCapabilities) {
+    onCapabilitiesChange?(Self.capabilitiesToMap(capabilities))
   }
 
   // MARK: — Player transport
@@ -344,6 +413,68 @@ actor SpotifyAppRemoteCoordinator {
     }
   }
 
+  // MARK: — User operations
+
+  func userGetCapabilities() async throws -> [String: Any] {
+    let userAPI = try requireUserAPI(callsite: "User.getCapabilities")
+    return try await withCheckedThrowingContinuation { cont in
+      userAPI.fetchCapabilities { result, error in
+        if let error = error {
+          cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.getCapabilities"))
+        } else if let capabilities = result as? any SPTAppRemoteUserCapabilities {
+          cont.resume(returning: Self.capabilitiesToMap(capabilities))
+        } else {
+          cont.resume(throwing: NativeUserError.unknown("User.getCapabilities: unexpected result type"))
+        }
+      }
+    }
+  }
+
+  func userGetLibraryState(uri: String) async throws -> [String: Any] {
+    let userAPI = try requireUserAPI(callsite: "User.getLibraryState")
+    return try await withCheckedThrowingContinuation { cont in
+      userAPI.fetchLibraryState(forURI: uri) { result, error in
+        if let error = error {
+          cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.getLibraryState"))
+        } else if let state = result as? any SPTAppRemoteLibraryState {
+          cont.resume(returning: Self.libraryStateToMap(state))
+        } else {
+          cont.resume(throwing: NativeUserError.unknown("User.getLibraryState: unexpected result type"))
+        }
+      }
+    }
+  }
+
+  func userAddToLibrary(uri: String) async throws -> [String: Any] {
+    let userAPI = try requireUserAPI(callsite: "User.addToLibrary")
+    return try await withCheckedThrowingContinuation { cont in
+      userAPI.addItem(toLibraryWithURI: uri) { result, error in
+        if let error = error {
+          cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.addToLibrary"))
+        } else if let state = result as? any SPTAppRemoteLibraryState {
+          cont.resume(returning: Self.libraryStateToMap(state))
+        } else {
+          cont.resume(throwing: NativeUserError.unknown("User.addToLibrary: unexpected result type"))
+        }
+      }
+    }
+  }
+
+  func userRemoveFromLibrary(uri: String) async throws -> [String: Any] {
+    let userAPI = try requireUserAPI(callsite: "User.removeFromLibrary")
+    return try await withCheckedThrowingContinuation { cont in
+      userAPI.removeItem(fromLibraryWithURI: uri) { result, error in
+        if let error = error {
+          cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.removeFromLibrary"))
+        } else if let state = result as? any SPTAppRemoteLibraryState {
+          cont.resume(returning: Self.libraryStateToMap(state))
+        } else {
+          cont.resume(throwing: NativeUserError.unknown("User.removeFromLibrary: unexpected result type"))
+        }
+      }
+    }
+  }
+
   // MARK: — Internal helpers
 
   private func requirePlayerAPI(callsite: String) throws -> any SPTAppRemotePlayerAPI {
@@ -353,6 +484,15 @@ actor SpotifyAppRemoteCoordinator {
       )
     }
     return playerAPI
+  }
+
+  private func requireUserAPI(callsite: String) throws -> any SPTAppRemoteUserAPI {
+    guard let remote = appRemote, remote.isConnected, let userAPI = remote.userAPI else {
+      throw NativeUserError.notConnected(
+        "\(callsite): requires an active App Remote connection — call AppRemote.connect() first"
+      )
+    }
+    return userAPI
   }
 
   private func voidPlayerCall(
@@ -429,6 +569,34 @@ actor SpotifyAppRemoteCoordinator {
     ]
   }
 
+  private static func capabilitiesToMap(_ capabilities: any SPTAppRemoteUserCapabilities) -> [String: Any] {
+    ["canPlayOnDemand": capabilities.canPlayOnDemand]
+  }
+
+  private static func libraryStateToMap(_ state: any SPTAppRemoteLibraryState) -> [String: Any] {
+    ["uri": state.uri, "isAdded": state.isAdded, "canAdd": state.canAdd]
+  }
+
+  private static func normalizeUserError(_ error: NSError, callsite: String) -> NativeUserError {
+    guard error.domain == SPTAppRemoteErrorDomain else {
+      return .unknown(error.localizedDescription)
+    }
+    switch error.code {
+    case SPTAppRemoteConnectionTerminatedError:
+      return .connectionLost("\(callsite): connection to Spotify app was terminated")
+    case SPTAppRemoteInvalidArgumentsError:
+      return .invalidURI("\(callsite): \(error.localizedDescription)")
+    case SPTAppRemoteRequestFailedError:
+      let desc = error.localizedDescription.lowercased()
+      if desc.contains("not allowed") || desc.contains("restriction") {
+        return .operationNotAllowed("\(callsite): \(error.localizedDescription)")
+      }
+      return .unknown(error.localizedDescription)
+    default:
+      return .unknown(error.localizedDescription)
+    }
+  }
+
   private func transitionState(_ state: String) {
     connectionStateString = state
     onConnectionStateChange?(state)
@@ -478,5 +646,15 @@ final class SpotifyPlayerStateDelegateBridge: NSObject, SPTAppRemotePlayerStateD
 
   func playerStateDidChange(_ playerState: any SPTAppRemotePlayerState) {
     Task { await coordinator?.playerStateDidChange(playerState) }
+  }
+}
+
+// MARK: — User capabilities delegate bridge
+
+final class SpotifyUserCapabilitiesDelegateBridge: NSObject, SPTAppRemoteUserAPIDelegate {
+  weak var coordinator: SpotifyAppRemoteCoordinator?
+
+  func userAPI(_ userAPI: any SPTAppRemoteUserAPI, didReceiveCapabilities capabilities: any SPTAppRemoteUserCapabilities) {
+    Task { await coordinator?.userCapabilitiesDidChange(capabilities) }
   }
 }

@@ -13,6 +13,7 @@ private const val EVENT_SESSION_CHANGE = "onSessionChange"
 private const val EVENT_CONNECTION_STATE_CHANGE = "onConnectionStateChange"
 private const val EVENT_CONNECTION_ERROR = "onConnectionError"
 private const val EVENT_PLAYER_STATE_CHANGE = "onPlayerStateChange"
+private const val EVENT_CAPABILITIES_CHANGE = "onCapabilitiesChange"
 
 class ExpoSpotifySDKModule : Module() {
 
@@ -77,6 +78,7 @@ class ExpoSpotifySDKModule : Module() {
       EVENT_CONNECTION_STATE_CHANGE,
       EVENT_CONNECTION_ERROR,
       EVENT_PLAYER_STATE_CHANGE,
+      EVENT_CAPABILITIES_CHANGE,
     )
 
     // Wire up App Remote coordinator event callbacks once the module is alive.
@@ -89,6 +91,9 @@ class ExpoSpotifySDKModule : Module() {
       }
       appRemoteCoordinator.onPlayerStateChange = { stateMap ->
         sendEvent(EVENT_PLAYER_STATE_CHANGE, stateMap)
+      }
+      appRemoteCoordinator.onCapabilitiesChange = { capabilities ->
+        sendEvent(EVENT_CAPABILITIES_CHANGE, capabilities)
       }
     }
 
@@ -259,6 +264,24 @@ class ExpoSpotifySDKModule : Module() {
 
     AsyncFunction("playerGetCrossfadeState") Coroutine { ->
       appRemoteCoordinator.playerGetCrossfadeState()
+    }
+
+    // ── User ────────────────────────────────────────────────────────────────
+
+    AsyncFunction("userGetCapabilities") Coroutine { ->
+      appRemoteCoordinator.userGetCapabilities()
+    }
+
+    AsyncFunction("userGetLibraryState") Coroutine { uri: String ->
+      appRemoteCoordinator.userGetLibraryState(uri)
+    }
+
+    AsyncFunction("userAddToLibrary") Coroutine { uri: String ->
+      appRemoteCoordinator.userAddToLibrary(uri)
+    }
+
+    AsyncFunction("userRemoveFromLibrary") Coroutine { uri: String ->
+      appRemoteCoordinator.userRemoveFromLibrary(uri)
     }
   }
 }

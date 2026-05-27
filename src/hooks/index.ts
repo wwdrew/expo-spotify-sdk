@@ -3,6 +3,8 @@ import { useSyncExternalStore } from "react";
 import { AppRemote, ConnectionState } from "../app-remote";
 import { Auth, SpotifySession } from "../auth";
 import { Player, PlayerState, Track } from "../player";
+import { Capabilities, LibraryState, User } from "../user";
+import type { SpotifyURI as SpotifyURIType } from "../uri";
 
 // ---------------------------------------------------------------------------
 // Shared utilities
@@ -115,6 +117,104 @@ function getPlayerSnapshot(): PlayerState | null {
 }
 
 // ---------------------------------------------------------------------------
+// Capabilities store
+// ---------------------------------------------------------------------------
+
+let _capabilities: Capabilities | null = null;
+const _capabilitiesListeners = new Set<Listener>();
+let _capabilitiesStoreInitialised = false;
+
+function initCapabilitiesStore() {
+  if (_capabilitiesStoreInitialised) return;
+  _capabilitiesStoreInitialised = true;
+
+  User.getCapabilities()
+    .then((capabilities) => {
+      _capabilities = capabilities;
+      _capabilitiesListeners.forEach((l) => l());
+    })
+    .catch(() => {
+      // Swallow initial read failures (e.g., not connected yet). The event
+      // stream will hydrate this later.
+    });
+
+  User.addListener("capabilitiesChange", (capabilities) => {
+    _capabilities = capabilities;
+    _capabilitiesListeners.forEach((l) => l());
+  });
+}
+
+function subscribeCapabilities(listener: Listener): () => void {
+  initCapabilitiesStore();
+  _capabilitiesListeners.add(listener);
+  return () => _capabilitiesListeners.delete(listener);
+}
+
+function getCapabilitiesSnapshot(): Capabilities | null {
+  return _capabilities;
+}
+
+// ---------------------------------------------------------------------------
+// Per-URI library-state store
+// ---------------------------------------------------------------------------
+
+interface LibraryStore {
+  state: LibraryState | null;
+  listeners: Set<Listener>;
+  initialised: boolean;
+}
+
+const _libraryStores = new Map<string, LibraryStore>();
+
+function getOrCreateLibraryStore(uri: SpotifyURIType): LibraryStore {
+  const key = String(uri);
+  let store = _libraryStores.get(key);
+  if (!store) {
+    store = { state: null, listeners: new Set(), initialised: false };
+    _libraryStores.set(key, store);
+  }
+  return store;
+}
+
+function initLibraryStore(uri: SpotifyURIType) {
+  const key = String(uri);
+  const store = getOrCreateLibraryStore(uri);
+  if (store.initialised) return;
+  store.initialised = true;
+
+  User.getLibraryState(uri)
+    .then((state) => {
+      store.state = state;
+      store.listeners.forEach((l) => l());
+    })
+    .catch(() => {
+      // Not connected / unavailable yet; listener updates can still arrive later.
+    });
+
+  User.addLibraryStateListener(uri, (state) => {
+    const next = getOrCreateLibraryStore(uri);
+    next.state = state;
+    next.listeners.forEach((l) => l());
+  });
+}
+
+function subscribeLibraryState(uri: SpotifyURIType, listener: Listener): () => void {
+  const key = String(uri);
+  initLibraryStore(uri);
+  const store = getOrCreateLibraryStore(uri);
+  store.listeners.add(listener);
+  return () => {
+    const current = _libraryStores.get(key);
+    if (!current) return;
+    current.listeners.delete(listener);
+  };
+}
+
+function getLibrarySnapshot(uri: SpotifyURIType): LibraryState | null {
+  return _libraryStores.get(String(uri))?.state ?? null;
+}
+
+// ---------------------------------------------------------------------------
 // Public hooks
 // ---------------------------------------------------------------------------
 
@@ -209,4 +309,32 @@ export function useIsPlaying(): boolean {
  */
 export function usePlaybackPosition(): number {
   return usePlayerState()?.playbackPosition ?? 0;
+}
+
+/**
+ * Returns the latest Spotify user capabilities, or `null` before the first
+ * snapshot arrives.
+ *
+ * Derived from `User.getCapabilities()` + `User.addListener("capabilitiesChange")`.
+ */
+export function useCapabilities(): Capabilities | null {
+  return useSyncExternalStore(
+    subscribeCapabilities,
+    getCapabilitiesSnapshot,
+    getCapabilitiesSnapshot,
+  );
+}
+
+/**
+ * Returns the library state for a specific URI, or `null` before the first
+ * snapshot arrives.
+ *
+ * Derived from `User.getLibraryState(uri)` + `User.addLibraryStateListener(uri, ...)`.
+ */
+export function useLibraryState(uri: SpotifyURIType): LibraryState | null {
+  return useSyncExternalStore(
+    (listener) => subscribeLibraryState(uri, listener),
+    () => getLibrarySnapshot(uri),
+    () => getLibrarySnapshot(uri),
+  );
 }

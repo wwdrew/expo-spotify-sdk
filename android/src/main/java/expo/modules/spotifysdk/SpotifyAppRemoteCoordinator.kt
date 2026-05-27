@@ -6,7 +6,9 @@ import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
 import com.spotify.protocol.client.CallResult
 import com.spotify.protocol.client.Subscription
+import com.spotify.protocol.types.Capabilities
 import com.spotify.protocol.types.CrossfadeState
+import com.spotify.protocol.types.LibraryState
 import com.spotify.protocol.types.PlayerState
 import com.spotify.protocol.types.PodcastPlaybackSpeed
 import com.spotify.protocol.types.Repeat
@@ -38,6 +40,7 @@ class SpotifyAppRemoteCoordinator {
   private val connectMutex = Mutex()
 
   private var playerStateSubscription: Subscription<PlayerState>? = null
+  private var capabilitiesSubscription: Subscription<Capabilities>? = null
 
   /** Injected by the module to forward connection state-change events to JS. */
   var onConnectionStateChange: ((String) -> Unit)? = null
@@ -47,6 +50,9 @@ class SpotifyAppRemoteCoordinator {
 
   /** Injected by the module to forward player state change events to JS. */
   var onPlayerStateChange: ((Map<String, Any?>) -> Unit)? = null
+
+  /** Injected by the module to forward user capabilities events to JS. */
+  var onCapabilitiesChange: ((Map<String, Any?>) -> Unit)? = null
 
   fun isConnected(): Boolean = appRemote?.isConnected == true
 
@@ -91,6 +97,7 @@ class SpotifyAppRemoteCoordinator {
             appRemote = remote
             transitionState("connected")
             subscribeToPlayerState(remote)
+            subscribeToCapabilities(remote)
             continuation.resume(Unit)
           }
 
@@ -121,6 +128,7 @@ class SpotifyAppRemoteCoordinator {
    */
   fun disconnect() {
     cancelPlayerStateSubscription()
+    cancelCapabilitiesSubscription()
     val remote = appRemote ?: return
     appRemote = null
     SpotifyAppRemote.disconnect(remote)
@@ -141,6 +149,22 @@ class SpotifyAppRemoteCoordinator {
   private fun cancelPlayerStateSubscription() {
     playerStateSubscription?.cancel()
     playerStateSubscription = null
+  }
+
+  // MARK: — User capabilities subscription
+
+  private fun subscribeToCapabilities(remote: SpotifyAppRemote) {
+    capabilitiesSubscription = remote.userApi
+      .subscribeToCapabilities()
+      .setEventCallback { capabilities ->
+        onCapabilitiesChange?.invoke(capabilitiesToMap(capabilities))
+      }
+      .setErrorCallback { /* subscription errors are non-fatal */ }
+  }
+
+  private fun cancelCapabilitiesSubscription() {
+    capabilitiesSubscription?.cancel()
+    capabilitiesSubscription = null
   }
 
   // MARK: — Player transport
@@ -210,6 +234,32 @@ class SpotifyAppRemoteCoordinator {
     return mapOf("isEnabled" to state.isEnabled, "duration" to state.duration)
   }
 
+  // MARK: — User operations
+
+  suspend fun userGetCapabilities(): Map<String, Any?> {
+    val capabilities = requireConnected("User.getCapabilities").userApi
+      .capabilities.awaitResult<Capabilities>("User.getCapabilities")
+    return capabilitiesToMap(capabilities)
+  }
+
+  suspend fun userGetLibraryState(uri: String): Map<String, Any?> {
+    val state = requireConnected("User.getLibraryState").userApi
+      .getLibraryState(uri).awaitResult<LibraryState>("User.getLibraryState", uri)
+    return libraryStateToMap(state)
+  }
+
+  suspend fun userAddToLibrary(uri: String): Map<String, Any?> {
+    val state = requireConnected("User.addToLibrary").userApi
+      .addToLibrary(uri).awaitResult<LibraryState>("User.addToLibrary", uri)
+    return libraryStateToMap(state)
+  }
+
+  suspend fun userRemoveFromLibrary(uri: String): Map<String, Any?> {
+    val state = requireConnected("User.removeFromLibrary").userApi
+      .removeFromLibrary(uri).awaitResult<LibraryState>("User.removeFromLibrary", uri)
+    return libraryStateToMap(state)
+  }
+
   // MARK: — Internal helpers
 
   private fun requireConnected(callsite: String): SpotifyAppRemote {
@@ -243,6 +293,16 @@ class SpotifyAppRemoteCoordinator {
     }
   }
 
+  @Suppress("UNCHECKED_CAST")
+  private suspend fun <T> CallResult<T>.awaitResult(callsite: String, uri: String): T {
+    return suspendCancellableCoroutine { continuation ->
+      setResultCallback { result -> continuation.resume(result) }
+      setErrorCallback { throwable ->
+        continuation.resumeWithException(normalizeUserError(throwable, callsite, uri))
+      }
+    }
+  }
+
   private fun normalizePlayerError(throwable: Throwable, callsite: String): CodedException {
     val msg = throwable.message ?: "Unknown error"
     return when {
@@ -254,6 +314,22 @@ class SpotifyAppRemoteCoordinator {
         msg.contains("restriction", ignoreCase = true) ->
         PlayerOperationNotAllowedException("$callsite: $msg", throwable)
       else -> PlayerUnknownException("$callsite: $msg", throwable)
+    }
+  }
+
+  private fun normalizeUserError(throwable: Throwable, callsite: String, uri: String): CodedException {
+    val msg = throwable.message ?: "Unknown error"
+    return when {
+      msg.contains("disconnected", ignoreCase = true) ||
+        msg.contains("not connected", ignoreCase = true) ->
+        UserConnectionLostException("$callsite: $msg", throwable)
+      msg.contains("uri", ignoreCase = true) ||
+        msg.contains("invalid", ignoreCase = true) ->
+        UserInvalidURIException(uri, throwable)
+      msg.contains("not allowed", ignoreCase = true) ||
+        msg.contains("restriction", ignoreCase = true) ->
+        UserOperationNotAllowedException("$callsite: $msg", throwable)
+      else -> UserUnknownException("$callsite: $msg", throwable)
     }
   }
 
@@ -298,6 +374,14 @@ class SpotifyAppRemoteCoordinator {
         "contextTitle" to (state.contextTitle ?: ""),
         "contextUri" to (state.contextUri ?: ""),
       )
+    }
+
+    private fun capabilitiesToMap(capabilities: Capabilities): Map<String, Any?> {
+      return mapOf("canPlayOnDemand" to capabilities.canPlayOnDemand)
+    }
+
+    private fun libraryStateToMap(state: LibraryState): Map<String, Any?> {
+      return mapOf("uri" to state.uri, "isAdded" to state.isAdded, "canAdd" to state.canAdd)
     }
   }
 }

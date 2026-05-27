@@ -6,6 +6,7 @@ private let EVENT_SESSION_CHANGE = "onSessionChange"
 private let EVENT_CONNECTION_STATE_CHANGE = "onConnectionStateChange"
 private let EVENT_CONNECTION_ERROR = "onConnectionError"
 private let EVENT_PLAYER_STATE_CHANGE = "onPlayerStateChange"
+private let EVENT_CAPABILITIES_CHANGE = "onCapabilitiesChange"
 
 public class ExpoSpotifySDKModule: Module {
   public func definition() -> ModuleDefinition {
@@ -15,7 +16,8 @@ public class ExpoSpotifySDKModule: Module {
       EVENT_SESSION_CHANGE,
       EVENT_CONNECTION_STATE_CHANGE,
       EVENT_CONNECTION_ERROR,
-      EVENT_PLAYER_STATE_CHANGE
+      EVENT_PLAYER_STATE_CHANGE,
+      EVENT_CAPABILITIES_CHANGE
     )
 
     // Wire up App Remote coordinator event callbacks once the module is alive.
@@ -28,6 +30,9 @@ public class ExpoSpotifySDKModule: Module {
       }
       SpotifyAppRemoteCoordinator.shared?.onPlayerStateChange = { [weak self] stateMap in
         self?.sendEvent(EVENT_PLAYER_STATE_CHANGE, stateMap)
+      }
+      SpotifyAppRemoteCoordinator.shared?.onCapabilitiesChange = { [weak self] capabilities in
+        self?.sendEvent(EVENT_CAPABILITIES_CHANGE, capabilities)
       }
     }
 
@@ -228,6 +233,36 @@ public class ExpoSpotifySDKModule: Module {
         throw PlayerException(NativePlayerError.notConnected("Player.getCrossfadeState: missing configuration"))
       }
       do { return try await coordinator.playerGetCrossfadeState() } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    // MARK: — User
+
+    AsyncFunction("userGetCapabilities") { () async throws -> [String: Any] in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw UserException(NativeUserError.notConnected("User.getCapabilities: missing configuration"))
+      }
+      do { return try await coordinator.userGetCapabilities() } catch let e as NativeUserError { throw UserException(e) }
+    }
+
+    AsyncFunction("userGetLibraryState") { (uri: String) async throws -> [String: Any] in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw UserException(NativeUserError.notConnected("User.getLibraryState: missing configuration"))
+      }
+      do { return try await coordinator.userGetLibraryState(uri: uri) } catch let e as NativeUserError { throw UserException(e) }
+    }
+
+    AsyncFunction("userAddToLibrary") { (uri: String) async throws -> [String: Any] in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw UserException(NativeUserError.notConnected("User.addToLibrary: missing configuration"))
+      }
+      do { return try await coordinator.userAddToLibrary(uri: uri) } catch let e as NativeUserError { throw UserException(e) }
+    }
+
+    AsyncFunction("userRemoveFromLibrary") { (uri: String) async throws -> [String: Any] in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw UserException(NativeUserError.notConnected("User.removeFromLibrary: missing configuration"))
+      }
+      do { return try await coordinator.userRemoveFromLibrary(uri: uri) } catch let e as NativeUserError { throw UserException(e) }
     }
   }
 
