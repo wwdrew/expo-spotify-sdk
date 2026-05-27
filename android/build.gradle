@@ -44,10 +44,19 @@ android {
 
 repositories {
   mavenCentral()
+  // Local AAR files for SDKs not published to Maven Central.
+  flatDir { dirs 'libs' }
 }
 
 dependencies {
   implementation "com.spotify.android:auth:4.0.1"
+
+  // Spotify App Remote SDK — NOT on Maven Central.
+  // Download spotify-app-remote-release-0.8.0.aar from
+  // https://github.com/spotify/android-sdk/releases and place it in android/libs/.
+  // See android/libs/SETUP.md for full instructions.
+  implementation(name: 'spotify-app-remote-release-0.8.0', ext: 'aar')
+
   implementation "com.squareup.okhttp3:okhttp:4.12.0"
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1"
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"

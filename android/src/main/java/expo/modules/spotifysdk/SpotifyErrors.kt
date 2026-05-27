@@ -32,3 +32,22 @@ class SpotifyAuthErrorException(error: String) :
 
 class UnknownSpotifyException(message: String, cause: Throwable? = null) :
   CodedException("UNKNOWN", message, cause)
+
+// ── App Remote errors ────────────────────────────────────────────────────────
+
+class AppRemoteConnectionFailedException(message: String, cause: Throwable? = null) :
+  CodedException("CONNECTION_FAILED", message, cause)
+
+class AppRemoteConnectionLostException(message: String, cause: Throwable? = null) :
+  CodedException("CONNECTION_LOST", message, cause)
+
+class AppRemoteNotConnectedException(callsite: String = "") :
+  CodedException(
+    "NOT_CONNECTED",
+    if (callsite.isNotBlank()) "Not connected to the Spotify app — call AppRemote.connect() before $callsite"
+    else "Not connected to the Spotify app. Call AppRemote.connect() first.",
+    null,
+  )
+
+class AppRemoteUnknownException(message: String, cause: Throwable? = null) :
+  CodedException("UNKNOWN", message, cause)
