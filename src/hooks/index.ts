@@ -1,8 +1,14 @@
 import { useSyncExternalStore } from "react";
 
 import { AppRemote, ConnectionState } from "../app-remote";
-import { SpotifySession } from "../auth";
-import { Auth } from "../auth";
+import { Auth, SpotifySession } from "../auth";
+import { Player, PlayerState, Track } from "../player";
+
+// ---------------------------------------------------------------------------
+// Shared utilities
+// ---------------------------------------------------------------------------
+
+type Listener = () => void;
 
 // ---------------------------------------------------------------------------
 // Connection-state store
@@ -11,8 +17,6 @@ import { Auth } from "../auth";
 // subscribe function for useSyncExternalStore, and stays in sync via the
 // native onConnectionStateChange event. Initialised lazily on first use.
 // ---------------------------------------------------------------------------
-
-type Listener = () => void;
 
 let _connectionState: ConnectionState = "disconnected";
 const _connectionListeners = new Set<Listener>();
@@ -79,6 +83,38 @@ function getSessionSnapshot(): SpotifySession | null {
 }
 
 // ---------------------------------------------------------------------------
+// Player-state store
+//
+// Seeded from the first playerStateChange event after subscription. The
+// native side automatically starts streaming player state updates once the
+// App Remote connection is established.
+// ---------------------------------------------------------------------------
+
+let _playerState: PlayerState | null = null;
+const _playerListeners = new Set<Listener>();
+let _playerStoreInitialised = false;
+
+function initPlayerStore() {
+  if (_playerStoreInitialised) return;
+  _playerStoreInitialised = true;
+
+  Player.addListener("playerStateChange", (state) => {
+    _playerState = state;
+    _playerListeners.forEach((l) => l());
+  });
+}
+
+function subscribePlayerState(listener: Listener): () => void {
+  initPlayerStore();
+  _playerListeners.add(listener);
+  return () => _playerListeners.delete(listener);
+}
+
+function getPlayerSnapshot(): PlayerState | null {
+  return _playerState;
+}
+
+// ---------------------------------------------------------------------------
 // Public hooks
 // ---------------------------------------------------------------------------
 
@@ -114,4 +150,63 @@ export function useConnectionState(): ConnectionState {
     getConnectionSnapshot,
     getConnectionSnapshot,
   );
+}
+
+/**
+ * Returns the latest {@link PlayerState} from the Spotify app, or `null`
+ * before the first update arrives (i.e., before `AppRemote.connect()` resolves
+ * and the native subscription emits its first event).
+ *
+ * Updates on every state change reported by the Spotify app (track change,
+ * pause/resume, seek, shuffle/repeat toggle, etc.).
+ *
+ * Built on `useSyncExternalStore` for tearing-free React rendering.
+ *
+ * @example
+ * ```tsx
+ * function NowPlaying() {
+ *   const state = usePlayerState();
+ *   if (!state) return <Text>Not playing</Text>;
+ *   return <Text>{state.track.name} — {state.isPaused ? "Paused" : "Playing"}</Text>;
+ * }
+ * ```
+ */
+export function usePlayerState(): PlayerState | null {
+  return useSyncExternalStore(subscribePlayerState, getPlayerSnapshot, getPlayerSnapshot);
+}
+
+/**
+ * Returns the currently playing {@link Track}, or `null` when nothing is
+ * playing or before the first state update arrives.
+ *
+ * Derived from `usePlayerState`.
+ */
+export function useCurrentTrack(): Track | null {
+  return usePlayerState()?.track ?? null;
+}
+
+/**
+ * Returns `true` when the Spotify player is actively playing (not paused),
+ * and `false` otherwise (including before the first state update arrives).
+ *
+ * Derived from `usePlayerState`.
+ */
+export function useIsPlaying(): boolean {
+  const state = usePlayerState();
+  return state !== null && !state.isPaused;
+}
+
+/**
+ * Returns the current playback position in milliseconds. Returns `0` before
+ * the first state update arrives.
+ *
+ * **Note:** This value updates whenever the native side emits a player state
+ * change (track transitions, pause/resume, seek, etc.) — not on a fixed timer.
+ * For a progress bar that ticks smoothly, combine this with a local `Date.now`
+ * offset and `requestAnimationFrame`.
+ *
+ * Derived from `usePlayerState`.
+ */
+export function usePlaybackPosition(): number {
+  return usePlayerState()?.playbackPosition ?? 0;
 }

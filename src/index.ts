@@ -2,7 +2,14 @@
 // Hooks (v1 public API)
 // ---------------------------------------------------------------------------
 
-export { useSession, useConnectionState } from "./hooks";
+export {
+  useSession,
+  useConnectionState,
+  usePlayerState,
+  useCurrentTrack,
+  useIsPlaying,
+  usePlaybackPosition,
+} from "./hooks";
 
 // ---------------------------------------------------------------------------
 // Namespaces (v1 public API)
@@ -66,6 +73,22 @@ export type {
   ConnectionStateChangeEvent,
   ConnectionErrorEvent,
 } from "./app-remote";
+
+// ---------------------------------------------------------------------------
+// Player types
+// ---------------------------------------------------------------------------
+
+export type {
+  RepeatMode,
+  PodcastPlaybackSpeed,
+  Artist,
+  Album,
+  Track,
+  PlaybackOptions,
+  PlaybackRestrictions,
+  PlayerState,
+  CrossfadeState,
+} from "./player";
 
 // ---------------------------------------------------------------------------
 // v0.x backward-compatible exports (deprecated — remove at v2.0.0)

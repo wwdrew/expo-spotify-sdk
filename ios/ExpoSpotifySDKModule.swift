@@ -5,6 +5,7 @@ private let SDK_VERSION = "0.8.0" // x-release-please-version
 private let EVENT_SESSION_CHANGE = "onSessionChange"
 private let EVENT_CONNECTION_STATE_CHANGE = "onConnectionStateChange"
 private let EVENT_CONNECTION_ERROR = "onConnectionError"
+private let EVENT_PLAYER_STATE_CHANGE = "onPlayerStateChange"
 
 public class ExpoSpotifySDKModule: Module {
   public func definition() -> ModuleDefinition {
@@ -13,7 +14,8 @@ public class ExpoSpotifySDKModule: Module {
     Events(
       EVENT_SESSION_CHANGE,
       EVENT_CONNECTION_STATE_CHANGE,
-      EVENT_CONNECTION_ERROR
+      EVENT_CONNECTION_ERROR,
+      EVENT_PLAYER_STATE_CHANGE
     )
 
     // Wire up App Remote coordinator event callbacks once the module is alive.
@@ -23,6 +25,9 @@ public class ExpoSpotifySDKModule: Module {
       }
       SpotifyAppRemoteCoordinator.shared?.onConnectionError = { [weak self] code, message in
         self?.sendEvent(EVENT_CONNECTION_ERROR, ["code": code, "message": message])
+      }
+      SpotifyAppRemoteCoordinator.shared?.onPlayerStateChange = { [weak self] stateMap in
+        self?.sendEvent(EVENT_PLAYER_STATE_CHANGE, stateMap)
       }
     }
 
@@ -133,6 +138,96 @@ public class ExpoSpotifySDKModule: Module {
 
     AsyncFunction("appRemoteGetConnectionState") { () async -> String in
       await SpotifyAppRemoteCoordinator.shared?.getConnectionState() ?? "disconnected"
+    }
+
+    // MARK: — Player
+
+    AsyncFunction("playerPlay") { (uri: String) async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.play: missing configuration"))
+      }
+      do { try await coordinator.playerPlay(uri: uri) } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerPause") { () async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.pause: missing configuration"))
+      }
+      do { try await coordinator.playerPause() } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerResume") { () async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.resume: missing configuration"))
+      }
+      do { try await coordinator.playerResume() } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerSkipNext") { () async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.skipNext: missing configuration"))
+      }
+      do { try await coordinator.playerSkipNext() } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerSkipPrevious") { () async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.skipPrevious: missing configuration"))
+      }
+      do { try await coordinator.playerSkipPrevious() } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerSeekTo") { (positionMs: Int) async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.seekTo: missing configuration"))
+      }
+      do { try await coordinator.playerSeekTo(positionMs: positionMs) } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerSetShuffle") { (enabled: Bool) async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.setShuffle: missing configuration"))
+      }
+      do { try await coordinator.playerSetShuffle(enabled: enabled) } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerSetRepeatMode") { (mode: Int) async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.setRepeatMode: missing configuration"))
+      }
+      do { try await coordinator.playerSetRepeatMode(mode: mode) } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerSetPodcastPlaybackSpeed") { (value: Double) async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.setPodcastPlaybackSpeed: missing configuration"))
+      }
+      do {
+        try await coordinator.playerSetPodcastPlaybackSpeed(value: Float(value))
+      } catch let e as NativePlayerError {
+        throw PlayerException(e)
+      }
+    }
+
+    AsyncFunction("playerQueue") { (uri: String) async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.queue: missing configuration"))
+      }
+      do { try await coordinator.playerQueue(uri: uri) } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerGetPlayerState") { () async throws -> [String: Any] in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.getPlayerState: missing configuration"))
+      }
+      do { return try await coordinator.playerGetPlayerState() } catch let e as NativePlayerError { throw PlayerException(e) }
+    }
+
+    AsyncFunction("playerGetCrossfadeState") { () async throws -> [String: Any] in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw PlayerException(NativePlayerError.notConnected("Player.getCrossfadeState: missing configuration"))
+      }
+      do { return try await coordinator.playerGetCrossfadeState() } catch let e as NativePlayerError { throw PlayerException(e) }
     }
   }
 

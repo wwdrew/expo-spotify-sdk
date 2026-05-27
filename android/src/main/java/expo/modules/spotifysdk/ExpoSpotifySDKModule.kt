@@ -12,6 +12,7 @@ private const val SDK_VERSION = "0.8.0" // x-release-please-version
 private const val EVENT_SESSION_CHANGE = "onSessionChange"
 private const val EVENT_CONNECTION_STATE_CHANGE = "onConnectionStateChange"
 private const val EVENT_CONNECTION_ERROR = "onConnectionError"
+private const val EVENT_PLAYER_STATE_CHANGE = "onPlayerStateChange"
 
 class ExpoSpotifySDKModule : Module() {
 
@@ -75,6 +76,7 @@ class ExpoSpotifySDKModule : Module() {
       EVENT_SESSION_CHANGE,
       EVENT_CONNECTION_STATE_CHANGE,
       EVENT_CONNECTION_ERROR,
+      EVENT_PLAYER_STATE_CHANGE,
     )
 
     // Wire up App Remote coordinator event callbacks once the module is alive.
@@ -84,6 +86,9 @@ class ExpoSpotifySDKModule : Module() {
       }
       appRemoteCoordinator.onConnectionError = { code, message ->
         sendEvent(EVENT_CONNECTION_ERROR, mapOf("code" to code, "message" to message))
+      }
+      appRemoteCoordinator.onPlayerStateChange = { stateMap ->
+        sendEvent(EVENT_PLAYER_STATE_CHANGE, stateMap)
       }
     }
 
@@ -204,6 +209,56 @@ class ExpoSpotifySDKModule : Module() {
 
     AsyncFunction("appRemoteGetConnectionState") Coroutine { ->
       appRemoteCoordinator.getConnectionState()
+    }
+
+    // ── Player ──────────────────────────────────────────────────────────────
+
+    AsyncFunction("playerPlay") Coroutine { uri: String ->
+      appRemoteCoordinator.playerPlay(uri)
+    }
+
+    AsyncFunction("playerPause") Coroutine { ->
+      appRemoteCoordinator.playerPause()
+    }
+
+    AsyncFunction("playerResume") Coroutine { ->
+      appRemoteCoordinator.playerResume()
+    }
+
+    AsyncFunction("playerSkipNext") Coroutine { ->
+      appRemoteCoordinator.playerSkipNext()
+    }
+
+    AsyncFunction("playerSkipPrevious") Coroutine { ->
+      appRemoteCoordinator.playerSkipPrevious()
+    }
+
+    AsyncFunction("playerSeekTo") Coroutine { positionMs: Long ->
+      appRemoteCoordinator.playerSeekTo(positionMs)
+    }
+
+    AsyncFunction("playerSetShuffle") Coroutine { enabled: Boolean ->
+      appRemoteCoordinator.playerSetShuffle(enabled)
+    }
+
+    AsyncFunction("playerSetRepeatMode") Coroutine { mode: Int ->
+      appRemoteCoordinator.playerSetRepeatMode(mode)
+    }
+
+    AsyncFunction("playerSetPodcastPlaybackSpeed") Coroutine { value: Double ->
+      appRemoteCoordinator.playerSetPodcastPlaybackSpeed(value.toFloat())
+    }
+
+    AsyncFunction("playerQueue") Coroutine { uri: String ->
+      appRemoteCoordinator.playerQueue(uri)
+    }
+
+    AsyncFunction("playerGetPlayerState") Coroutine { ->
+      appRemoteCoordinator.playerGetPlayerState()
+    }
+
+    AsyncFunction("playerGetCrossfadeState") Coroutine { ->
+      appRemoteCoordinator.playerGetCrossfadeState()
     }
   }
 }
