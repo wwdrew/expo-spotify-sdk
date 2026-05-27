@@ -99,6 +99,18 @@ export type {
 export type { Capabilities, LibraryState } from "./user";
 
 // ---------------------------------------------------------------------------
+// Content types
+// ---------------------------------------------------------------------------
+
+export type { ContentType, ContentItem } from "./content";
+
+// ---------------------------------------------------------------------------
+// Images types
+// ---------------------------------------------------------------------------
+
+export type { ImageSize, ImageResult, ImageRepresentable } from "./images";
+
+// ---------------------------------------------------------------------------
 // v0.x backward-compatible exports (deprecated — remove at v2.0.0)
 //
 // These shims let existing callers continue to compile after upgrading to v1.

@@ -264,6 +264,43 @@ public class ExpoSpotifySDKModule: Module {
       }
       do { return try await coordinator.userRemoveFromLibrary(uri: uri) } catch let e as NativeUserError { throw UserException(e) }
     }
+
+    // MARK: — Content
+
+    AsyncFunction("contentGetRecommendedContentItems") { (type: String) async throws -> [[String: Any]] in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw ContentException(NativeContentError.notConnected("Content.getRecommendedContentItems: missing configuration"))
+      }
+      do {
+        return try await coordinator.contentGetRecommendedContentItems(type: type)
+      } catch let e as NativeContentError {
+        throw ContentException(e)
+      }
+    }
+
+    AsyncFunction("contentGetChildren") { (item: [String: Any]) async throws -> [[String: Any]] in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw ContentException(NativeContentError.notConnected("Content.getChildren: missing configuration"))
+      }
+      do {
+        return try await coordinator.contentGetChildren(itemMap: item)
+      } catch let e as NativeContentError {
+        throw ContentException(e)
+      }
+    }
+
+    // MARK: — Images
+
+    AsyncFunction("imagesLoad") { (imageIdentifier: String, size: String) async throws -> [String: Any] in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw ImagesException(NativeImagesError.notConnected("Images.load: missing configuration"))
+      }
+      do {
+        return try await coordinator.imagesLoad(imageIdentifier: imageIdentifier, size: size)
+      } catch let e as NativeImagesError {
+        throw ImagesException(e)
+      }
+    }
   }
 
   // MARK: — Helpers

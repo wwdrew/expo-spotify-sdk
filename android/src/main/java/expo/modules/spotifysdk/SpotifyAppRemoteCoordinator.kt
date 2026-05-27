@@ -1,6 +1,7 @@
 package expo.modules.spotifysdk
 
 import android.content.Context
+import android.graphics.Bitmap
 import com.spotify.android.appremote.api.ConnectionParams
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
@@ -8,13 +9,19 @@ import com.spotify.protocol.client.CallResult
 import com.spotify.protocol.client.Subscription
 import com.spotify.protocol.types.Capabilities
 import com.spotify.protocol.types.CrossfadeState
+import com.spotify.protocol.types.Image
+import com.spotify.protocol.types.ImageUri
 import com.spotify.protocol.types.LibraryState
+import com.spotify.protocol.types.ListItem
+import com.spotify.protocol.types.ListItems
 import com.spotify.protocol.types.PlayerState
 import com.spotify.protocol.types.PodcastPlaybackSpeed
 import com.spotify.protocol.types.Repeat
 import expo.modules.kotlin.exception.CodedException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
+import java.io.File
+import java.io.FileOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.abs
@@ -260,6 +267,41 @@ class SpotifyAppRemoteCoordinator {
     return libraryStateToMap(state)
   }
 
+  // MARK: — Content operations
+
+  suspend fun contentGetRecommendedContentItems(type: String): List<Map<String, Any?>> {
+    val remote = appRemote?.takeIf { it.isConnected } ?: throw ContentNotConnectedException("Content.getRecommendedContentItems")
+    val listItems = remote.contentApi
+      .getRecommendedContentItems(type).awaitContentResult("Content.getRecommendedContentItems")
+    return listItems.items.map(::contentItemToMap)
+  }
+
+  suspend fun contentGetChildren(item: Map<String, Any?>): List<Map<String, Any?>> {
+    val remote = appRemote?.takeIf { it.isConnected } ?: throw ContentNotConnectedException("Content.getChildren")
+    val listItem = mapToListItem(item)
+    val listItems = remote.contentApi
+      .getChildrenOfItem(listItem, 200, 0).awaitContentResult("Content.getChildren")
+    return listItems.items.map(::contentItemToMap)
+  }
+
+  // MARK: — Images operations
+
+  suspend fun imagesLoad(imageIdentifier: String, size: String, cacheDir: File): Map<String, Any?> {
+    if (imageIdentifier.isBlank()) {
+      throw ImagesInvalidURIException("Images.load: imageIdentifier must be non-empty")
+    }
+    val remote = appRemote?.takeIf { it.isConnected } ?: throw ImagesNotConnectedException("Images.load")
+    val imageUri = ImageUri(imageIdentifier)
+    val dimension = when (size) {
+      "small" -> Image.Dimension.SMALL
+      "medium" -> Image.Dimension.MEDIUM
+      else -> Image.Dimension.LARGE
+    }
+    val bitmap = remote.imagesApi
+      .getImage(imageUri, dimension).awaitImageResult("Images.load")
+    return mapOf("uri" to writeBitmapToTempFile(bitmap, cacheDir).toURI().toString())
+  }
+
   // MARK: — Internal helpers
 
   private fun requireConnected(callsite: String): SpotifyAppRemote {
@@ -303,6 +345,24 @@ class SpotifyAppRemoteCoordinator {
     }
   }
 
+  private suspend fun CallResult<ListItems>.awaitContentResult(callsite: String): ListItems {
+    return suspendCancellableCoroutine { continuation ->
+      setResultCallback { result -> continuation.resume(result) }
+      setErrorCallback { throwable ->
+        continuation.resumeWithException(normalizeContentError(throwable, callsite))
+      }
+    }
+  }
+
+  private suspend fun CallResult<Bitmap>.awaitImageResult(callsite: String): Bitmap {
+    return suspendCancellableCoroutine { continuation ->
+      setResultCallback { result -> continuation.resume(result) }
+      setErrorCallback { throwable ->
+        continuation.resumeWithException(normalizeImagesError(throwable, callsite))
+      }
+    }
+  }
+
   private fun normalizePlayerError(throwable: Throwable, callsite: String): CodedException {
     val msg = throwable.message ?: "Unknown error"
     return when {
@@ -333,6 +393,44 @@ class SpotifyAppRemoteCoordinator {
     }
   }
 
+  private fun normalizeContentError(throwable: Throwable, callsite: String): CodedException {
+    val msg = throwable.message ?: "Unknown error"
+    return when {
+      msg.contains("disconnected", ignoreCase = true) ||
+        msg.contains("not connected", ignoreCase = true) ->
+        ContentConnectionLostException("$callsite: $msg", throwable)
+      msg.contains("not supported", ignoreCase = true) ||
+        msg.contains("unsupported", ignoreCase = true) ->
+        ContentApiUnavailableException("$callsite: content API unavailable on this Spotify app version", throwable)
+      else -> ContentUnknownException("$callsite: $msg", throwable)
+    }
+  }
+
+  private fun normalizeImagesError(throwable: Throwable, callsite: String): CodedException {
+    val msg = throwable.message ?: "Unknown error"
+    return when {
+      msg.contains("disconnected", ignoreCase = true) ||
+        msg.contains("not connected", ignoreCase = true) ->
+        ImagesNotConnectedException(callsite)
+      msg.contains("invalid", ignoreCase = true) ->
+        ImagesInvalidURIException("$callsite: invalid image identifier", throwable)
+      msg.contains("load", ignoreCase = true) || msg.contains("image", ignoreCase = true) ->
+        ImagesLoadFailedException("$callsite: $msg", throwable)
+      else -> ImagesUnknownException("$callsite: $msg", throwable)
+    }
+  }
+
+  private fun writeBitmapToTempFile(bitmap: Bitmap, cacheDir: File): File {
+    val out = File(cacheDir, "expo-spotify-image-${System.currentTimeMillis()}-${(0..9999).random()}.png")
+    FileOutputStream(out).use { stream ->
+      if (!bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
+        throw ImagesLoadFailedException("Images.load: failed to compress bitmap")
+      }
+      stream.flush()
+    }
+    return out
+  }
+
   companion object {
     private fun playerStateToMap(state: PlayerState): Map<String, Any?> {
       val track = state.track
@@ -342,6 +440,7 @@ class SpotifyAppRemoteCoordinator {
         "track" to mapOf(
           "uri" to (track?.uri ?: ""),
           "name" to (track?.name ?: ""),
+          "imageIdentifier" to (track?.imageUri?.raw ?: ""),
           "duration" to (track?.duration ?: 0L),
           "artist" to mapOf(
             "name" to (track?.artist?.name ?: ""),
@@ -382,6 +481,33 @@ class SpotifyAppRemoteCoordinator {
 
     private fun libraryStateToMap(state: LibraryState): Map<String, Any?> {
       return mapOf("uri" to state.uri, "isAdded" to state.isAdded, "canAdd" to state.canAdd)
+    }
+
+    private fun contentItemToMap(item: ListItem): Map<String, Any?> {
+      return mapOf(
+        "title" to item.title,
+        "subtitle" to item.subtitle,
+        "contentDescription" to null,
+        "identifier" to item.id,
+        "uri" to item.uri,
+        "imageIdentifier" to item.imageUri?.raw,
+        "isAvailableOffline" to false,
+        "isPlayable" to item.playable,
+        "isContainer" to item.hasChildren,
+        "isPinned" to false,
+      )
+    }
+
+    private fun mapToListItem(item: Map<String, Any?>): ListItem {
+      val id = (item["identifier"] as? String).orEmpty()
+      val uri = (item["uri"] as? String).orEmpty()
+      val title = (item["title"] as? String).orEmpty()
+      val subtitle = (item["subtitle"] as? String).orEmpty()
+      val imageIdentifier = item["imageIdentifier"] as? String
+      val playable = item["isPlayable"] as? Boolean ?: false
+      val isContainer = item["isContainer"] as? Boolean ?: false
+      val imageUri = imageIdentifier?.takeIf { it.isNotBlank() }?.let(::ImageUri)
+      return ListItem(id, uri, imageUri, title, subtitle, playable, isContainer)
     }
   }
 }

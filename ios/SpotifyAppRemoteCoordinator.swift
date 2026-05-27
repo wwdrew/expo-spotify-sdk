@@ -1,6 +1,7 @@
 import ExpoModulesCore
 import Foundation
 import SpotifyiOS
+import UIKit
 
 // MARK: — App Remote error types
 
@@ -137,6 +138,88 @@ final class UserException: Exception, @unchecked Sendable {
 
   override var code: String { userCode }
   override var reason: String { userMessage }
+}
+
+// MARK: — Content error types
+
+enum NativeContentError: Error {
+  case notConnected(String)
+  case connectionLost(String)
+  case contentAPIUnavailable(String)
+  case unknown(String)
+
+  var code: String {
+    switch self {
+    case .notConnected: return "NOT_CONNECTED"
+    case .connectionLost: return "CONNECTION_LOST"
+    case .contentAPIUnavailable: return "CONTENT_API_UNAVAILABLE"
+    case .unknown: return "UNKNOWN"
+    }
+  }
+
+  var message: String {
+    switch self {
+    case .notConnected(let m): return m
+    case .connectionLost(let m): return m
+    case .contentAPIUnavailable(let m): return m
+    case .unknown(let m): return m
+    }
+  }
+}
+
+final class ContentException: Exception, @unchecked Sendable {
+  private let contentCode: String
+  private let contentMessage: String
+
+  init(_ error: NativeContentError, file: String = #fileID, line: UInt = #line, function: String = #function) {
+    self.contentCode = error.code
+    self.contentMessage = error.message
+    super.init(file: file, line: line, function: function)
+  }
+
+  override var code: String { contentCode }
+  override var reason: String { contentMessage }
+}
+
+// MARK: — Images error types
+
+enum NativeImagesError: Error {
+  case notConnected(String)
+  case invalidURI(String)
+  case imageLoadFailed(String)
+  case unknown(String)
+
+  var code: String {
+    switch self {
+    case .notConnected: return "NOT_CONNECTED"
+    case .invalidURI: return "INVALID_URI"
+    case .imageLoadFailed: return "IMAGE_LOAD_FAILED"
+    case .unknown: return "UNKNOWN"
+    }
+  }
+
+  var message: String {
+    switch self {
+    case .notConnected(let m): return m
+    case .invalidURI(let m): return m
+    case .imageLoadFailed(let m): return m
+    case .unknown(let m): return m
+    }
+  }
+}
+
+final class ImagesException: Exception, @unchecked Sendable {
+  private let imagesCode: String
+  private let imagesMessage: String
+
+  init(_ error: NativeImagesError, file: String = #fileID, line: UInt = #line, function: String = #function) {
+    self.imagesCode = error.code
+    self.imagesMessage = error.message
+    super.init(file: file, line: line, function: function)
+  }
+
+  override var code: String { imagesCode }
+  override var reason: String { imagesMessage }
 }
 
 // MARK: — Coordinator
@@ -475,6 +558,90 @@ actor SpotifyAppRemoteCoordinator {
     }
   }
 
+  // MARK: — Content operations
+
+  func contentGetRecommendedContentItems(type: String) async throws -> [[String: Any]] {
+    let contentAPI = try requireContentAPI(callsite: "Content.getRecommendedContentItems")
+    return try await withCheckedThrowingContinuation { cont in
+      contentAPI.fetchRecommendedContentItems(forType: Self.mapContentType(type), flattenContainers: false) { result, error in
+        if let error = error {
+          cont.resume(throwing: Self.normalizeContentError(error as NSError, callsite: "Content.getRecommendedContentItems"))
+        } else if let list = result as? [any SPTAppRemoteContentItem] {
+          cont.resume(returning: list.map(Self.contentItemToMap))
+        } else {
+          cont.resume(throwing: NativeContentError.unknown("Content.getRecommendedContentItems: unexpected result type"))
+        }
+      }
+    }
+  }
+
+  func contentGetChildren(itemMap: [String: Any]) async throws -> [[String: Any]] {
+    let contentAPI = try requireContentAPI(callsite: "Content.getChildren")
+    guard let uri = itemMap["uri"] as? String, !uri.isEmpty else {
+      throw NativeContentError.unknown("Content.getChildren: missing item uri")
+    }
+
+    let contentItem: any SPTAppRemoteContentItem = try await withCheckedThrowingContinuation { cont in
+      contentAPI.fetchContentItem(forURI: uri) { result, error in
+        if let error = error {
+          cont.resume(throwing: Self.normalizeContentError(error as NSError, callsite: "Content.getChildren"))
+        } else if let item = result as? any SPTAppRemoteContentItem {
+          cont.resume(returning: item)
+        } else {
+          cont.resume(throwing: NativeContentError.unknown("Content.getChildren: failed to resolve content item from URI"))
+        }
+      }
+    }
+
+    return try await withCheckedThrowingContinuation { cont in
+      contentAPI.fetchChildren(ofContentItem: contentItem) { result, error in
+        if let error = error {
+          cont.resume(throwing: Self.normalizeContentError(error as NSError, callsite: "Content.getChildren"))
+        } else if let children = result as? [any SPTAppRemoteContentItem] {
+          cont.resume(returning: children.map(Self.contentItemToMap))
+        } else {
+          cont.resume(throwing: NativeContentError.unknown("Content.getChildren: unexpected result type"))
+        }
+      }
+    }
+  }
+
+  // MARK: — Images operations
+
+  func imagesLoad(imageIdentifier: String, size: String) async throws -> [String: Any] {
+    guard !imageIdentifier.isEmpty else {
+      throw NativeImagesError.invalidURI("Images.load: imageIdentifier must be non-empty")
+    }
+    let imageAPI = try requireImageAPI(callsite: "Images.load")
+    let representable = LocalImageRepresentable(imageIdentifier: imageIdentifier)
+    let targetSize = Self.mapImageSize(size)
+
+    let image: UIImage = try await withCheckedThrowingContinuation { cont in
+      imageAPI.fetchImage(forItem: representable, with: targetSize) { result, error in
+        if let error = error {
+          cont.resume(throwing: Self.normalizeImagesError(error as NSError, callsite: "Images.load"))
+        } else if let image = result as? UIImage {
+          cont.resume(returning: image)
+        } else {
+          cont.resume(throwing: NativeImagesError.imageLoadFailed("Images.load: unexpected image result type"))
+        }
+      }
+    }
+
+    let data = image.pngData() ?? image.jpegData(compressionQuality: 1.0)
+    guard let bytes = data else {
+      throw NativeImagesError.imageLoadFailed("Images.load: failed to encode image data")
+    }
+    let filename = "expo-spotify-image-\(UUID().uuidString).png"
+    let path = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(filename)
+    do {
+      try bytes.write(to: path, options: .atomic)
+      return ["uri": path.absoluteString]
+    } catch {
+      throw NativeImagesError.imageLoadFailed("Images.load: failed to write temp image file")
+    }
+  }
+
   // MARK: — Internal helpers
 
   private func requirePlayerAPI(callsite: String) throws -> any SPTAppRemotePlayerAPI {
@@ -493,6 +660,24 @@ actor SpotifyAppRemoteCoordinator {
       )
     }
     return userAPI
+  }
+
+  private func requireContentAPI(callsite: String) throws -> any SPTAppRemoteContentAPI {
+    guard let remote = appRemote, remote.isConnected, let contentAPI = remote.contentAPI else {
+      throw NativeContentError.notConnected(
+        "\(callsite): requires an active App Remote connection — call AppRemote.connect() first"
+      )
+    }
+    return contentAPI
+  }
+
+  private func requireImageAPI(callsite: String) throws -> any SPTAppRemoteImageAPI {
+    guard let remote = appRemote, remote.isConnected, let imageAPI = remote.imageAPI else {
+      throw NativeImagesError.notConnected(
+        "\(callsite): requires an active App Remote connection — call AppRemote.connect() first"
+      )
+    }
+    return imageAPI
   }
 
   private func voidPlayerCall(
@@ -541,6 +726,7 @@ actor SpotifyAppRemoteCoordinator {
       "track": [
         "uri": track.URI,
         "name": track.name,
+        "imageIdentifier": track.imageIdentifier,
         "duration": track.duration,
         "artist": ["name": track.artist.name, "uri": track.artist.URI],
         "album": ["name": track.album.name, "uri": track.album.URI],
@@ -595,6 +781,76 @@ actor SpotifyAppRemoteCoordinator {
     default:
       return .unknown(error.localizedDescription)
     }
+  }
+
+  private static func normalizeContentError(_ error: NSError, callsite: String) -> NativeContentError {
+    guard error.domain == SPTAppRemoteErrorDomain else {
+      return .unknown(error.localizedDescription)
+    }
+    switch error.code {
+    case SPTAppRemoteConnectionTerminatedError:
+      return .connectionLost("\(callsite): connection to Spotify app was terminated")
+    case SPTAppRemoteRequestFailedError:
+      let desc = error.localizedDescription.lowercased()
+      if desc.contains("not supported") || desc.contains("unsupported") {
+        return .contentAPIUnavailable("\(callsite): content API is unavailable on this Spotify app version")
+      }
+      return .unknown(error.localizedDescription)
+    default:
+      return .unknown(error.localizedDescription)
+    }
+  }
+
+  private static func normalizeImagesError(_ error: NSError, callsite: String) -> NativeImagesError {
+    guard error.domain == SPTAppRemoteErrorDomain else {
+      return .unknown(error.localizedDescription)
+    }
+    switch error.code {
+    case SPTAppRemoteConnectionTerminatedError:
+      return .notConnected("\(callsite): connection to Spotify app was terminated")
+    case SPTAppRemoteInvalidArgumentsError:
+      return .invalidURI("\(callsite): invalid image identifier")
+    case SPTAppRemoteRequestFailedError:
+      return .imageLoadFailed("\(callsite): Spotify rejected image request")
+    default:
+      return .unknown(error.localizedDescription)
+    }
+  }
+
+  private static func mapContentType(_ type: String) -> SPTAppRemoteContentType {
+    switch type {
+    case "navigation": return SPTAppRemoteContentTypeNavigation
+    case "fitness": return SPTAppRemoteContentTypeFitness
+    case "gaming": return SPTAppRemoteContentTypeGaming
+    default: return SPTAppRemoteContentTypeDefault
+    }
+  }
+
+  private static func mapImageSize(_ size: String) -> CGSize {
+    switch size {
+    case "small": return CGSize(width: 64, height: 64)
+    case "medium": return CGSize(width: 300, height: 300)
+    default: return CGSize(width: 640, height: 640)
+    }
+  }
+
+  private static func contentItemToMap(_ item: any SPTAppRemoteContentItem) -> [String: Any] {
+    var map: [String: Any] = [
+      "title": item.title as Any,
+      "subtitle": item.subtitle as Any,
+      "contentDescription": item.contentDescription as Any,
+      "identifier": item.identifier,
+      "uri": item.URI,
+      "imageIdentifier": item.imageIdentifier,
+      "isAvailableOffline": item.isAvailableOffline,
+      "isPlayable": item.isPlayable,
+      "isContainer": item.isContainer,
+      "isPinned": item.isPinned,
+    ]
+    if let children = item.children {
+      map["children"] = children.map(Self.contentItemToMap)
+    }
+    return map
   }
 
   private func transitionState(_ state: String) {
@@ -656,5 +912,16 @@ final class SpotifyUserCapabilitiesDelegateBridge: NSObject, SPTAppRemoteUserAPI
 
   func userAPI(_ userAPI: any SPTAppRemoteUserAPI, didReceiveCapabilities capabilities: any SPTAppRemoteUserCapabilities) {
     Task { await coordinator?.userCapabilitiesDidChange(capabilities) }
+  }
+}
+
+// MARK: — Local image wrapper
+
+final class LocalImageRepresentable: NSObject, SPTAppRemoteImageRepresentable {
+  let imageIdentifier: String
+
+  init(imageIdentifier: String) {
+    self.imageIdentifier = imageIdentifier
+    super.init()
   }
 }

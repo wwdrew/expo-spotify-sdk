@@ -106,3 +106,41 @@ class UserOperationNotAllowedException(message: String, cause: Throwable? = null
 
 class UserUnknownException(message: String, cause: Throwable? = null) :
   CodedException("UNKNOWN", message, cause)
+
+// ── Content errors ────────────────────────────────────────────────────────────
+
+class ContentNotConnectedException(callsite: String = "") :
+  CodedException(
+    "NOT_CONNECTED",
+    if (callsite.isNotBlank()) "Not connected to the Spotify app — call AppRemote.connect() before $callsite"
+    else "Not connected to the Spotify app. Call AppRemote.connect() first.",
+    null,
+  )
+
+class ContentConnectionLostException(message: String, cause: Throwable? = null) :
+  CodedException("CONNECTION_LOST", message, cause)
+
+class ContentApiUnavailableException(message: String, cause: Throwable? = null) :
+  CodedException("CONTENT_API_UNAVAILABLE", message, cause)
+
+class ContentUnknownException(message: String, cause: Throwable? = null) :
+  CodedException("UNKNOWN", message, cause)
+
+// ── Images errors ─────────────────────────────────────────────────────────────
+
+class ImagesNotConnectedException(callsite: String = "") :
+  CodedException(
+    "NOT_CONNECTED",
+    if (callsite.isNotBlank()) "Not connected to the Spotify app — call AppRemote.connect() before $callsite"
+    else "Not connected to the Spotify app. Call AppRemote.connect() first.",
+    null,
+  )
+
+class ImagesInvalidURIException(message: String, cause: Throwable? = null) :
+  CodedException("INVALID_URI", message, cause)
+
+class ImagesLoadFailedException(message: String, cause: Throwable? = null) :
+  CodedException("IMAGE_LOAD_FAILED", message, cause)
+
+class ImagesUnknownException(message: String, cause: Throwable? = null) :
+  CodedException("UNKNOWN", message, cause)
