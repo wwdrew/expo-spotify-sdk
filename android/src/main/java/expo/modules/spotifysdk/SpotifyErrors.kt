@@ -51,3 +51,58 @@ class AppRemoteNotConnectedException(callsite: String = "") :
 
 class AppRemoteUnknownException(message: String, cause: Throwable? = null) :
   CodedException("UNKNOWN", message, cause)
+
+// ── Player errors ─────────────────────────────────────────────────────────────
+
+class PlayerNotConnectedException(callsite: String = "") :
+  CodedException(
+    "NOT_CONNECTED",
+    if (callsite.isNotBlank()) "Not connected to the Spotify app — call AppRemote.connect() before $callsite"
+    else "Not connected to the Spotify app. Call AppRemote.connect() first.",
+    null,
+  )
+
+class PlayerConnectionLostException(message: String, cause: Throwable? = null) :
+  CodedException("CONNECTION_LOST", message, cause)
+
+class PlayerPremiumRequiredException(callsite: String = "") :
+  CodedException(
+    "PREMIUM_REQUIRED",
+    if (callsite.isNotBlank()) "$callsite: Spotify Premium is required for on-demand playback"
+    else "Spotify Premium is required for on-demand playback",
+    null,
+  )
+
+class PlayerInvalidURIException(uri: String, cause: Throwable? = null) :
+  CodedException("INVALID_URI", "Invalid Spotify URI: $uri", cause)
+
+class PlayerInvalidParameterException(message: String, cause: Throwable? = null) :
+  CodedException("INVALID_PARAMETER", message, cause)
+
+class PlayerOperationNotAllowedException(message: String, cause: Throwable? = null) :
+  CodedException("OPERATION_NOT_ALLOWED", message, cause)
+
+class PlayerUnknownException(message: String, cause: Throwable? = null) :
+  CodedException("UNKNOWN", message, cause)
+
+// ── User errors ───────────────────────────────────────────────────────────────
+
+class UserNotConnectedException(callsite: String = "") :
+  CodedException(
+    "NOT_CONNECTED",
+    if (callsite.isNotBlank()) "Not connected to the Spotify app — call AppRemote.connect() before $callsite"
+    else "Not connected to the Spotify app. Call AppRemote.connect() first.",
+    null,
+  )
+
+class UserConnectionLostException(message: String, cause: Throwable? = null) :
+  CodedException("CONNECTION_LOST", message, cause)
+
+class UserInvalidURIException(uri: String, cause: Throwable? = null) :
+  CodedException("INVALID_URI", "Invalid Spotify URI: $uri", cause)
+
+class UserOperationNotAllowedException(message: String, cause: Throwable? = null) :
+  CodedException("OPERATION_NOT_ALLOWED", message, cause)
+
+class UserUnknownException(message: String, cause: Throwable? = null) :
+  CodedException("UNKNOWN", message, cause)
