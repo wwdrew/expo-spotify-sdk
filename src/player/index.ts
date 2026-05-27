@@ -36,6 +36,8 @@ export interface Album {
 export interface Track {
   uri: string;
   name: string;
+  /** Identifier used by `Images.load(...)`. */
+  imageIdentifier?: string;
   /** Duration in milliseconds. */
   duration: number;
   artist: Artist;

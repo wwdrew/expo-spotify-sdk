@@ -283,5 +283,21 @@ class ExpoSpotifySDKModule : Module() {
     AsyncFunction("userRemoveFromLibrary") Coroutine { uri: String ->
       appRemoteCoordinator.userRemoveFromLibrary(uri)
     }
+
+    // ── Content ───────────────────────────────────────────────────────────────
+
+    AsyncFunction("contentGetRecommendedContentItems") Coroutine { type: String ->
+      appRemoteCoordinator.contentGetRecommendedContentItems(type)
+    }
+
+    AsyncFunction("contentGetChildren") Coroutine { item: Map<String, Any?> ->
+      appRemoteCoordinator.contentGetChildren(item)
+    }
+
+    // ── Images ────────────────────────────────────────────────────────────────
+
+    AsyncFunction("imagesLoad") Coroutine { imageIdentifier: String, size: String ->
+      appRemoteCoordinator.imagesLoad(imageIdentifier, size, context.cacheDir)
+    }
   }
 }
