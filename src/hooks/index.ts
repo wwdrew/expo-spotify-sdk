@@ -177,7 +177,6 @@ function getOrCreateLibraryStore(uri: SpotifyURIType): LibraryStore {
 }
 
 function initLibraryStore(uri: SpotifyURIType) {
-  const key = String(uri);
   const store = getOrCreateLibraryStore(uri);
   if (store.initialised) return;
   store.initialised = true;
