@@ -75,6 +75,15 @@ export default {
   userRemoveFromLibrary(): Promise<never> {
     return Promise.reject(unsupported("userRemoveFromLibrary"));
   },
+  contentGetRecommendedContentItems(): Promise<never> {
+    return Promise.reject(unsupported("contentGetRecommendedContentItems"));
+  },
+  contentGetChildren(): Promise<never> {
+    return Promise.reject(unsupported("contentGetChildren"));
+  },
+  imagesLoad(): Promise<never> {
+    return Promise.reject(unsupported("imagesLoad"));
+  },
   addListener(): { remove(): void } {
     return { remove() {} };
   },
