@@ -1,9 +1,7 @@
-import { SpotifyError } from "./ExpoSpotifySDK.types";
-
-function notImplementedReject(method: string): SpotifyError {
-  return new SpotifyError(
-    "INVALID_CONFIG",
-    `expo-spotify-sdk: ${method} is not implemented on web yet (planned for v0.7.0).`,
+function unsupported(method: string): Error {
+  return new Error(
+    `[expo-spotify-sdk] ${method} is not supported on web. ` +
+      "This library targets iOS and Android only.",
   );
 }
 
@@ -12,10 +10,10 @@ export default {
     return false;
   },
   authenticateAsync(): Promise<never> {
-    return Promise.reject(notImplementedReject("authenticateAsync"));
+    return Promise.reject(unsupported("authenticateAsync"));
   },
   refreshSessionAsync(): Promise<never> {
-    return Promise.reject(notImplementedReject("refreshSessionAsync"));
+    return Promise.reject(unsupported("refreshSessionAsync"));
   },
   addListener(): { remove(): void } {
     return { remove() {} };

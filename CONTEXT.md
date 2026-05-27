@@ -6,6 +6,10 @@ Reference for humans and agents. Use this file to keep terminology straight when
 
 This repo uses [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): description` (e.g. `fix(ios): …`, `feat(android): …`, `docs: …`). Use an optional scope when the change is platform- or area-specific.
 
+## Branch naming
+
+Branch names follow the same `type/` prefix as conventional commits: `feat/*`, `fix/*`, `refactor/*`, `docs/*`, `chore/*`, `test/*`. Examples: `feat/auth-namespace`, `fix/android-token-flow`, `docs/v1-plan`.
+
 ## Terminology
 
 | Term | Meaning | **Not** this |
@@ -31,13 +35,13 @@ This repo uses [Conventional Commits](https://www.conventionalcommits.org/): `ty
 
 ## v1.0.0 direction
 
-`v1.0.0` adds App Remote support (transport, now-playing, hooks) on top of the existing Auth surface, drops support for iOS deployment targets older than what Expo SDK 56 requires, and is the cutoff for the last `v0.x` release that supports SDK 55 and earlier.
+`v1.0.0` adds App Remote support (transport, now-playing, hooks) on top of the existing Auth surface. It targets Expo SDK 55 (iOS 15.1+). See [ADR-0005](./docs/adr/0005-sdk-lane-versioning.md) for the lane versioning strategy.
 
-**Explicitly not in v1:**
+**Explicitly not in v1 (or any version):**
 
 - Spotify Web API wrappers (catalog, library reads, recently played, top items, recommendations, playlist mutations) — consumers call REST themselves with the access token. Spotify is tightening Web API access (see [Feb 2026 migration](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide)) and we don't want to be on the hook for that surface.
 - Spotify Connect device transfer / device list — Web API only.
-- Web platform / Web Playback SDK — native SDKs only.
+- Web platform — this library targets iOS and Android only. There is no web support and none is planned.
 - Any in-app audio playback — Spotify's model is "remote-control the Spotify app". No exceptions.
 
 ## Related docs
