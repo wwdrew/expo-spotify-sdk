@@ -10,11 +10,14 @@ import expo.modules.kotlin.modules.ModuleDefinition
 
 private const val SDK_VERSION = "0.8.0" // x-release-please-version
 private const val EVENT_SESSION_CHANGE = "onSessionChange"
+private const val EVENT_CONNECTION_STATE_CHANGE = "onConnectionStateChange"
+private const val EVENT_CONNECTION_ERROR = "onConnectionError"
 
 class ExpoSpotifySDKModule : Module() {
 
   private lateinit var authLauncher: AppContextActivityResultLauncher<SpotifyAuthInput, AuthorizationResponse>
-  private val coordinator = SpotifyAuthCoordinator()
+  private val authCoordinator = SpotifyAuthCoordinator()
+  private val appRemoteCoordinator = SpotifyAppRemoteCoordinator()
 
   private val context
     get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
@@ -58,17 +61,33 @@ class ExpoSpotifySDKModule : Module() {
     )
   }
 
-  private fun emitError(type: String, code: String, message: String) {
+  private fun emitSessionError(code: String, message: String) {
     sendEvent(
       EVENT_SESSION_CHANGE,
-      mapOf("type" to type, "error" to mapOf("code" to code, "message" to message)),
+      mapOf("type" to "didFail", "error" to mapOf("code" to code, "message" to message)),
     )
   }
 
   override fun definition() = ModuleDefinition {
     Name("ExpoSpotifySDK")
 
-    Events(EVENT_SESSION_CHANGE)
+    Events(
+      EVENT_SESSION_CHANGE,
+      EVENT_CONNECTION_STATE_CHANGE,
+      EVENT_CONNECTION_ERROR,
+    )
+
+    // Wire up App Remote coordinator event callbacks once the module is alive.
+    OnCreate {
+      appRemoteCoordinator.onConnectionStateChange = { state ->
+        sendEvent(EVENT_CONNECTION_STATE_CHANGE, mapOf("state" to state))
+      }
+      appRemoteCoordinator.onConnectionError = { code, message ->
+        sendEvent(EVENT_CONNECTION_ERROR, mapOf("code" to code, "message" to message))
+      }
+    }
+
+    // ── Auth ────────────────────────────────────────────────────────────────
 
     Function("isAvailable") {
       isSpotifyInstalled()
@@ -97,7 +116,7 @@ class ExpoSpotifySDKModule : Module() {
           showDialog = config.showDialog,
         )
 
-        val response = coordinator.authenticate(authLauncher, input)
+        val response = authCoordinator.authenticate(authLauncher, input)
 
         val payload = when (response.type) {
           AuthorizationResponse.Type.TOKEN -> SpotifySessionPayload(
@@ -135,7 +154,7 @@ class ExpoSpotifySDKModule : Module() {
         emitSession("didInitiate", payload)
         payload.toMap()
       } catch (e: expo.modules.kotlin.exception.CodedException) {
-        emitError("didFail", e.code ?: "UNKNOWN", e.localizedMessage ?: e.code ?: "Unknown error")
+        emitSessionError(e.code ?: "UNKNOWN", e.localizedMessage ?: e.code ?: "Unknown error")
         throw e
       }
     }
@@ -158,9 +177,33 @@ class ExpoSpotifySDKModule : Module() {
         emitSession("didRenew", payload)
         payload.toMap()
       } catch (e: expo.modules.kotlin.exception.CodedException) {
-        emitError("didFail", e.code ?: "UNKNOWN", e.localizedMessage ?: e.code ?: "Unknown error")
+        emitSessionError(e.code ?: "UNKNOWN", e.localizedMessage ?: e.code ?: "Unknown error")
         throw e
       }
+    }
+
+    // ── App Remote ──────────────────────────────────────────────────────────
+
+    AsyncFunction("appRemoteConnect") Coroutine { accessToken: String ->
+      val manifest = readManifestConfig()
+      appRemoteCoordinator.connect(
+        context = context,
+        clientId = manifest.clientId,
+        redirectUri = manifest.redirectUri,
+        accessToken = accessToken,
+      )
+    }
+
+    AsyncFunction("appRemoteDisconnect") Coroutine { ->
+      appRemoteCoordinator.disconnect()
+    }
+
+    Function("appRemoteIsConnected") {
+      appRemoteCoordinator.isConnected()
+    }
+
+    AsyncFunction("appRemoteGetConnectionState") Coroutine { ->
+      appRemoteCoordinator.getConnectionState()
     }
   }
 }
