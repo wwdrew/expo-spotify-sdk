@@ -157,7 +157,7 @@ class ExpoSpotifySDKModule : Module() {
           AuthorizationResponse.Type.ERROR -> throw SpotifyAuthErrorException(
             response.error ?: "Spotify returned an unspecified error",
           )
-          AuthorizationResponse.Type.UNKNOWN, null -> throw UnknownSpotifyException(
+          AuthorizationResponse.Type.UNKNOWN -> throw UnknownSpotifyException(
             "Unknown Spotify authorization response type",
           )
         }

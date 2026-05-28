@@ -96,13 +96,50 @@ let _playerState: PlayerState | null = null;
 const _playerListeners = new Set<Listener>();
 let _playerStoreInitialised = false;
 
+function notifyPlayerListeners() {
+  _playerListeners.forEach((l) => l());
+}
+
+async function hydratePlayerState() {
+  try {
+    const state = await Player.getPlayerState();
+    _playerState = state;
+    notifyPlayerListeners();
+  } catch {
+    // Ignore one-shot hydration failures (e.g., connection races). Event stream
+    // updates still populate this store once available.
+  }
+}
+
 function initPlayerStore() {
   if (_playerStoreInitialised) return;
   _playerStoreInitialised = true;
 
+  // Hydrate immediately if the module is already connected before any consumer
+  // subscribes to player events.
+  AppRemote.getConnectionState().then((state) => {
+    if (state === "connected") {
+      void hydratePlayerState();
+    }
+  });
+
+  // Refresh the one-shot snapshot whenever App Remote reconnects, and clear on
+  // disconnect so stale "now playing" data is not retained.
+  AppRemote.addListener("connectionStateChange", ({ state }) => {
+    if (state === "connected") {
+      void hydratePlayerState();
+      return;
+    }
+
+    if (_playerState !== null) {
+      _playerState = null;
+      notifyPlayerListeners();
+    }
+  });
+
   Player.addListener("playerStateChange", (state) => {
     _playerState = state;
-    _playerListeners.forEach((l) => l());
+    notifyPlayerListeners();
   });
 }
 

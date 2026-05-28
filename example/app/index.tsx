@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   AppRemote,
   Auth,
@@ -64,6 +65,15 @@ interface SpotifyProfile {
 
 type Busy = "auth" | "refresh" | "profile" | null;
 type BrowseBusy = "root" | "children" | null;
+type TransportBusy = "toggle" | "next" | "previous" | null;
+const STORED_SESSION_KEY = "expo-spotify-example:session";
+
+function formatTime(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
 
 function formatExpiry(ms: number): string {
   const diff = ms - Date.now();
@@ -87,14 +97,23 @@ export default function HomeScreen() {
   const currentTrack = useCurrentTrack();
   const isPlaying = useIsPlaying();
   const playbackPositionMs = usePlaybackPosition();
+  const [positionAnchor, setPositionAnchor] = useState<{ positionMs: number; capturedAt: number }>({
+    positionMs: 0,
+    capturedAt: Date.now(),
+  });
+  const [clockTick, setClockTick] = useState(0);
 
   const [session, setSession] = useState<SpotifySession | null>(null);
+  const [hasHydratedSession, setHasHydratedSession] = useState(false);
+  const [isRestoredSession, setIsRestoredSession] = useState(false);
   const [profile, setProfile] = useState<SpotifyProfile | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
+  const [transportBusy, setTransportBusy] = useState<TransportBusy>(null);
   const [browseBusy, setBrowseBusy] = useState<BrowseBusy>(null);
   const [browseItems, setBrowseItems] = useState<ContentItem[]>([]);
   const [browseTrail, setBrowseTrail] = useState<string[]>([]);
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+  const [nowPlayingImageUri, setNowPlayingImageUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -105,6 +124,52 @@ export default function HomeScreen() {
     });
     return () => sub.remove();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(STORED_SESSION_KEY)
+      .then((raw) => {
+        if (!active || raw == null) return;
+        const parsed = JSON.parse(raw) as SpotifySession;
+        if (!parsed.accessToken || !parsed.expirationDate) return;
+        setSession(parsed);
+        setIsRestoredSession(true);
+      })
+      .catch(() => {
+        // Ignore persistence decode/read errors for this demo.
+      })
+      .finally(() => {
+        if (active) setHasHydratedSession(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setPositionAnchor({ positionMs: playbackPositionMs, capturedAt: Date.now() });
+  }, [playbackPositionMs, currentTrack?.uri, isPlaying]);
+
+  useEffect(() => {
+    if (connectionState !== "connected" || currentTrack == null || !isPlaying) {
+      return;
+    }
+    const timer = setInterval(() => setClockTick((v) => v + 1), 500);
+    return () => clearInterval(timer);
+  }, [connectionState, currentTrack?.uri, isPlaying]);
+
+  const displayPlaybackMs = useMemo(() => {
+    if (connectionState !== "connected" || currentTrack == null) return 0;
+    if (!isPlaying) return positionAnchor.positionMs;
+
+    const elapsedMs = Date.now() - positionAnchor.capturedAt;
+    const durationMs = currentTrack.duration ?? 0;
+    if (durationMs > 0) {
+      return Math.min(positionAnchor.positionMs + elapsedMs, durationMs);
+    }
+    return positionAnchor.positionMs + elapsedMs;
+  }, [clockTick, connectionState, currentTrack, isPlaying, positionAnchor]);
 
   const loadProfile = useCallback(async (token: string) => {
     setBusy("profile");
@@ -118,6 +183,10 @@ export default function HomeScreen() {
     }
   }, []);
 
+  const persistSession = useCallback(async (next: SpotifySession) => {
+    await AsyncStorage.setItem(STORED_SESSION_KEY, JSON.stringify(next));
+  }, []);
+
   async function handleConnect() {
     setError(null);
     setBusy("auth");
@@ -128,6 +197,8 @@ export default function HomeScreen() {
         tokenRefreshURL: TOKEN_REFRESH_URL,
       });
       setSession(s);
+      setIsRestoredSession(false);
+      await persistSession(s);
       await loadProfile(s.accessToken);
     } catch (e) {
       if (e instanceof SpotifyError && e.code === "USER_CANCELLED") return;
@@ -148,6 +219,8 @@ export default function HomeScreen() {
         scopes: session.scopes,
       });
       setSession(s);
+      setIsRestoredSession(false);
+      await persistSession(s);
       await loadProfile(s.accessToken);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -157,7 +230,14 @@ export default function HomeScreen() {
   }
 
   function handleDisconnect() {
+    void AppRemote.disconnect().catch(() => {
+      // Ignore remote disconnect failures for local teardown.
+    });
+    void AsyncStorage.removeItem(STORED_SESSION_KEY).catch(() => {
+      // Ignore storage cleanup errors for this demo.
+    });
     setSession(null);
+    setIsRestoredSession(false);
     setProfile(null);
     setBrowseItems([]);
     setBrowseTrail([]);
@@ -172,6 +252,93 @@ export default function HomeScreen() {
       await AppRemote.connect(session.accessToken);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  useEffect(() => {
+    if (!hasHydratedSession) return;
+    if (session == null) return;
+    if (connectionState !== "disconnected") return;
+
+    void AppRemote.connect(session.accessToken).catch(() => {
+      // Keep manual connect available if auto-reconnect fails.
+    });
+  }, [connectionState, hasHydratedSession, session]);
+
+  useEffect(() => {
+    if (session == null) return;
+    if (busy !== null) return;
+    if (session.expirationDate > Date.now()) return;
+    if (!session.refreshToken) return;
+
+    void handleRefresh();
+  }, [busy, handleRefresh, session]);
+
+  useEffect(() => {
+    if (session?.accessToken) {
+      void loadProfile(session.accessToken);
+    }
+  }, [loadProfile, session?.accessToken]);
+
+  useEffect(() => {
+    if (connectionState !== "connected" || currentTrack?.imageIdentifier == null) {
+      setNowPlayingImageUri(null);
+      return;
+    }
+
+    let active = true;
+    void Images.load(currentTrack, "large")
+      .then((image) => {
+        if (!active) return;
+        setNowPlayingImageUri(image.uri);
+      })
+      .catch(() => {
+        if (!active) return;
+        setNowPlayingImageUri(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [connectionState, currentTrack]);
+
+  async function handleTogglePlayback() {
+    setTransportBusy("toggle");
+    setError(null);
+    try {
+      if (isPlaying) {
+        await Player.pause();
+      } else {
+        await Player.resume();
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTransportBusy(null);
+    }
+  }
+
+  async function handleSkipPrevious() {
+    setTransportBusy("previous");
+    setError(null);
+    try {
+      await Player.skipPrevious();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTransportBusy(null);
+    }
+  }
+
+  async function handleSkipNext() {
+    setTransportBusy("next");
+    setError(null);
+    try {
+      await Player.skipNext();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTransportBusy(null);
     }
   }
 
@@ -281,6 +448,9 @@ export default function HomeScreen() {
             ) : null}
 
             <SessionCard session={session} />
+            {isRestoredSession && (
+              <Text style={s.restoreHint}>Session restored from local storage.</Text>
+            )}
 
             <ConnectionActions
               connectionState={connectionState}
@@ -291,8 +461,17 @@ export default function HomeScreen() {
             <NowPlayingCard
               isConnected={connectionState === "connected"}
               currentTrackName={currentTrack?.name ?? null}
+              currentTrackArtist={currentTrack?.artist?.name ?? null}
+              currentTrackAlbum={currentTrack?.album?.name ?? null}
+              currentTrackUri={currentTrack?.uri ?? null}
+              currentTrackImageUri={nowPlayingImageUri}
+              currentTrackDurationMs={currentTrack?.duration ?? 0}
               isPlaying={isPlaying}
-              playbackPositionMs={playbackPositionMs}
+              playbackPositionMs={displayPlaybackMs}
+              transportBusy={transportBusy}
+              onTogglePlayback={handleTogglePlayback}
+              onSkipPrevious={handleSkipPrevious}
+              onSkipNext={handleSkipNext}
             />
 
             <BrowseCard
@@ -404,13 +583,31 @@ function ConnectionActions({
 function NowPlayingCard({
   isConnected,
   currentTrackName,
+  currentTrackArtist,
+  currentTrackAlbum,
+  currentTrackUri,
+  currentTrackImageUri,
+  currentTrackDurationMs,
   isPlaying,
   playbackPositionMs,
+  transportBusy,
+  onTogglePlayback,
+  onSkipPrevious,
+  onSkipNext,
 }: {
   isConnected: boolean;
   currentTrackName: string | null;
+  currentTrackArtist: string | null;
+  currentTrackAlbum: string | null;
+  currentTrackUri: string | null;
+  currentTrackImageUri: string | null;
+  currentTrackDurationMs: number;
   isPlaying: boolean;
   playbackPositionMs: number;
+  transportBusy: TransportBusy;
+  onTogglePlayback: () => void;
+  onSkipPrevious: () => void;
+  onSkipNext: () => void;
 }) {
   return (
     <View style={s.card}>
@@ -421,10 +618,45 @@ function NowPlayingCard({
         <Text style={s.emptyHint}>No active track yet.</Text>
       ) : (
         <>
-          <Text style={s.profileName}>{currentTrackName}</Text>
-          <Text style={s.profileMeta}>
-            {isPlaying ? "Playing" : "Paused"} · {Math.floor(playbackPositionMs / 1000)}s
-          </Text>
+          <View style={s.nowPlayingRow}>
+            {currentTrackImageUri ? (
+              <Image source={{ uri: currentTrackImageUri }} style={s.nowPlayingArtwork} />
+            ) : (
+              <View style={[s.nowPlayingArtwork, s.nowPlayingArtworkPlaceholder]}>
+                <Text style={s.nowPlayingArtworkIcon}>♪</Text>
+              </View>
+            )}
+            <View style={s.nowPlayingMeta}>
+              <Text style={s.profileName} numberOfLines={1}>{currentTrackName}</Text>
+              {currentTrackArtist ? <Text style={s.profileMeta} numberOfLines={1}>{currentTrackArtist}</Text> : null}
+              {currentTrackAlbum ? <Text style={s.profileMeta} numberOfLines={1}>{currentTrackAlbum}</Text> : null}
+              <Text style={s.profileMeta}>
+                {isPlaying ? "Playing" : "Paused"} · {formatTime(playbackPositionMs)}
+                {currentTrackDurationMs > 0 ? ` / ${formatTime(currentTrackDurationMs)}` : ""}
+              </Text>
+              {currentTrackUri ? <Text style={s.nowPlayingUri} numberOfLines={1}>{currentTrackUri}</Text> : null}
+            </View>
+          </View>
+          <View style={s.transportRow}>
+            <TransportBtn
+              label={transportBusy === "previous" ? "…" : "Prev"}
+              onPress={onSkipPrevious}
+              disabled={transportBusy !== null}
+              variant="secondary"
+            />
+            <TransportBtn
+              label={transportBusy === "toggle" ? "…" : isPlaying ? "Pause" : "Play"}
+              onPress={onTogglePlayback}
+              disabled={transportBusy !== null}
+              variant="primary"
+            />
+            <TransportBtn
+              label={transportBusy === "next" ? "…" : "Next"}
+              onPress={onSkipNext}
+              disabled={transportBusy !== null}
+              variant="secondary"
+            />
+          </View>
         </>
       )}
     </View>
@@ -513,7 +745,43 @@ function Btn({
 
   return (
     <TouchableOpacity
-      style={[s.btn, { backgroundColor: bg, borderColor }, disabled && s.disabledOpacity]}
+      style={[
+        s.btn,
+        s.btnFull,
+        { backgroundColor: bg, borderColor },
+        disabled && s.disabledOpacity,
+      ]}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.8}
+    >
+      <Text style={[s.btnText, { color: textColor }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function TransportBtn({
+  label,
+  onPress,
+  disabled,
+  variant,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  variant: "primary" | "secondary";
+}) {
+  const bg = variant === "secondary" ? C.surface : C.green;
+  const borderColor = variant === "secondary" ? C.border : C.green;
+  const textColor = variant === "secondary" ? C.white : C.bg;
+
+  return (
+    <TouchableOpacity
+      style={[
+        s.transportBtn,
+        { backgroundColor: bg, borderColor },
+        disabled && s.disabledOpacity,
+      ]}
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.8}
@@ -576,7 +844,15 @@ const s = StyleSheet.create({
   rowLabel: { color: C.muted, fontSize: 13, flex: 1, marginRight: 8 },
   rowValue: { color: C.white, fontSize: 13, fontWeight: "500" },
   actions: { gap: 10, marginTop: 4 },
+  restoreHint: { color: C.muted, fontSize: 12, textAlign: "center", marginBottom: 10 },
   emptyHint: { color: C.muted, fontSize: 13, textAlign: "center", marginTop: 8 },
+  nowPlayingRow: { flexDirection: "row", width: "100%", alignItems: "center", gap: 12 },
+  nowPlayingArtwork: { width: 64, height: 64, borderRadius: 10, backgroundColor: "#2b2b2b" },
+  nowPlayingArtworkPlaceholder: { alignItems: "center", justifyContent: "center" },
+  nowPlayingArtworkIcon: { color: C.muted, fontSize: 24 },
+  nowPlayingMeta: { flex: 1, minWidth: 0, alignItems: "flex-start" },
+  nowPlayingUri: { color: C.muted, fontSize: 11, marginTop: 2 },
+  transportRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 10, width: "100%" },
   emptyBrowse: { alignItems: "center", justifyContent: "center", marginTop: 14, marginBottom: 8 },
   emptyBrowseIcon: { color: C.green, fontSize: 28, marginBottom: 4 },
   browseImage: { width: 90, height: 90, borderRadius: 8, marginTop: 12, marginBottom: 8 },
@@ -594,7 +870,15 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
-    width: "100%",
+  },
+  btnFull: { width: "100%" },
+  transportBtn: {
+    width: "31%",
+    borderRadius: 32,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
   },
   btnText: { fontWeight: "600", fontSize: 15 },
   disabledOpacity: { opacity: 0.5 },
