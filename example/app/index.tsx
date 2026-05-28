@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Linking,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -31,6 +32,7 @@ import {
 const DEV_HOST = Constants.expoConfig?.hostUri ?? "127.0.0.1:8081";
 const TOKEN_SWAP_URL = `http://${DEV_HOST}/swap`;
 const TOKEN_REFRESH_URL = `http://${DEV_HOST}/refresh`;
+const USE_TOKEN_SWAP = false;
 
 const SCOPES: SpotifyScope[] = [
   "app-remote-control",
@@ -89,6 +91,16 @@ function formatExpiry(ms: number): string {
   return hours > 0 ? `${hours}h ${mins % 60}m` : `${mins}m`;
 }
 
+function formatAccountTier(product: string | undefined): "Premium" | "Free" | "Unknown" {
+  if (product === "premium") return "Premium";
+  if (product === "free") return "Free";
+  return "Unknown";
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function fetchProfile(accessToken: string): Promise<SpotifyProfile | null> {
   const res = await fetch("https://api.spotify.com/v1/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -122,6 +134,8 @@ export default function HomeScreen() {
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [nowPlayingImageUri, setNowPlayingImageUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const accountTier = formatAccountTier(profile?.product);
+  const [hasAttemptedAutoReconnect, setHasAttemptedAutoReconnect] = useState(false);
 
   useEffect(() => {
     const sub = Auth.addListener("sessionChange", (event) => {
@@ -200,11 +214,16 @@ export default function HomeScreen() {
     try {
       const s = await Auth.authenticate({
         scopes: SCOPES,
-        tokenSwapURL: TOKEN_SWAP_URL,
-        tokenRefreshURL: TOKEN_REFRESH_URL,
+        ...(USE_TOKEN_SWAP
+          ? {
+              tokenSwapURL: TOKEN_SWAP_URL,
+              tokenRefreshURL: TOKEN_REFRESH_URL,
+            }
+          : {}),
       });
       setSession(s);
       setIsRestoredSession(false);
+      setHasAttemptedAutoReconnect(false);
       await persistSession(s);
       await loadProfile(s.accessToken);
     } catch (e) {
@@ -227,6 +246,7 @@ export default function HomeScreen() {
       });
       setSession(s);
       setIsRestoredSession(false);
+      setHasAttemptedAutoReconnect(false);
       await persistSession(s);
       await loadProfile(s.accessToken);
     } catch (e) {
@@ -245,6 +265,7 @@ export default function HomeScreen() {
     });
     setSession(null);
     setIsRestoredSession(false);
+    setHasAttemptedAutoReconnect(false);
     setProfile(null);
     setBrowseItems([]);
     setBrowseTrail([]);
@@ -255,22 +276,45 @@ export default function HomeScreen() {
   async function handleConnectRemote() {
     if (session == null) return;
     setError(null);
-    try {
-      await AppRemote.connect(session.accessToken);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+    const retryDelaysMs = [0, 600, 1200];
+
+    for (let i = 0; i < retryDelaysMs.length; i += 1) {
+      if (retryDelaysMs[i] > 0) {
+        await sleep(retryDelaysMs[i]);
+      }
+
+      // On iOS, nudge Spotify to foreground so its App Remote transport is ready.
+      if (i === 0) {
+        void Linking.openURL("spotify://").catch(() => {
+          // Ignore wake-up failures and still attempt a direct connect.
+        });
+        await sleep(450);
+      }
+
+      try {
+        await AppRemote.connect(session.accessToken);
+        return;
+      } catch (e) {
+        const isLastAttempt = i === retryDelaysMs.length - 1;
+        if (isLastAttempt) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
+      }
     }
   }
 
   useEffect(() => {
     if (!hasHydratedSession) return;
     if (session == null) return;
+    if (!isRestoredSession) return;
     if (connectionState !== "disconnected") return;
+    if (hasAttemptedAutoReconnect) return;
 
+    setHasAttemptedAutoReconnect(true);
     void AppRemote.connect(session.accessToken).catch(() => {
       // Keep manual connect available if auto-reconnect fails.
     });
-  }, [connectionState, hasHydratedSession, session]);
+  }, [connectionState, hasAttemptedAutoReconnect, hasHydratedSession, isRestoredSession, session]);
 
   useEffect(() => {
     if (session == null) return;
@@ -437,6 +481,11 @@ export default function HomeScreen() {
           </Text>
         </View>
         <Text style={s.connectionText}>{connectionLabel}</Text>
+        {session !== null && (
+          <Text style={s.connectionText}>
+            Account tier: {accountTier}
+          </Text>
+        )}
 
         {error !== null && (
           <View style={s.errorBox}>
