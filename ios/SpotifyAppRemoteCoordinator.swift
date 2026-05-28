@@ -252,6 +252,18 @@ actor SpotifyAppRemoteCoordinator {
   var onPlayerStateChange: (([String: Any]) -> Void)?
   var onCapabilitiesChange: (([String: Any]) -> Void)?
 
+  func setEventHandlers(
+    onConnectionStateChange: @escaping (String) -> Void,
+    onConnectionError: @escaping (String, String) -> Void,
+    onPlayerStateChange: @escaping ([String: Any]) -> Void,
+    onCapabilitiesChange: @escaping ([String: Any]) -> Void
+  ) {
+    self.onConnectionStateChange = onConnectionStateChange
+    self.onConnectionError = onConnectionError
+    self.onPlayerStateChange = onPlayerStateChange
+    self.onCapabilitiesChange = onCapabilitiesChange
+  }
+
   private init(sptConfiguration: SPTConfiguration) {
     self.sptConfiguration = sptConfiguration
     self.connectionBridge = SpotifyAppRemoteDelegateBridge()
@@ -358,13 +370,13 @@ actor SpotifyAppRemoteCoordinator {
   private func setupPlayerSubscription() {
     guard let playerAPI = appRemote?.playerAPI else { return }
     playerAPI.delegate = playerStateBridge
-    playerAPI.subscribeToPlayerState { _, _ in }
+    playerAPI.subscribe(toPlayerState: { _, _ in })
   }
 
   private func teardownPlayerSubscription() {
     guard let playerAPI = appRemote?.playerAPI else { return }
     playerAPI.delegate = nil
-    playerAPI.unsubscribeToPlayerState { _, _ in }
+    playerAPI.unsubscribe(toPlayerState: { _, _ in })
   }
 
   /// Called by `SpotifyPlayerStateDelegateBridge` when a state update arrives.
@@ -377,13 +389,13 @@ actor SpotifyAppRemoteCoordinator {
   private func setupCapabilitiesSubscription() {
     guard let userAPI = appRemote?.userAPI else { return }
     userAPI.delegate = userCapabilitiesBridge
-    userAPI.subscribeToCapabilityChanges { _, _ in }
+    userAPI.subscribe(toCapabilityChanges: { _, _ in })
   }
 
   private func teardownCapabilitiesSubscription() {
     guard let userAPI = appRemote?.userAPI else { return }
     userAPI.delegate = nil
-    userAPI.unsubscribeToCapabilityChanges { _, _ in }
+    userAPI.unsubscribe(toCapabilityChanges: { _, _ in })
   }
 
   /// Called by `SpotifyUserCapabilitiesDelegateBridge` on each capabilities update.
@@ -400,22 +412,22 @@ actor SpotifyAppRemoteCoordinator {
 
   func playerPause() async throws {
     let playerAPI = try requirePlayerAPI(callsite: "Player.pause")
-    try await voidPlayerCall(callsite: "Player.pause") { playerAPI.pause(callback: $0) }
+    try await voidPlayerCall(callsite: "Player.pause") { playerAPI.pause($0) }
   }
 
   func playerResume() async throws {
     let playerAPI = try requirePlayerAPI(callsite: "Player.resume")
-    try await voidPlayerCall(callsite: "Player.resume") { playerAPI.resume(callback: $0) }
+    try await voidPlayerCall(callsite: "Player.resume") { playerAPI.resume($0) }
   }
 
   func playerSkipNext() async throws {
     let playerAPI = try requirePlayerAPI(callsite: "Player.skipNext")
-    try await voidPlayerCall(callsite: "Player.skipNext") { playerAPI.skipToNext(callback: $0) }
+    try await voidPlayerCall(callsite: "Player.skipNext") { playerAPI.skip(toNext: $0) }
   }
 
   func playerSkipPrevious() async throws {
     let playerAPI = try requirePlayerAPI(callsite: "Player.skipPrevious")
-    try await voidPlayerCall(callsite: "Player.skipPrevious") { playerAPI.skipToPrevious(callback: $0) }
+    try await voidPlayerCall(callsite: "Player.skipPrevious") { playerAPI.skip(toPrevious: $0) }
   }
 
   func playerSeekTo(positionMs: Int) async throws {
@@ -531,7 +543,7 @@ actor SpotifyAppRemoteCoordinator {
   func userAddToLibrary(uri: String) async throws -> [String: Any] {
     let userAPI = try requireUserAPI(callsite: "User.addToLibrary")
     return try await withCheckedThrowingContinuation { cont in
-      userAPI.addItem(toLibraryWithURI: uri) { result, error in
+      userAPI.addItemToLibrary(withURI: uri) { result, error in
         if let error = error {
           cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.addToLibrary"))
         } else if let state = result as? any SPTAppRemoteLibraryState {
@@ -546,7 +558,7 @@ actor SpotifyAppRemoteCoordinator {
   func userRemoveFromLibrary(uri: String) async throws -> [String: Any] {
     let userAPI = try requireUserAPI(callsite: "User.removeFromLibrary")
     return try await withCheckedThrowingContinuation { cont in
-      userAPI.removeItem(fromLibraryWithURI: uri) { result, error in
+      userAPI.removeItemFromLibrary(withURI: uri) { result, error in
         if let error = error {
           cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.removeFromLibrary"))
         } else if let state = result as? any SPTAppRemoteLibraryState {
@@ -594,7 +606,7 @@ actor SpotifyAppRemoteCoordinator {
     }
 
     return try await withCheckedThrowingContinuation { cont in
-      contentAPI.fetchChildren(ofContentItem: contentItem) { result, error in
+      contentAPI.fetchChildren(of: contentItem, callback: { result, error in
         if let error = error {
           cont.resume(throwing: Self.normalizeContentError(error as NSError, callsite: "Content.getChildren"))
         } else if let children = result as? [any SPTAppRemoteContentItem] {
@@ -602,7 +614,7 @@ actor SpotifyAppRemoteCoordinator {
         } else {
           cont.resume(throwing: NativeContentError.unknown("Content.getChildren: unexpected result type"))
         }
-      }
+      })
     }
   }
 
@@ -700,11 +712,11 @@ actor SpotifyAppRemoteCoordinator {
       return .unknown(error.localizedDescription)
     }
     switch error.code {
-    case SPTAppRemoteConnectionTerminatedError:
+    case SPTAppRemoteErrorCode.connectionTerminatedError.rawValue:
       return .connectionLost("\(callsite): connection to Spotify app was terminated")
-    case SPTAppRemoteInvalidArgumentsError:
+    case SPTAppRemoteErrorCode.invalidArgumentsError.rawValue:
       return .invalidParameter(error.localizedDescription)
-    case SPTAppRemoteRequestFailedError:
+    case SPTAppRemoteErrorCode.requestFailedError.rawValue:
       let desc = error.localizedDescription.lowercased()
       if desc.contains("premium") {
         return .premiumRequired("\(callsite): Spotify Premium is required for on-demand playback")
@@ -724,12 +736,12 @@ actor SpotifyAppRemoteCoordinator {
     let options = state.playbackOptions
     return [
       "track": [
-        "uri": track.URI,
+        "uri": track.uri,
         "name": track.name,
         "imageIdentifier": track.imageIdentifier,
         "duration": track.duration,
-        "artist": ["name": track.artist.name, "uri": track.artist.URI],
-        "album": ["name": track.album.name, "uri": track.album.URI],
+        "artist": ["name": track.artist.name, "uri": track.artist.uri],
+        "album": ["name": track.album.name, "uri": track.album.uri],
         "isSaved": track.isSaved,
         "isEpisode": track.isEpisode,
         "isPodcast": track.isPodcast,
@@ -768,11 +780,11 @@ actor SpotifyAppRemoteCoordinator {
       return .unknown(error.localizedDescription)
     }
     switch error.code {
-    case SPTAppRemoteConnectionTerminatedError:
+    case SPTAppRemoteErrorCode.connectionTerminatedError.rawValue:
       return .connectionLost("\(callsite): connection to Spotify app was terminated")
-    case SPTAppRemoteInvalidArgumentsError:
+    case SPTAppRemoteErrorCode.invalidArgumentsError.rawValue:
       return .invalidURI("\(callsite): \(error.localizedDescription)")
-    case SPTAppRemoteRequestFailedError:
+    case SPTAppRemoteErrorCode.requestFailedError.rawValue:
       let desc = error.localizedDescription.lowercased()
       if desc.contains("not allowed") || desc.contains("restriction") {
         return .operationNotAllowed("\(callsite): \(error.localizedDescription)")
@@ -788,9 +800,9 @@ actor SpotifyAppRemoteCoordinator {
       return .unknown(error.localizedDescription)
     }
     switch error.code {
-    case SPTAppRemoteConnectionTerminatedError:
+    case SPTAppRemoteErrorCode.connectionTerminatedError.rawValue:
       return .connectionLost("\(callsite): connection to Spotify app was terminated")
-    case SPTAppRemoteRequestFailedError:
+    case SPTAppRemoteErrorCode.requestFailedError.rawValue:
       let desc = error.localizedDescription.lowercased()
       if desc.contains("not supported") || desc.contains("unsupported") {
         return .contentAPIUnavailable("\(callsite): content API is unavailable on this Spotify app version")
@@ -806,18 +818,18 @@ actor SpotifyAppRemoteCoordinator {
       return .unknown(error.localizedDescription)
     }
     switch error.code {
-    case SPTAppRemoteConnectionTerminatedError:
+    case SPTAppRemoteErrorCode.connectionTerminatedError.rawValue:
       return .notConnected("\(callsite): connection to Spotify app was terminated")
-    case SPTAppRemoteInvalidArgumentsError:
+    case SPTAppRemoteErrorCode.invalidArgumentsError.rawValue:
       return .invalidURI("\(callsite): invalid image identifier")
-    case SPTAppRemoteRequestFailedError:
+    case SPTAppRemoteErrorCode.requestFailedError.rawValue:
       return .imageLoadFailed("\(callsite): Spotify rejected image request")
     default:
       return .unknown(error.localizedDescription)
     }
   }
 
-  private static func mapContentType(_ type: String) -> SPTAppRemoteContentType {
+  private static func mapContentType(_ type: String) -> String {
     switch type {
     case "navigation": return SPTAppRemoteContentTypeNavigation
     case "fitness": return SPTAppRemoteContentTypeFitness
@@ -840,7 +852,7 @@ actor SpotifyAppRemoteCoordinator {
       "subtitle": item.subtitle as Any,
       "contentDescription": item.contentDescription as Any,
       "identifier": item.identifier,
-      "uri": item.URI,
+      "uri": item.uri,
       "imageIdentifier": item.imageIdentifier,
       "isAvailableOffline": item.isAvailableOffline,
       "isPlayable": item.isPlayable,
@@ -910,7 +922,7 @@ final class SpotifyPlayerStateDelegateBridge: NSObject, SPTAppRemotePlayerStateD
 final class SpotifyUserCapabilitiesDelegateBridge: NSObject, SPTAppRemoteUserAPIDelegate {
   weak var coordinator: SpotifyAppRemoteCoordinator?
 
-  func userAPI(_ userAPI: any SPTAppRemoteUserAPI, didReceiveCapabilities capabilities: any SPTAppRemoteUserCapabilities) {
+  func userAPI(_ userAPI: any SPTAppRemoteUserAPI, didReceive capabilities: any SPTAppRemoteUserCapabilities) {
     Task { await coordinator?.userCapabilitiesDidChange(capabilities) }
   }
 }

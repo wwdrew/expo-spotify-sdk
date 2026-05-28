@@ -37,6 +37,10 @@ Branch names follow the same `type/` prefix as conventional commits: `feat/*`, `
 
 `v1.0.0` adds App Remote support (transport, now-playing, hooks) on top of the existing Auth surface. It targets Expo SDK 55 (iOS 15.1+). See [ADR-0005](./docs/adr/0005-sdk-lane-versioning.md) for the lane versioning strategy.
 
+## v2.0.0 direction (SDK 56 lane only)
+
+`v2.0.0` is the Expo SDK 56+ line (`main` after Phase 7 in [V1_PLAN.md](./docs/V1_PLAN.md)). Besides the SDK / iOS floor bump, it ships **typed config plugins**: import from `@wwdrew/expo-spotify-sdk/plugin` in `app.config.ts` for autocomplete and type-checked `SpotifyConfig` options (Expo SDK 56 feature). The legacy string/tuple plugin entry (`["@wwdrew/expo-spotify-sdk", { … }]`) remains supported on v2; typed imports are **not** backported to the `v1` / SDK 55 branch.
+
 **Explicitly not in v1 (or any version):**
 
 - Spotify Web API wrappers (catalog, library reads, recently played, top items, recommendations, playlist mutations) — consumers call REST themselves with the access token. Spotify is tightening Web API access (see [Feb 2026 migration](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide)) and we don't want to be on the hook for that surface.
@@ -46,5 +50,5 @@ Branch names follow the same `type/` prefix as conventional commits: `feat/*`, `
 
 ## Related docs
 
-- [README.md](./README.md) — install and current (`v0.x`) Auth-only API.
+- [README.md](./README.md) — install, v1 namespaced API (Auth + App Remote), and migration from v0.x.
 - [docs/adr/](./docs/adr/) — architecture decision records.

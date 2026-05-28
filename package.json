@@ -1,7 +1,7 @@
 {
   "name": "@wwdrew/expo-spotify-sdk",
-  "version": "0.8.0",
-  "description": "Expo module wrapping the native Spotify iOS (v5) and Android (v4) SDKs for OAuth authentication",
+  "version": "1.0.0",
+  "description": "Expo module wrapping the native Spotify iOS (v5) and Android (v4) SDKs for OAuth authentication and App Remote playback control",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {

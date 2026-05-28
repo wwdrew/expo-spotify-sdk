@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.0.0](https://github.com/wwdrew/expo-spotify-sdk/compare/v0.8.0...v1.0.0) (2026-05-28)
+
+**Expo SDK 55 lane** — install `1.x` when your app targets Expo SDK 55 (iOS 15.1+). See [ADR-0005](docs/adr/0005-sdk-lane-versioning.md).
+
+### Features
+
+* **App Remote** — `AppRemote`, `Player`, `User`, `Content`, and `Images` namespaces with iOS and Android native bridges
+* **React hooks** — `useSession`, `useConnectionState`, `usePlayerState`, `useCurrentTrack`, `useIsPlaying`, `usePlaybackPosition`, `useCapabilities`, `useLibraryState`
+* **Namespaced Auth** — `Auth.authenticate`, `Auth.refresh`, `Auth.cancelPending`, `Auth.addListener("sessionChange")` (v0 top-level exports retained as deprecated shims)
+* **Error hierarchy** — per-namespace `*Error` subclasses (`AuthError`, `AppRemoteError`, `PlayerError`, …) with typed `*ErrorCode` unions
+* **`SpotifyURI`** — branded URI type and helpers
+
+### Documentation
+
+* README rewritten for v1 API, Premium requirements, error code reference, SDK lane mapping, and auto-connect pattern
+* [docs/QA_CHECKLIST.md](docs/QA_CHECKLIST.md), [docs/RELEASE.md](docs/RELEASE.md), [ATTRIBUTION.md](ATTRIBUTION.md)
+
 ## [0.8.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v0.7.1...expo-spotify-sdk-v0.8.0) (2026-05-07)
 
 
