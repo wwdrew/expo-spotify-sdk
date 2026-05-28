@@ -22,17 +22,22 @@ public class ExpoSpotifySDKModule: Module {
 
     // Wire up App Remote coordinator event callbacks once the module is alive.
     OnCreate {
-      SpotifyAppRemoteCoordinator.shared?.onConnectionStateChange = { [weak self] state in
-        self?.sendEvent(EVENT_CONNECTION_STATE_CHANGE, ["state": state])
-      }
-      SpotifyAppRemoteCoordinator.shared?.onConnectionError = { [weak self] code, message in
-        self?.sendEvent(EVENT_CONNECTION_ERROR, ["code": code, "message": message])
-      }
-      SpotifyAppRemoteCoordinator.shared?.onPlayerStateChange = { [weak self] stateMap in
-        self?.sendEvent(EVENT_PLAYER_STATE_CHANGE, stateMap)
-      }
-      SpotifyAppRemoteCoordinator.shared?.onCapabilitiesChange = { [weak self] capabilities in
-        self?.sendEvent(EVENT_CAPABILITIES_CHANGE, capabilities)
+      Task {
+        guard let coordinator = SpotifyAppRemoteCoordinator.shared else { return }
+        await coordinator.setEventHandlers(
+          onConnectionStateChange: { [weak self] state in
+            self?.sendEvent(EVENT_CONNECTION_STATE_CHANGE, ["state": state])
+          },
+          onConnectionError: { [weak self] code, message in
+            self?.sendEvent(EVENT_CONNECTION_ERROR, ["code": code, "message": message])
+          },
+          onPlayerStateChange: { [weak self] stateMap in
+            self?.sendEvent(EVENT_PLAYER_STATE_CHANGE, stateMap)
+          },
+          onCapabilitiesChange: { [weak self] capabilities in
+            self?.sendEvent(EVENT_CAPABILITIES_CHANGE, capabilities)
+          }
+        )
       }
     }
 
