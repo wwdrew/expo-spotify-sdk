@@ -3,6 +3,7 @@ package expo.modules.spotifysdk
 import android.content.Context
 import android.graphics.Bitmap
 import com.spotify.android.appremote.api.ConnectionParams
+import com.spotify.android.appremote.api.ContentApi
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
 import com.spotify.protocol.client.CallResult
@@ -245,7 +246,7 @@ class SpotifyAppRemoteCoordinator {
 
   suspend fun userGetCapabilities(): Map<String, Any?> {
     val capabilities = requireConnected("User.getCapabilities").userApi
-      .capabilities.awaitResult<Capabilities>("User.getCapabilities")
+      .capabilities.awaitUserResult("User.getCapabilities")
     return capabilitiesToMap(capabilities)
   }
 
@@ -271,8 +272,14 @@ class SpotifyAppRemoteCoordinator {
 
   suspend fun contentGetRecommendedContentItems(type: String): List<Map<String, Any?>> {
     val remote = appRemote?.takeIf { it.isConnected } ?: throw ContentNotConnectedException("Content.getRecommendedContentItems")
+    val mappedType = when (type) {
+      "navigation" -> ContentApi.ContentType.NAVIGATION
+      "fitness" -> ContentApi.ContentType.FITNESS
+      "gaming" -> ContentApi.ContentType.GAMING
+      else -> ContentApi.ContentType.DEFAULT
+    }
     val listItems = remote.contentApi
-      .getRecommendedContentItems(type).awaitContentResult("Content.getRecommendedContentItems")
+      .getRecommendedContentItems(mappedType).awaitContentResult("Content.getRecommendedContentItems")
     return listItems.items.map(::contentItemToMap)
   }
 
@@ -341,6 +348,15 @@ class SpotifyAppRemoteCoordinator {
       setResultCallback { result -> continuation.resume(result) }
       setErrorCallback { throwable ->
         continuation.resumeWithException(normalizeUserError(throwable, callsite, uri))
+      }
+    }
+  }
+
+  private suspend fun CallResult<Capabilities>.awaitUserResult(callsite: String): Capabilities {
+    return suspendCancellableCoroutine { continuation ->
+      setResultCallback { result -> continuation.resume(result) }
+      setErrorCallback { throwable ->
+        continuation.resumeWithException(normalizeUserError(throwable, callsite, ""))
       }
     }
   }
