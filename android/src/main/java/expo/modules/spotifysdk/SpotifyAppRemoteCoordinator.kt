@@ -3,6 +3,7 @@ package expo.modules.spotifysdk
 import android.content.Context
 import android.graphics.Bitmap
 import com.spotify.android.appremote.api.ConnectionParams
+import com.spotify.android.appremote.api.ContentApi
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
 import com.spotify.protocol.client.CallResult
@@ -15,7 +16,7 @@ import com.spotify.protocol.types.LibraryState
 import com.spotify.protocol.types.ListItem
 import com.spotify.protocol.types.ListItems
 import com.spotify.protocol.types.PlayerState
-import com.spotify.protocol.types.PodcastPlaybackSpeed
+import com.spotify.protocol.types.PlaybackSpeed
 import com.spotify.protocol.types.Repeat
 import expo.modules.kotlin.exception.CodedException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -41,13 +42,14 @@ import kotlin.math.abs
  * for API parity with iOS but is not forwarded to the Android SDK.
  */
 class SpotifyAppRemoteCoordinator {
-
   @Volatile private var appRemote: SpotifyAppRemote? = null
   @Volatile private var connectionState: String = "disconnected"
   private val connectMutex = Mutex()
 
   private var playerStateSubscription: Subscription<PlayerState>? = null
   private var capabilitiesSubscription: Subscription<Capabilities>? = null
+  @Volatile private var lastTrackUri: String? = null
+  @Volatile private var lastNonEmptyTrackName: String? = null
 
   /** Injected by the module to forward connection state-change events to JS. */
   var onConnectionStateChange: ((String) -> Unit)? = null
@@ -145,12 +147,13 @@ class SpotifyAppRemoteCoordinator {
   // MARK: — Player subscription
 
   private fun subscribeToPlayerState(remote: SpotifyAppRemote) {
-    playerStateSubscription = remote.playerApi
+    val subscription = remote.playerApi
       .subscribeToPlayerState()
       .setEventCallback { playerState ->
-        onPlayerStateChange?.invoke(playerStateToMap(playerState))
+        onPlayerStateChange?.invoke(playerStateToMap(playerState, this))
       }
-      .setErrorCallback { /* subscription errors are non-fatal; connection errors handled separately */ }
+    subscription.setErrorCallback { /* subscription errors are non-fatal; connection errors handled separately */ }
+    playerStateSubscription = subscription
   }
 
   private fun cancelPlayerStateSubscription() {
@@ -161,12 +164,13 @@ class SpotifyAppRemoteCoordinator {
   // MARK: — User capabilities subscription
 
   private fun subscribeToCapabilities(remote: SpotifyAppRemote) {
-    capabilitiesSubscription = remote.userApi
+    val subscription = remote.userApi
       .subscribeToCapabilities()
       .setEventCallback { capabilities ->
         onCapabilitiesChange?.invoke(capabilitiesToMap(capabilities))
       }
-      .setErrorCallback { /* subscription errors are non-fatal */ }
+    subscription.setErrorCallback { /* subscription errors are non-fatal */ }
+    capabilitiesSubscription = subscription
   }
 
   private fun cancelCapabilitiesSubscription() {
@@ -217,9 +221,14 @@ class SpotifyAppRemoteCoordinator {
   }
 
   suspend fun playerSetPodcastPlaybackSpeed(value: Float) {
-    val speed = PodcastPlaybackSpeed.entries.firstOrNull { abs(it.value - value) < 0.01f }
+    val speed = PlaybackSpeed.PodcastPlaybackSpeed.values().firstOrNull {
+      // Accept either decimal multipliers (0.5, 1.2, ...) or integer percentages (50, 120, ...).
+      abs((it.value / 100f) - value) < 0.01f || abs(it.value.toFloat() - value) < 0.01f
+    }
       ?: throw PlayerInvalidParameterException(
-        "Player.setPodcastPlaybackSpeed: unsupported speed $value. Available: ${PodcastPlaybackSpeed.entries.map { it.value }}"
+        "Player.setPodcastPlaybackSpeed: unsupported speed $value. Available: ${
+          PlaybackSpeed.PodcastPlaybackSpeed.values().joinToString { (it.value / 100f).toString() }
+        }"
       )
     requireConnected("Player.setPodcastPlaybackSpeed").playerApi
       .setPodcastPlaybackSpeed(speed).awaitVoid("Player.setPodcastPlaybackSpeed")
@@ -232,7 +241,7 @@ class SpotifyAppRemoteCoordinator {
   suspend fun playerGetPlayerState(): Map<String, Any?> {
     val state = requireConnected("Player.getPlayerState").playerApi
       .playerState.awaitResult<PlayerState>("Player.getPlayerState")
-    return playerStateToMap(state)
+    return playerStateToMap(state, this)
   }
 
   suspend fun playerGetCrossfadeState(): Map<String, Any?> {
@@ -245,7 +254,7 @@ class SpotifyAppRemoteCoordinator {
 
   suspend fun userGetCapabilities(): Map<String, Any?> {
     val capabilities = requireConnected("User.getCapabilities").userApi
-      .capabilities.awaitResult<Capabilities>("User.getCapabilities")
+      .capabilities.awaitUserResult("User.getCapabilities")
     return capabilitiesToMap(capabilities)
   }
 
@@ -256,14 +265,16 @@ class SpotifyAppRemoteCoordinator {
   }
 
   suspend fun userAddToLibrary(uri: String): Map<String, Any?> {
-    val state = requireConnected("User.addToLibrary").userApi
-      .addToLibrary(uri).awaitResult<LibraryState>("User.addToLibrary", uri)
+    val remote = requireConnected("User.addToLibrary")
+    remote.userApi.addToLibrary(uri).awaitVoid("User.addToLibrary")
+    val state = remote.userApi.getLibraryState(uri).awaitResult<LibraryState>("User.addToLibrary", uri)
     return libraryStateToMap(state)
   }
 
   suspend fun userRemoveFromLibrary(uri: String): Map<String, Any?> {
-    val state = requireConnected("User.removeFromLibrary").userApi
-      .removeFromLibrary(uri).awaitResult<LibraryState>("User.removeFromLibrary", uri)
+    val remote = requireConnected("User.removeFromLibrary")
+    remote.userApi.removeFromLibrary(uri).awaitVoid("User.removeFromLibrary")
+    val state = remote.userApi.getLibraryState(uri).awaitResult<LibraryState>("User.removeFromLibrary", uri)
     return libraryStateToMap(state)
   }
 
@@ -271,8 +282,14 @@ class SpotifyAppRemoteCoordinator {
 
   suspend fun contentGetRecommendedContentItems(type: String): List<Map<String, Any?>> {
     val remote = appRemote?.takeIf { it.isConnected } ?: throw ContentNotConnectedException("Content.getRecommendedContentItems")
+    val mappedType = when (type) {
+      "navigation" -> ContentApi.ContentType.NAVIGATION
+      "fitness" -> ContentApi.ContentType.FITNESS
+      "gaming" -> ContentApi.ContentType.DEFAULT
+      else -> ContentApi.ContentType.DEFAULT
+    }
     val listItems = remote.contentApi
-      .getRecommendedContentItems(type).awaitContentResult("Content.getRecommendedContentItems")
+      .getRecommendedContentItems(mappedType).awaitContentResult("Content.getRecommendedContentItems")
     return listItems.items.map(::contentItemToMap)
   }
 
@@ -341,6 +358,15 @@ class SpotifyAppRemoteCoordinator {
       setResultCallback { result -> continuation.resume(result) }
       setErrorCallback { throwable ->
         continuation.resumeWithException(normalizeUserError(throwable, callsite, uri))
+      }
+    }
+  }
+
+  private suspend fun CallResult<Capabilities>.awaitUserResult(callsite: String): Capabilities {
+    return suspendCancellableCoroutine { continuation ->
+      setResultCallback { result -> continuation.resume(result) }
+      setErrorCallback { throwable ->
+        continuation.resumeWithException(normalizeUserError(throwable, callsite, ""))
       }
     }
   }
@@ -432,14 +458,31 @@ class SpotifyAppRemoteCoordinator {
   }
 
   companion object {
-    private fun playerStateToMap(state: PlayerState): Map<String, Any?> {
+    private fun playerStateToMap(
+      state: PlayerState,
+      coordinator: SpotifyAppRemoteCoordinator,
+    ): Map<String, Any?> {
       val track = state.track
+      val trackUri = track?.uri ?: ""
+      val rawTrackName = track?.name?.trim().orEmpty()
+      val sameTrackAsPrevious = coordinator.lastTrackUri == trackUri && trackUri.isNotBlank()
+      val resolvedTrackName = when {
+        rawTrackName.isNotBlank() -> {
+          coordinator.lastTrackUri = trackUri
+          coordinator.lastNonEmptyTrackName = rawTrackName
+          rawTrackName
+        }
+        sameTrackAsPrevious && !coordinator.lastNonEmptyTrackName.isNullOrBlank() ->
+          coordinator.lastNonEmptyTrackName!!
+        else -> rawTrackName
+      }
+
       val options = state.playbackOptions
       val restrictions = state.playbackRestrictions
       return mapOf(
         "track" to mapOf(
-          "uri" to (track?.uri ?: ""),
-          "name" to (track?.name ?: ""),
+          "uri" to trackUri,
+          "name" to resolvedTrackName,
           "imageIdentifier" to (track?.imageUri?.raw ?: ""),
           "duration" to (track?.duration ?: 0L),
           "artist" to mapOf(
@@ -450,28 +493,28 @@ class SpotifyAppRemoteCoordinator {
             "name" to (track?.album?.name ?: ""),
             "uri" to (track?.album?.uri ?: ""),
           ),
-          "isSaved" to (track?.isSaved ?: false),
           "isEpisode" to (track?.isEpisode ?: false),
           "isPodcast" to (track?.isPodcast ?: false),
-          "isAdvertisement" to (track?.isAd ?: false),
+          "isSaved" to false,
+          "isAdvertisement" to false,
         ),
         "playbackPosition" to state.playbackPosition,
         "playbackSpeed" to state.playbackSpeed,
         "isPaused" to state.isPaused,
         "playbackOptions" to mapOf(
           "isShuffling" to (options?.isShuffling ?: false),
-          "repeatMode" to (options?.repeatMode?.ordinal ?: 0),
+          "repeatMode" to (options?.repeatMode ?: Repeat.OFF),
         ),
         "playbackRestrictions" to mapOf(
           "canSkipNext" to (restrictions?.canSkipNext ?: false),
-          "canSkipPrevious" to (restrictions?.canSkipPrevious ?: false),
+          "canSkipPrevious" to (restrictions?.canSkipPrev ?: false),
           "canRepeatTrack" to (restrictions?.canRepeatTrack ?: false),
           "canRepeatContext" to (restrictions?.canRepeatContext ?: false),
           "canToggleShuffle" to (restrictions?.canToggleShuffle ?: false),
           "canSeek" to (restrictions?.canSeek ?: false),
         ),
-        "contextTitle" to (state.contextTitle ?: ""),
-        "contextUri" to (state.contextUri ?: ""),
+        "contextTitle" to "",
+        "contextUri" to "",
       )
     }
 
