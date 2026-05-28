@@ -71,6 +71,7 @@ The branch cut and SDK 56 migration happen **after** all v1.0.0 feature work is 
 | `release-please-config.json` on `v1` configured to release `v1.x.y` from `v1` branch | `v1` | Immediately after branch cut |
 | Bump `main` to SDK 56: `ios/ExpoSpotifySDK.podspec` → `:ios, '16.4'`; `package.json` dev deps → `^56`; `example/` pinned to SDK 56 | `main` | Phase 7 |
 | Bump `package.json` version on `main` to `2.0.0` | `main` | Phase 7 |
+| Export typed config plugin at `@wwdrew/expo-spotify-sdk/plugin` (SDK 56 pattern) | `main` only | Phase 7 — not on `v1` |
 | README on both branches documents the lane → version mapping prominently | both | Phases 6 (main / v1) and 7 (main) |
 | CHANGELOG entries reference the lane (`v1.0.0 — Expo SDK 55 lane`, `v2.0.0 — Expo SDK 56 lane`) | both | At release |
 | GitHub Actions runs per branch with the appropriate Xcode / Android SDK matrix | `.github/workflows/` per branch | Phase 7 (main migration); pre-existing on `v1` |

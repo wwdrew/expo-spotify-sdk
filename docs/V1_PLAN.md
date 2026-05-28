@@ -2,7 +2,7 @@
 
 Plan for getting `@wwdrew/expo-spotify-sdk` from its current auth-only `0.8.x` state to a feature-complete native-SDK wrapper covering both halves of Spotify's mobile SDKs: the **Auth SDK** (today) and the **App Remote SDK** (new).
 
-**Status:** Living document — update as features land. Source of truth for per-method status: the [Coverage matrix](#5-coverage-matrix).
+**Status:** Phase 6 complete on `main` (SDK 55). Source of truth for per-method status: the [Coverage matrix](#5-coverage-matrix). Remaining: manual QA sign-off, tag `v1.0.0`, cut `v1` branch — see [RELEASE.md](./RELEASE.md).
 
 **Related:** [CONTEXT.md](../CONTEXT.md) (terminology), [ADR-0004](./adr/0004-no-web-api-wrapper.md), [ADR-0005](./adr/0005-sdk-lane-versioning.md), [ADR-0006](./adr/0006-namespaced-api-and-app-remote-scope.md).
 
@@ -27,12 +27,12 @@ Plan for getting `@wwdrew/expo-spotify-sdk` from its current auth-only `0.8.x` s
 
 ## 2. What exists today (baseline)
 
-**Current release:** `0.8.0` (Expo SDK 55).
+**Current release (pending tag):** `1.0.0` on `main` (Expo SDK 55). npm may still show `0.8.0` until release.
 
-| Domain | Public API | iOS | Android | Web |
-| --- | --- | --- | --- | --- |
-| Auth | `isAvailable`, `authenticateAsync`, `cancelPendingAuthAsync`, `refreshSessionAsync`, `addSessionChangeListener` | ✅ | ✅ | — (no-op) |
-| App Remote | — | ❌ | ❌ | — |
+| Domain | Public API | iOS | Android |
+| --- | --- | --- | --- |
+| Auth | `Auth.*` (+ deprecated v0 shims) | ✅ | ✅ |
+| App Remote | `AppRemote`, `Player`, `User`, `Content`, `Images`, hooks | ✅ | ✅ |
 
 **Public API shape:** Flat top-level functions exported from `src/index.ts`. Single `SpotifyError` class with `SpotifyErrorCode` union of 9 codes.
 
@@ -202,70 +202,70 @@ const SpotifyURI = {
 
 Legend: ✅ shipped · 🟡 in progress · ⬜ not started · ➖ N/A on this platform
 
-### 5.1 Auth (already shipped pre-v1)
+### 5.1 Auth
 
 | Method | iOS | Android |
 | --- | --- | --- |
-| `Auth.isAvailable()` | ⬜ (rename of `isAvailable`) | ⬜ |
-| `Auth.authenticate()` | ⬜ (rename of `authenticateAsync`) | ⬜ |
-| `Auth.refresh()` | ⬜ | ⬜ |
-| `Auth.cancelPending()` | ⬜ | ➖ (no-op) |
-| `Auth.addListener("sessionChange", ...)` | ⬜ | ⬜ |
+| `Auth.isAvailable()` | ✅ | ✅ |
+| `Auth.authenticate()` | ✅ | ✅ |
+| `Auth.refresh()` | ✅ | ✅ |
+| `Auth.cancelPending()` | ✅ | ➖ (no-op) |
+| `Auth.addListener("sessionChange", ...)` | ✅ | ✅ |
 
 ### 5.2 AppRemote
 
 | Method | iOS | Android |
 | --- | --- | --- |
-| `AppRemote.connect()` | ⬜ | ⬜ |
-| `AppRemote.disconnect()` | ⬜ | ⬜ |
-| `AppRemote.isConnected()` | ⬜ | ⬜ |
-| `AppRemote.getConnectionState()` | ⬜ | ⬜ |
-| `addListener("connectionStateChange", ...)` | ⬜ | ⬜ |
-| `addListener("connectionError", ...)` | ⬜ | ⬜ |
+| `AppRemote.connect()` | ✅ | ✅ |
+| `AppRemote.disconnect()` | ✅ | ✅ |
+| `AppRemote.isConnected()` | ✅ | ✅ |
+| `AppRemote.getConnectionState()` | ✅ | ✅ |
+| `addListener("connectionStateChange", ...)` | ✅ | ✅ |
+| `addListener("connectionError", ...)` | ✅ | ✅ |
 
 ### 5.3 Player
 
 | Method | iOS | Android |
 | --- | --- | --- |
-| `Player.play()` | ⬜ | ⬜ |
-| `Player.pause()` / `resume()` | ⬜ | ⬜ |
-| `Player.skipNext()` / `skipPrevious()` | ⬜ | ⬜ |
-| `Player.seekTo()` | ⬜ | ⬜ |
-| `Player.setShuffle()` / `setRepeatMode()` | ⬜ | ⬜ |
-| `Player.setPodcastPlaybackSpeed()` | ⬜ | ⬜ |
-| `Player.queue()` | ⬜ | ⬜ |
-| `Player.getPlayerState()` | ⬜ | ⬜ |
-| `Player.getCrossfadeState()` | ⬜ | ⬜ |
-| `addListener("playerStateChange", ...)` | ⬜ | ⬜ |
+| `Player.play()` | ✅ | ✅ |
+| `Player.pause()` / `resume()` | ✅ | ✅ |
+| `Player.skipNext()` / `skipPrevious()` | ✅ | ✅ |
+| `Player.seekTo()` | ✅ | ✅ |
+| `Player.setShuffle()` / `setRepeatMode()` | ✅ | ✅ |
+| `Player.setPodcastPlaybackSpeed()` | ✅ | ✅ |
+| `Player.queue()` | ✅ | ✅ |
+| `Player.getPlayerState()` | ✅ | ✅ |
+| `Player.getCrossfadeState()` | ✅ | ✅ |
+| `addListener("playerStateChange", ...)` | ✅ | ✅ |
 
 ### 5.4 User
 
 | Method | iOS | Android |
 | --- | --- | --- |
-| `User.getCapabilities()` | ⬜ | ⬜ |
-| `User.getLibraryState()` | ⬜ | ⬜ |
-| `User.addToLibrary()` / `removeFromLibrary()` | ⬜ | ⬜ |
-| `addListener("capabilitiesChange", ...)` | ⬜ | ⬜ |
-| `addLibraryStateListener(uri, ...)` | ⬜ | ⬜ |
+| `User.getCapabilities()` | ✅ | ✅ |
+| `User.getLibraryState()` | ✅ | ✅ |
+| `User.addToLibrary()` / `removeFromLibrary()` | ✅ | ✅ |
+| `addListener("capabilitiesChange", ...)` | ✅ | ✅ |
+| `addLibraryStateListener(uri, ...)` | ✅ | ✅ |
 
 ### 5.5 Content
 
 | Method | iOS | Android |
 | --- | --- | --- |
-| `Content.getRecommendedContentItems()` | ⬜ | ⬜ |
-| `Content.getChildren()` | ⬜ | ⬜ |
+| `Content.getRecommendedContentItems()` | ✅ | ✅ |
+| `Content.getChildren()` | ✅ | ✅ |
 
 ### 5.6 Images
 
 | Method | iOS | Android |
 | --- | --- | --- |
-| `Images.load()` | ⬜ | ⬜ |
+| `Images.load()` | ✅ | ✅ |
 
 ### 5.7 Hooks (TypeScript-only; no native work)
 
 | Hook | Status |
 | --- | --- |
-| All hooks listed in §4 | ⬜ |
+| All hooks listed in §4 | ✅ |
 
 ---
 
@@ -348,16 +348,16 @@ Ordered for vertical slices (each phase produces something demoable on device) a
 
 ### Phase 6 — v1.0.0 hardening (still on `main`, still on SDK 55)
 
-| Task | Deliverable |
-| --- | --- |
-| Error normalization audit | Every native code path that can fail returns the right `*Error` subclass and code |
-| README rewrite | New API surface, migration table from v0.x, curried-wrapper recipe for auto-connect, Premium / capabilities doc, error code reference, lane → version mapping (v1.x → SDK 55, v2.x → SDK 56+) |
-| Documentation of every error code | Per `*ErrorCode` enum entry, what causes it, what to do |
-| Example app polish | Loading states, error UI for every error code, accessibility |
-| Cross-platform parity audit | All methods behave the same on iOS and Android (modulo documented platform differences) |
-| Manual QA on real devices, Premium and Free accounts | Sign-off checklist |
-| Tag `v1.0.0` on `main` | Release on the SDK 55 toolchain |
-| Cut `v1` branch from the `v1.0.0` tag | Long-lived SDK 55 maintenance branch starts here. Configure `release-please` to release `v1.x.y` from this branch. |
+| Task | Deliverable | Status |
+| --- | --- | --- |
+| Error normalization audit | Every native code path that can fail returns the right `*Error` subclass and code | ✅ |
+| README rewrite | New API surface, migration table, auto-connect hook recipe, Premium doc, error reference, SDK lanes | ✅ |
+| Documentation of every error code | Per `*ErrorCode` entry: when + what to do in README | ✅ |
+| Example app polish | Save button gated by capabilities, structured error UI, a11y labels | ✅ |
+| Cross-platform parity audit | Documented in README § Platform differences | ✅ |
+| Manual QA on real devices | [QA_CHECKLIST.md](./QA_CHECKLIST.md) | ⬜ maintainer |
+| Tag `v1.0.0` on `main` | [RELEASE.md](./RELEASE.md) | ⬜ maintainer |
+| Cut `v1` branch from tag | `release-please` → `v1.x.y` from `v1` | ⬜ maintainer |
 
 **Exit:** `v1.0.0` is shipped on npm, the `v1` branch exists and is set up for `v1.x.y` releases. `main` is now free to migrate to SDK 56 in Phase 7.
 
@@ -370,6 +370,7 @@ Ordered for vertical slices (each phase produces something demoable on device) a
 | Bump `example/` Expo SDK to 56 | New dev build / prebuild; verify on both platforms |
 | Bump Android `compileSdkVersion` / `targetSdkVersion` if Expo SDK 56 requires (currently 35; verify against SDK 56) | |
 | Adopt SDK 56–only API surface where it pays off | Optional: new JSI layer for iOS Swift modules, Kotlin compiler plugin attributes. Not required for parity — only where they materially improve perf or DX. |
+| **Typed config plugin** (`@wwdrew/expo-spotify-sdk/plugin`) | **Required for v2.0.0.** Export a typed helper (Expo SDK 56 pattern: default export returns `[@wwdrew/expo-spotify-sdk, SpotifyConfig]` for use in `app.config.ts`). String/tuple syntax via `app.plugin.js` stays supported for backward compatibility. **Do not backport to `v1` / SDK 55** — typed plugin imports are SDK 56–only. |
 | Update README on `main` to say "v2.x for SDK 56+; see v1.x for SDK 55" | Lane → version mapping |
 | Bump `package.json` version → `2.0.0` | |
 | Run full QA pass on SDK 56 toolchain | Same checklist as Phase 6, this time on SDK 56 |
@@ -462,13 +463,14 @@ The `SpotifySession` shape, `SpotifyScope`, `SpotifyConfig`, `SpotifyRefreshConf
 
 All required before tagging either major:
 
-- [ ] Phase 0–6 complete on the relevant branch.
-- [ ] Coverage matrix: every method `✅` on iOS and Android.
-- [ ] Example app demonstrates Auth, AppRemote connect/disconnect, Player transport, now-playing state via hooks, User save button gated by capabilities, Content browse with images.
-- [ ] README rewritten with new API + migration table + curried-wrapper recipe.
-- [ ] Every error code has documented "when" and "what to do" in the README.
-- [ ] [ATTRIBUTION.md or equivalent] reflects no Web API wrapping intent.
-- [ ] Manual QA on real devices, Premium and Free accounts.
+- [x] Phase 0–6 code/docs complete on `main` (SDK 55).
+- [x] Coverage matrix: every method `✅` on iOS and Android.
+- [x] Example app demonstrates Auth, AppRemote, Player transport, hooks, User save gated by capabilities, Content browse with images.
+- [x] README rewritten with new API + migration table + auto-connect recipe.
+- [x] Every error code has documented "when" and "what to do" in the README.
+- [x] [ATTRIBUTION.md](../ATTRIBUTION.md) reflects no Web API wrapping intent.
+- [ ] Manual QA on real devices, Premium and Free accounts ([checklist](./QA_CHECKLIST.md)).
+- [ ] Tag `v1.0.0` and cut `v1` branch ([release steps](./RELEASE.md)).
 
 **Semver after v1 / v2:**
 
