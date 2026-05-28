@@ -71,7 +71,7 @@ actor SpotifyAuthCoordinator {
   static let shared: SpotifyAuthCoordinator? = SpotifyAuthCoordinator.create()
 
   private let sptConfiguration: SPTConfiguration
-  private let sessionManager: SPTSessionManager
+  nonisolated(unsafe) private let sessionManager: SPTSessionManager
   private let bridge: SpotifySessionDelegateBridge
   private var pending: CheckedContinuation<SPTSession, Error>?
 
@@ -105,7 +105,15 @@ actor SpotifyAuthCoordinator {
   /// Synchronous URL-handler dispatcher used by the AppDelegate / SceneDelegate
   /// subscribers to forward redirects to the SPTSessionManager.
   nonisolated func handleOpenURL(_ url: URL, options: [UIApplication.OpenURLOptionsKey: Any]) -> Bool {
-    sessionManager.application(UIApplication.shared, open: url, options: options)
+    let openSession: () -> Bool = { [self] in
+      MainActor.assumeIsolated {
+        sessionManager.application(UIApplication.shared, open: url, options: options)
+      }
+    }
+    if Thread.isMainThread {
+      return openSession()
+    }
+    return DispatchQueue.main.sync(execute: openSession)
   }
 
   func authenticate(

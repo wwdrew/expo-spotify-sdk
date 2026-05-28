@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   AppRemote,
   Auth,
+  AuthError,
   Content,
   type ContentItem,
   Images,
@@ -11,26 +12,32 @@ import {
   type SpotifyScope,
   type SpotifySession,
   SpotifyURI,
+  type SpotifyURIType,
+  User,
+  useCapabilities,
   useConnectionState,
   useCurrentTrack,
   useIsPlaying,
+  useLibraryState,
   usePlaybackPosition,
 } from "expo-spotify-sdk";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  SafeAreaView,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const DEV_HOST = Constants.expoConfig?.hostUri ?? "127.0.0.1:8081";
 const TOKEN_SWAP_URL = `http://${DEV_HOST}/swap`;
 const TOKEN_REFRESH_URL = `http://${DEV_HOST}/refresh`;
+const USE_TOKEN_SWAP = false;
 
 const SCOPES: SpotifyScope[] = [
   "app-remote-control",
@@ -41,6 +48,8 @@ const SCOPES: SpotifyScope[] = [
   "user-top-read",
   "user-read-recently-played",
   "playlist-read-private",
+  "user-library-read",
+  "user-library-modify",
   "streaming",
 ];
 
@@ -89,6 +98,24 @@ function formatExpiry(ms: number): string {
   return hours > 0 ? `${hours}h ${mins % 60}m` : `${mins}m`;
 }
 
+function formatAccountTier(product: string | undefined): "Premium" | "Free" | "Unknown" {
+  if (product === "premium") return "Premium";
+  if (product === "free") return "Free";
+  return "Unknown";
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function formatSpotifyError(e: unknown): string {
+  if (e instanceof SpotifyError) {
+    return `[${e.namespace}] ${e.code}: ${e.message}`;
+  }
+  if (e instanceof Error) return e.message;
+  return String(e);
+}
+
 async function fetchProfile(accessToken: string): Promise<SpotifyProfile | null> {
   const res = await fetch("https://api.spotify.com/v1/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -122,6 +149,8 @@ export default function HomeScreen() {
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [nowPlayingImageUri, setNowPlayingImageUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const accountTier = formatAccountTier(profile?.product);
+  const [hasAttemptedAutoReconnect, setHasAttemptedAutoReconnect] = useState(false);
 
   useEffect(() => {
     const sub = Auth.addListener("sessionChange", (event) => {
@@ -200,16 +229,21 @@ export default function HomeScreen() {
     try {
       const s = await Auth.authenticate({
         scopes: SCOPES,
-        tokenSwapURL: TOKEN_SWAP_URL,
-        tokenRefreshURL: TOKEN_REFRESH_URL,
+        ...(USE_TOKEN_SWAP
+          ? {
+              tokenSwapURL: TOKEN_SWAP_URL,
+              tokenRefreshURL: TOKEN_REFRESH_URL,
+            }
+          : {}),
       });
       setSession(s);
       setIsRestoredSession(false);
+      setHasAttemptedAutoReconnect(false);
       await persistSession(s);
       await loadProfile(s.accessToken);
     } catch (e) {
-      if (e instanceof SpotifyError && e.code === "USER_CANCELLED") return;
-      setError(e instanceof Error ? e.message : String(e));
+      if (e instanceof AuthError && e.code === "USER_CANCELLED") return;
+      setError(formatSpotifyError(e));
     } finally {
       setBusy(null);
     }
@@ -227,10 +261,11 @@ export default function HomeScreen() {
       });
       setSession(s);
       setIsRestoredSession(false);
+      setHasAttemptedAutoReconnect(false);
       await persistSession(s);
       await loadProfile(s.accessToken);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatSpotifyError(e));
     } finally {
       setBusy(null);
     }
@@ -245,6 +280,7 @@ export default function HomeScreen() {
     });
     setSession(null);
     setIsRestoredSession(false);
+    setHasAttemptedAutoReconnect(false);
     setProfile(null);
     setBrowseItems([]);
     setBrowseTrail([]);
@@ -255,22 +291,45 @@ export default function HomeScreen() {
   async function handleConnectRemote() {
     if (session == null) return;
     setError(null);
-    try {
-      await AppRemote.connect(session.accessToken);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+    const retryDelaysMs = [0, 600, 1200];
+
+    for (let i = 0; i < retryDelaysMs.length; i += 1) {
+      if (retryDelaysMs[i] > 0) {
+        await sleep(retryDelaysMs[i]);
+      }
+
+      // On iOS, nudge Spotify to foreground so its App Remote transport is ready.
+      if (i === 0) {
+        void Linking.openURL("spotify://").catch(() => {
+          // Ignore wake-up failures and still attempt a direct connect.
+        });
+        await sleep(450);
+      }
+
+      try {
+        await AppRemote.connect(session.accessToken);
+        return;
+      } catch (e) {
+        const isLastAttempt = i === retryDelaysMs.length - 1;
+        if (isLastAttempt) {
+          setError(formatSpotifyError(e));
+        }
+      }
     }
   }
 
   useEffect(() => {
     if (!hasHydratedSession) return;
     if (session == null) return;
+    if (!isRestoredSession) return;
     if (connectionState !== "disconnected") return;
+    if (hasAttemptedAutoReconnect) return;
 
+    setHasAttemptedAutoReconnect(true);
     void AppRemote.connect(session.accessToken).catch(() => {
       // Keep manual connect available if auto-reconnect fails.
     });
-  }, [connectionState, hasHydratedSession, session]);
+  }, [connectionState, hasAttemptedAutoReconnect, hasHydratedSession, isRestoredSession, session]);
 
   useEffect(() => {
     if (session == null) return;
@@ -319,7 +378,7 @@ export default function HomeScreen() {
         await Player.resume();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatSpotifyError(e));
     } finally {
       setTransportBusy(null);
     }
@@ -331,7 +390,7 @@ export default function HomeScreen() {
     try {
       await Player.skipPrevious();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatSpotifyError(e));
     } finally {
       setTransportBusy(null);
     }
@@ -343,7 +402,7 @@ export default function HomeScreen() {
     try {
       await Player.skipNext();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatSpotifyError(e));
     } finally {
       setTransportBusy(null);
     }
@@ -354,7 +413,7 @@ export default function HomeScreen() {
     try {
       await AppRemote.disconnect();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatSpotifyError(e));
     }
   }
 
@@ -366,7 +425,7 @@ export default function HomeScreen() {
       setBrowseItems(items);
       setBrowseTrail(["Recommended"]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(formatSpotifyError(e));
     } finally {
       setBrowseBusy(null);
     }
@@ -390,7 +449,7 @@ export default function HomeScreen() {
       try {
         await Player.play(SpotifyURI.unsafe(item.uri));
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(formatSpotifyError(e));
       }
       return;
     }
@@ -402,7 +461,7 @@ export default function HomeScreen() {
         setBrowseItems(children);
         setBrowseTrail((prev) => [...prev, item.title ?? "Untitled"]);
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(formatSpotifyError(e));
       } finally {
         setBrowseBusy(null);
       }
@@ -437,6 +496,11 @@ export default function HomeScreen() {
           </Text>
         </View>
         <Text style={s.connectionText}>{connectionLabel}</Text>
+        {session !== null && (
+          <Text style={s.connectionText}>
+            Account tier: {accountTier}
+          </Text>
+        )}
 
         {error !== null && (
           <View style={s.errorBox}>
@@ -479,6 +543,7 @@ export default function HomeScreen() {
               onTogglePlayback={handleTogglePlayback}
               onSkipPrevious={handleSkipPrevious}
               onSkipNext={handleSkipNext}
+              onPlaybackError={setError}
             />
 
             <BrowseCard
@@ -521,6 +586,8 @@ function ConnectButton({ onPress, loading }: { onPress: () => void; loading: boo
       onPress={onPress}
       disabled={loading}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel="Connect with Spotify"
     >
       {loading ? <ActivityIndicator color={C.bg} /> : <Text style={s.connectBtnText}>Connect with Spotify</Text>}
     </TouchableOpacity>
@@ -587,6 +654,57 @@ function ConnectionActions({
   );
 }
 
+function LibrarySaveButton({
+  uri,
+  onError,
+}: {
+  uri: SpotifyURIType;
+  onError: (message: string) => void;
+}) {
+  const capabilities = useCapabilities();
+  const libraryState = useLibraryState(uri);
+  const [busy, setBusy] = useState(false);
+
+  const canSave = capabilities?.canPlayOnDemand === true && libraryState?.canAdd !== false;
+  const isSaved = libraryState?.isAdded === true;
+
+  async function toggleSave() {
+    if (!canSave || busy) return;
+    setBusy(true);
+    try {
+      if (isSaved) {
+        await User.removeFromLibrary(uri);
+      } else {
+        await User.addToLibrary(uri);
+      }
+    } catch (e) {
+      onError(formatSpotifyError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Btn
+      label={
+        busy
+          ? "Saving…"
+          : !capabilities
+            ? "Loading capabilities…"
+            : !capabilities.canPlayOnDemand
+              ? "Save (Premium required)"
+              : isSaved
+                ? "Saved — tap to remove"
+                : "Save to library"
+      }
+      onPress={toggleSave}
+      disabled={busy || !canSave}
+      variant="secondary"
+      accessibilityLabel={isSaved ? "Remove from library" : "Save to library"}
+    />
+  );
+}
+
 function NowPlayingCard({
   isConnected,
   currentTrackName,
@@ -601,6 +719,7 @@ function NowPlayingCard({
   onTogglePlayback,
   onSkipPrevious,
   onSkipNext,
+  onPlaybackError,
 }: {
   isConnected: boolean;
   currentTrackName: string | null;
@@ -615,6 +734,7 @@ function NowPlayingCard({
   onTogglePlayback: () => void;
   onSkipPrevious: () => void;
   onSkipNext: () => void;
+  onPlaybackError: (message: string) => void;
 }) {
   const displayTitle = deriveTrackTitle(currentTrackName);
   const hasActiveTrack =
@@ -655,20 +775,31 @@ function NowPlayingCard({
               onPress={onSkipPrevious}
               disabled={transportBusy !== null}
               variant="secondary"
+              accessibilityLabel="Skip to previous track"
             />
             <TransportBtn
               label={transportBusy === "toggle" ? "…" : isPlaying ? "Pause" : "Play"}
               onPress={onTogglePlayback}
               disabled={transportBusy !== null}
               variant="primary"
+              accessibilityLabel={isPlaying ? "Pause playback" : "Resume playback"}
             />
             <TransportBtn
               label={transportBusy === "next" ? "…" : "Next"}
               onPress={onSkipNext}
               disabled={transportBusy !== null}
               variant="secondary"
+              accessibilityLabel="Skip to next track"
             />
           </View>
+          {currentTrackUri != null && SpotifyURI.isValid(currentTrackUri) ? (
+            <View style={s.librarySaveRow}>
+              <LibrarySaveButton
+                uri={SpotifyURI.from(currentTrackUri)}
+                onError={onPlaybackError}
+              />
+            </View>
+          ) : null}
         </>
       )}
     </View>
@@ -745,11 +876,13 @@ function Btn({
   onPress,
   disabled,
   variant,
+  accessibilityLabel,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   variant: "primary" | "secondary" | "destructive";
+  accessibilityLabel?: string;
 }) {
   const bg = variant === "destructive" ? "transparent" : variant === "secondary" ? C.surface : C.green;
   const borderColor = variant === "destructive" ? C.error : variant === "secondary" ? C.border : C.green;
@@ -766,6 +899,9 @@ function Btn({
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: disabled === true }}
     >
       <Text style={[s.btnText, { color: textColor }]}>{label}</Text>
     </TouchableOpacity>
@@ -777,11 +913,13 @@ function TransportBtn({
   onPress,
   disabled,
   variant,
+  accessibilityLabel,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   variant: "primary" | "secondary";
+  accessibilityLabel?: string;
 }) {
   const bg = variant === "secondary" ? C.surface : C.green;
   const borderColor = variant === "secondary" ? C.border : C.green;
@@ -797,6 +935,9 @@ function TransportBtn({
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: disabled === true }}
     >
       <Text style={[s.btnText, { color: textColor }]}>{label}</Text>
     </TouchableOpacity>
@@ -865,6 +1006,7 @@ const s = StyleSheet.create({
   nowPlayingMeta: { flex: 1, minWidth: 0, alignItems: "flex-start" },
   nowPlayingUri: { color: C.muted, fontSize: 11, marginTop: 2 },
   transportRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 10, width: "100%" },
+  librarySaveRow: { width: "100%", marginTop: 10 },
   emptyBrowse: { alignItems: "center", justifyContent: "center", marginTop: 14, marginBottom: 8 },
   emptyBrowseIcon: { color: C.green, fontSize: 28, marginBottom: 4 },
   browseImage: { width: 90, height: 90, borderRadius: 8, marginTop: 12, marginBottom: 8 },
