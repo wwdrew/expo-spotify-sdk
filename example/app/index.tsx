@@ -75,6 +75,12 @@ function formatTime(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+function deriveTrackTitle(trackName: string | null): string {
+  const cleanName = trackName?.trim();
+  if (cleanName) return cleanName;
+  return "Title unavailable";
+}
+
 function formatExpiry(ms: number): string {
   const diff = ms - Date.now();
   if (diff <= 0) return "Expired";
@@ -91,6 +97,7 @@ async function fetchProfile(accessToken: string): Promise<SpotifyProfile | null>
   if (!res.ok) throw new Error(`Spotify Web API returned ${res.status}`);
   return res.json() as Promise<SpotifyProfile>;
 }
+
 
 export default function HomeScreen() {
   const connectionState = useConnectionState();
@@ -460,7 +467,7 @@ export default function HomeScreen() {
 
             <NowPlayingCard
               isConnected={connectionState === "connected"}
-              currentTrackName={currentTrack?.name ?? null}
+              currentTrackName={currentTrack?.name?.trim() ? currentTrack.name : null}
               currentTrackArtist={currentTrack?.artist?.name ?? null}
               currentTrackAlbum={currentTrack?.album?.name ?? null}
               currentTrackUri={currentTrack?.uri ?? null}
@@ -609,12 +616,17 @@ function NowPlayingCard({
   onSkipPrevious: () => void;
   onSkipNext: () => void;
 }) {
+  const displayTitle = deriveTrackTitle(currentTrackName);
+  const hasActiveTrack =
+    (currentTrackUri != null && currentTrackUri.trim().length > 0) ||
+    (currentTrackName != null && currentTrackName.trim().length > 0);
+
   return (
     <View style={s.card}>
       <Text style={s.cardTitle}>Now Playing</Text>
       {!isConnected ? (
         <Text style={s.emptyHint}>Connect App Remote to view player state.</Text>
-      ) : currentTrackName == null ? (
+      ) : !hasActiveTrack ? (
         <Text style={s.emptyHint}>No active track yet.</Text>
       ) : (
         <>
@@ -627,7 +639,7 @@ function NowPlayingCard({
               </View>
             )}
             <View style={s.nowPlayingMeta}>
-              <Text style={s.profileName} numberOfLines={1}>{currentTrackName}</Text>
+              <Text style={s.profileName} numberOfLines={1}>{displayTitle}</Text>
               {currentTrackArtist ? <Text style={s.profileMeta} numberOfLines={1}>{currentTrackArtist}</Text> : null}
               {currentTrackAlbum ? <Text style={s.profileMeta} numberOfLines={1}>{currentTrackAlbum}</Text> : null}
               <Text style={s.profileMeta}>

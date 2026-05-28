@@ -96,6 +96,31 @@ let _playerState: PlayerState | null = null;
 const _playerListeners = new Set<Listener>();
 let _playerStoreInitialised = false;
 
+function normalizePlayerState(
+  nextState: PlayerState,
+  previousState: PlayerState | null,
+): PlayerState {
+  const nextName = nextState.track.name?.trim() ?? "";
+  const previousName = previousState?.track.name?.trim() ?? "";
+  const sameTrack =
+    previousState != null && previousState.track.uri === nextState.track.uri;
+
+  // App Remote can occasionally emit a transient blank title between valid
+  // snapshots for the same URI; keep the last non-empty title to avoid UI
+  // flicker/regression in hooks consumers.
+  if (sameTrack && nextName.length === 0 && previousName.length > 0) {
+    return {
+      ...nextState,
+      track: {
+        ...nextState.track,
+        name: previousState.track.name,
+      },
+    };
+  }
+
+  return nextState;
+}
+
 function notifyPlayerListeners() {
   _playerListeners.forEach((l) => l());
 }
@@ -103,7 +128,7 @@ function notifyPlayerListeners() {
 async function hydratePlayerState() {
   try {
     const state = await Player.getPlayerState();
-    _playerState = state;
+    _playerState = normalizePlayerState(state, _playerState);
     notifyPlayerListeners();
   } catch {
     // Ignore one-shot hydration failures (e.g., connection races). Event stream
@@ -138,7 +163,7 @@ function initPlayerStore() {
   });
 
   Player.addListener("playerStateChange", (state) => {
-    _playerState = state;
+    _playerState = normalizePlayerState(state, _playerState);
     notifyPlayerListeners();
   });
 }

@@ -42,13 +42,14 @@ import kotlin.math.abs
  * for API parity with iOS but is not forwarded to the Android SDK.
  */
 class SpotifyAppRemoteCoordinator {
-
   @Volatile private var appRemote: SpotifyAppRemote? = null
   @Volatile private var connectionState: String = "disconnected"
   private val connectMutex = Mutex()
 
   private var playerStateSubscription: Subscription<PlayerState>? = null
   private var capabilitiesSubscription: Subscription<Capabilities>? = null
+  @Volatile private var lastTrackUri: String? = null
+  @Volatile private var lastNonEmptyTrackName: String? = null
 
   /** Injected by the module to forward connection state-change events to JS. */
   var onConnectionStateChange: ((String) -> Unit)? = null
@@ -149,7 +150,7 @@ class SpotifyAppRemoteCoordinator {
     val subscription = remote.playerApi
       .subscribeToPlayerState()
       .setEventCallback { playerState ->
-        onPlayerStateChange?.invoke(playerStateToMap(playerState))
+        onPlayerStateChange?.invoke(playerStateToMap(playerState, this))
       }
     subscription.setErrorCallback { /* subscription errors are non-fatal; connection errors handled separately */ }
     playerStateSubscription = subscription
@@ -240,7 +241,7 @@ class SpotifyAppRemoteCoordinator {
   suspend fun playerGetPlayerState(): Map<String, Any?> {
     val state = requireConnected("Player.getPlayerState").playerApi
       .playerState.awaitResult<PlayerState>("Player.getPlayerState")
-    return playerStateToMap(state)
+    return playerStateToMap(state, this)
   }
 
   suspend fun playerGetCrossfadeState(): Map<String, Any?> {
@@ -457,14 +458,31 @@ class SpotifyAppRemoteCoordinator {
   }
 
   companion object {
-    private fun playerStateToMap(state: PlayerState): Map<String, Any?> {
+    private fun playerStateToMap(
+      state: PlayerState,
+      coordinator: SpotifyAppRemoteCoordinator,
+    ): Map<String, Any?> {
       val track = state.track
+      val trackUri = track?.uri ?: ""
+      val rawTrackName = track?.name?.trim().orEmpty()
+      val sameTrackAsPrevious = coordinator.lastTrackUri == trackUri && trackUri.isNotBlank()
+      val resolvedTrackName = when {
+        rawTrackName.isNotBlank() -> {
+          coordinator.lastTrackUri = trackUri
+          coordinator.lastNonEmptyTrackName = rawTrackName
+          rawTrackName
+        }
+        sameTrackAsPrevious && !coordinator.lastNonEmptyTrackName.isNullOrBlank() ->
+          coordinator.lastNonEmptyTrackName!!
+        else -> rawTrackName
+      }
+
       val options = state.playbackOptions
       val restrictions = state.playbackRestrictions
       return mapOf(
         "track" to mapOf(
-          "uri" to (track?.uri ?: ""),
-          "name" to (track?.name ?: ""),
+          "uri" to trackUri,
+          "name" to resolvedTrackName,
           "imageIdentifier" to (track?.imageUri?.raw ?: ""),
           "duration" to (track?.duration ?: 0L),
           "artist" to mapOf(
