@@ -4,21 +4,46 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/wwdrew/expo-spotify-sdk/ci.yml?label=CI)](https://github.com/wwdrew/expo-spotify-sdk/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/wwdrew/expo-spotify-sdk)](LICENSE)
 
-An Expo module that wraps the native [Spotify iOS SDK](https://github.com/spotify/ios-sdk) (v5.0.1) and [Spotify Android SDK](https://github.com/spotify/android-sdk) (v4.0.1) to provide OAuth authentication in Expo and React Native apps.
+An Expo module that wraps the native [Spotify iOS SDK](https://github.com/spotify/ios-sdk) (v5.0.1) and [Spotify Android SDK](https://github.com/spotify/android-sdk) (v4.0.1) to provide Spotify Auth + App Remote control in Expo and React Native apps.
 
 **Why this exists:** Spotify ships native SDKs for iOS and Android that enable authentication via the installed Spotify app (no browser redirect, better UX) but there is no maintained Expo module for them. This library fills that gap.
 
 ## Platform support
 
-| Feature                                       | iOS | Android      | Web                 |
-| --------------------------------------------- | --- | ------------ | ------------------- |
-| `isAvailable()`                               | ✅  | ✅           | ✅ (always `false`) |
-| `authenticateAsync` — CODE flow (recommended) | ✅  | ✅           | —                   |
-| `authenticateAsync` — TOKEN flow (implicit)   | ✅  | ⚠️ see below | —                   |
-| `cancelPendingAuthAsync()`                    | ✅  | no-op        | no-op               |
-| `refreshSessionAsync`                         | ✅  | ✅           | —                   |
-| Auth via installed Spotify app                | ✅  | ✅           | —                   |
-| Auth via Spotify web fallback                 | ✅  | ✅           | —                   |
+| Feature | iOS | Android | Web |
+| --- | --- | --- | --- |
+| `Auth.*` | ✅ | ✅ | ❌ |
+| `AppRemote.*` | ✅ | ✅ | ❌ |
+| `Player.*` | ✅ | ✅ | ❌ |
+| `User.*` | ✅ | ✅ | ❌ |
+| `Content.*` | ✅ | ✅ | ❌ |
+| `Images.*` | ✅ | ✅ | ❌ |
+
+This package targets **iOS and Android only**. Web is intentionally unsupported.
+
+## v1 namespaced API
+
+```ts
+import {
+  Auth,
+  AppRemote,
+  Player,
+  User,
+  Content,
+  Images,
+  SpotifyURI,
+  useSession,
+  useConnectionState,
+  usePlayerState,
+  useCurrentTrack,
+  useIsPlaying,
+  usePlaybackPosition,
+  useCapabilities,
+  useLibraryState,
+} from "@wwdrew/expo-spotify-sdk";
+```
+
+Top-level v0-style functions (`authenticateAsync`, `isAvailable`, etc.) are still exported for backward compatibility, but new integrations should use namespace APIs.
 
 ## Quick start (Expo)
 
@@ -348,6 +373,97 @@ breadcrumbs see the full underlying chain, not just the rendered string.
 On Android the same field carries the `CodedException`'s `localizedMessage`
 from the corresponding cause path (e.g. `IOException` from the token
 swap call).
+
+## App Remote + namespace API reference
+
+The v1 namespace API is the primary surface:
+
+### `Auth`
+
+- `Auth.isAvailable(): boolean`
+- `Auth.authenticate(config): Promise<SpotifySession>`
+- `Auth.refresh(config): Promise<SpotifySession>`
+- `Auth.cancelPending(): Promise<void>`
+- `Auth.addListener("sessionChange", cb): Subscription`
+
+### `AppRemote`
+
+- `AppRemote.connect(accessToken): Promise<void>`
+- `AppRemote.disconnect(): Promise<void>`
+- `AppRemote.isConnected(): boolean`
+- `AppRemote.getConnectionState(): Promise<"disconnected" | "connecting" | "connected">`
+- `AppRemote.addListener("connectionStateChange" | "connectionError", cb): Subscription`
+
+### `Player`
+
+- `Player.play(uri)`
+- `Player.pause()`
+- `Player.resume()`
+- `Player.skipNext()`
+- `Player.skipPrevious()`
+- `Player.seekTo(positionMs)`
+- `Player.setShuffle(enabled)`
+- `Player.setRepeatMode(mode)`
+- `Player.setPodcastPlaybackSpeed(speed)`
+- `Player.queue(uri)`
+- `Player.getPlayerState()`
+- `Player.getCrossfadeState()`
+- `Player.addListener("playerStateChange", cb)`
+
+### `User`
+
+- `User.getCapabilities()`
+- `User.getLibraryState(uri)`
+- `User.addToLibrary(uri)`
+- `User.removeFromLibrary(uri)`
+- `User.addListener("capabilitiesChange", cb)`
+- `User.addLibraryStateListener(uri, cb)`
+
+### `Content`
+
+- `Content.getRecommendedContentItems(type)`
+- `Content.getChildren(item)`
+
+### `Images`
+
+- `Images.load(item, size)`
+
+### Hooks
+
+- `useSession()`
+- `useConnectionState()`
+- `usePlayerState()`
+- `useCurrentTrack()`
+- `useIsPlaying()`
+- `usePlaybackPosition()`
+- `useCapabilities()`
+- `useLibraryState(uri)`
+
+## Error codes by namespace
+
+### `AuthErrorCode`
+
+`USER_CANCELLED` · `AUTH_IN_PROGRESS` · `INVALID_CONFIG` · `NETWORK_ERROR` · `TOKEN_SWAP_FAILED` · `TOKEN_SWAP_PARSE_ERROR` · `SPOTIFY_NOT_INSTALLED` · `AUTH_ERROR` · `UNKNOWN`
+
+### `AppRemoteErrorCode`
+
+`CONNECTION_FAILED` · `CONNECTION_LOST` · `NOT_CONNECTED` · `UNKNOWN`
+
+### `PlayerErrorCode`
+
+`NOT_CONNECTED` · `CONNECTION_LOST` · `PREMIUM_REQUIRED` · `INVALID_URI` · `INVALID_PARAMETER` · `OPERATION_NOT_ALLOWED` · `UNKNOWN`
+
+### `UserErrorCode`
+
+`NOT_CONNECTED` · `CONNECTION_LOST` · `INVALID_URI` · `OPERATION_NOT_ALLOWED` · `UNKNOWN`
+
+### `ContentErrorCode`
+
+`NOT_CONNECTED` · `CONNECTION_LOST` · `CONTENT_API_UNAVAILABLE` · `UNKNOWN`
+
+### `ImagesErrorCode`
+
+`NOT_CONNECTED` · `INVALID_URI` · `IMAGE_LOAD_FAILED` · `UNKNOWN`
 
 ## Android implicit (TOKEN) flow is not recommended
 

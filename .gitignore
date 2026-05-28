@@ -39,6 +39,9 @@ android.iml
 android/app/libs
 android/keystores/debug.keystore
 
+# Android local SDK binaries
+android/libs/*.aar
+
 # Cocoapods
 #
 example/ios/Pods

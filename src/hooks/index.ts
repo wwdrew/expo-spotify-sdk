@@ -96,13 +96,75 @@ let _playerState: PlayerState | null = null;
 const _playerListeners = new Set<Listener>();
 let _playerStoreInitialised = false;
 
+function normalizePlayerState(
+  nextState: PlayerState,
+  previousState: PlayerState | null,
+): PlayerState {
+  const nextName = nextState.track.name?.trim() ?? "";
+  const previousName = previousState?.track.name?.trim() ?? "";
+  const sameTrack =
+    previousState != null && previousState.track.uri === nextState.track.uri;
+
+  // App Remote can occasionally emit a transient blank title between valid
+  // snapshots for the same URI; keep the last non-empty title to avoid UI
+  // flicker/regression in hooks consumers.
+  if (sameTrack && nextName.length === 0 && previousName.length > 0) {
+    return {
+      ...nextState,
+      track: {
+        ...nextState.track,
+        name: previousState.track.name,
+      },
+    };
+  }
+
+  return nextState;
+}
+
+function notifyPlayerListeners() {
+  _playerListeners.forEach((l) => l());
+}
+
+async function hydratePlayerState() {
+  try {
+    const state = await Player.getPlayerState();
+    _playerState = normalizePlayerState(state, _playerState);
+    notifyPlayerListeners();
+  } catch {
+    // Ignore one-shot hydration failures (e.g., connection races). Event stream
+    // updates still populate this store once available.
+  }
+}
+
 function initPlayerStore() {
   if (_playerStoreInitialised) return;
   _playerStoreInitialised = true;
 
+  // Hydrate immediately if the module is already connected before any consumer
+  // subscribes to player events.
+  AppRemote.getConnectionState().then((state) => {
+    if (state === "connected") {
+      void hydratePlayerState();
+    }
+  });
+
+  // Refresh the one-shot snapshot whenever App Remote reconnects, and clear on
+  // disconnect so stale "now playing" data is not retained.
+  AppRemote.addListener("connectionStateChange", ({ state }) => {
+    if (state === "connected") {
+      void hydratePlayerState();
+      return;
+    }
+
+    if (_playerState !== null) {
+      _playerState = null;
+      notifyPlayerListeners();
+    }
+  });
+
   Player.addListener("playerStateChange", (state) => {
-    _playerState = state;
-    _playerListeners.forEach((l) => l());
+    _playerState = normalizePlayerState(state, _playerState);
+    notifyPlayerListeners();
   });
 }
 
