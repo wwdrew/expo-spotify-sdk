@@ -2,7 +2,7 @@
 
 Plan for getting `@wwdrew/expo-spotify-sdk` from its current auth-only `0.8.x` state to a feature-complete native-SDK wrapper covering both halves of Spotify's mobile SDKs: the **Auth SDK** (today) and the **App Remote SDK** (new).
 
-**Status:** Phase 6 complete on `main` (SDK 55). Source of truth for per-method status: the [Coverage matrix](#5-coverage-matrix). Remaining: manual QA sign-off, tag `v1.0.0`, cut `v1` branch — see [RELEASE.md](./RELEASE.md).
+**Status:** Phase 7 in progress on `main` (SDK 56 → `2.0.0`). Phase 6 complete; `v1.0.0` shipped on the `v1` branch (SDK 55). Source of truth for per-method status: the [Coverage matrix](#5-coverage-matrix). Remaining: manual QA on SDK 56, tag `v2.0.0` — see [RELEASE.md](./RELEASE.md) (update for v2 when ready).
 
 **Related:** [CONTEXT.md](../CONTEXT.md) (terminology), [ADR-0004](./adr/0004-no-web-api-wrapper.md), [ADR-0005](./adr/0005-sdk-lane-versioning.md), [ADR-0006](./adr/0006-namespaced-api-and-app-remote-scope.md).
 
@@ -27,7 +27,7 @@ Plan for getting `@wwdrew/expo-spotify-sdk` from its current auth-only `0.8.x` s
 
 ## 2. What exists today (baseline)
 
-**Current release (pending tag):** `1.0.0` on `main` (Expo SDK 55). npm may still show `0.8.0` until release.
+**Current release (pending tag):** `2.0.0` on `main` (Expo SDK 56). `1.x` is maintained on the `v1` branch (SDK 55).
 
 | Domain | Public API | iOS | Android |
 | --- | --- | --- | --- |
@@ -355,26 +355,26 @@ Ordered for vertical slices (each phase produces something demoable on device) a
 | Documentation of every error code | Per `*ErrorCode` entry: when + what to do in README | ✅ |
 | Example app polish | Save button gated by capabilities, structured error UI, a11y labels | ✅ |
 | Cross-platform parity audit | Documented in README § Platform differences | ✅ |
-| Manual QA on real devices | [QA_CHECKLIST.md](./QA_CHECKLIST.md) | ⬜ maintainer |
-| Tag `v1.0.0` on `main` | [RELEASE.md](./RELEASE.md) | ⬜ maintainer |
-| Cut `v1` branch from tag | `release-please` → `v1.x.y` from `v1` | ⬜ maintainer |
+| Manual QA on real devices | [QA_CHECKLIST.md](./QA_CHECKLIST.md) | ✅ maintainer |
+| Tag `v1.0.0` on `main` | [RELEASE.md](./RELEASE.md) | ✅ maintainer |
+| Cut `v1` branch from tag | `release-please` → `v1.x.y` from `v1` | ✅ maintainer |
 
 **Exit:** `v1.0.0` is shipped on npm, the `v1` branch exists and is set up for `v1.x.y` releases. `main` is now free to migrate to SDK 56 in Phase 7.
 
 ### Phase 7 — Migrate `main` to Expo SDK 56 (v2.0.0)
 
-| Task | Deliverable |
-| --- | --- |
-| Bump `ios/ExpoSpotifySDK.podspec` deployment target → `:ios, '16.4'` | Required by `expo-modules-core@^4` |
-| Bump `package.json` dev deps to SDK 56 lane (`@expo/config-plugins@^56`, `expo-module-scripts@^56`, `expo-modules-core@^4`) | |
-| Bump `example/` Expo SDK to 56 | New dev build / prebuild; verify on both platforms |
-| Bump Android `compileSdkVersion` / `targetSdkVersion` if Expo SDK 56 requires (currently 35; verify against SDK 56) | |
-| Adopt SDK 56–only API surface where it pays off | Optional: new JSI layer for iOS Swift modules, Kotlin compiler plugin attributes. Not required for parity — only where they materially improve perf or DX. |
-| **Typed config plugin** (`@wwdrew/expo-spotify-sdk/plugin`) | **Required for v2.0.0.** Export a typed helper (Expo SDK 56 pattern: default export returns `[@wwdrew/expo-spotify-sdk, SpotifyConfig]` for use in `app.config.ts`). String/tuple syntax via `app.plugin.js` stays supported for backward compatibility. **Do not backport to `v1` / SDK 55** — typed plugin imports are SDK 56–only. |
-| Update README on `main` to say "v2.x for SDK 56+; see v1.x for SDK 55" | Lane → version mapping |
-| Bump `package.json` version → `2.0.0` | |
-| Run full QA pass on SDK 56 toolchain | Same checklist as Phase 6, this time on SDK 56 |
-| Tag `v2.0.0` on `main` | Release on the SDK 56 toolchain |
+| Task | Deliverable | Status |
+| --- | --- | --- |
+| Bump `ios/ExpoSpotifySDK.podspec` deployment target → `:ios, '16.4'` | Required by `expo-modules-core@^56` | ✅ |
+| Bump `package.json` dev deps to SDK 56 lane (`@expo/config-plugins@^56`, `expo-module-scripts@^56`, `expo-modules-core@^56`) | | ✅ |
+| Bump `example/` Expo SDK to 56 | New dev build / prebuild; verify on both platforms | ✅ |
+| Bump Android `compileSdkVersion` / `targetSdkVersion` if Expo SDK 56 requires | Fallbacks → 36 | ✅ |
+| Adopt SDK 56–only API surface where it pays off | Optional JSI / Kotlin compiler plugin | — skipped (inherits SDK 56 runtime gains) |
+| **Typed config plugin** (`@wwdrew/expo-spotify-sdk/plugin`) | Typed tuple helper + string/tuple backward compat | ✅ |
+| Update README on `main` to say "v2.x for SDK 56+; see v1.x for SDK 55" | Lane → version mapping | ✅ |
+| Bump `package.json` version → `2.0.0` | | ✅ |
+| Run full QA pass on SDK 56 toolchain | Same checklist as Phase 6, this time on SDK 56 | ⬜ maintainer |
+| Tag `v2.0.0` on `main` | Release on the SDK 56 toolchain | ⬜ maintainer |
 
 **Exit:** `v2.0.0` is shipped on npm. Both lanes are now live: `v1.x` (on `v1` branch, SDK 55) and `v2.x` (on `main`, SDK 56+). Future feature work happens on `main` first; backporting to `v1` is at the maintainer's discretion per [ADR-0005](./adr/0005-sdk-lane-versioning.md).
 

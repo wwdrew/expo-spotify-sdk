@@ -16,10 +16,10 @@ buildscript {
 }
 
 project.android {
-  compileSdkVersion safeExtGet("compileSdkVersion", 35)
+  compileSdkVersion safeExtGet("compileSdkVersion", 36)
   defaultConfig {
     minSdkVersion safeExtGet("minSdkVersion", 24)
-    targetSdkVersion safeExtGet("targetSdkVersion", 35)
+    targetSdkVersion safeExtGet("targetSdkVersion", 36)
   }
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_17

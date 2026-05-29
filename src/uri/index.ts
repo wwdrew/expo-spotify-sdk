@@ -65,7 +65,7 @@ export const SpotifyURI = {
     if (!m) {
       throw new Error(`Cannot parse Spotify URI: "${uri}"`);
     }
-    return { type: m[1] as SpotifyResourceType, id: m[2] };
+    return { type: m[1] as SpotifyResourceType, id: m[2]! };
   },
 
   /**

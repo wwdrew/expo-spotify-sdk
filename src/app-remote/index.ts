@@ -1,7 +1,7 @@
-import { EventSubscription } from "expo-modules-core";
+import type { EventSubscription } from "expo-modules-core";
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
-import { AppRemoteError, AppRemoteErrorCode } from "./error";
+import { AppRemoteError, type AppRemoteErrorCode } from "./error";
 
 export type { AppRemoteErrorCode } from "./error";
 export { AppRemoteError } from "./error";

@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.0](https://github.com/wwdrew/expo-spotify-sdk/compare/v1.0.0...v2.0.0) (unreleased)
+
+**Expo SDK 56 lane** — install `2.x` when your app targets Expo SDK 56+ (iOS 16.4+). For SDK 55, use `1.x` on the `v1` branch. See [ADR-0005](docs/adr/0005-sdk-lane-versioning.md).
+
+### Features
+
+* **Typed config plugin** — import `withSpotifySdk` from `@wwdrew/expo-spotify-sdk/plugin` in `app.config.ts` (Expo SDK 56+). String/tuple plugin syntax remains supported.
+
+### Build
+
+* Bump iOS deployment target to 16.4 and dev dependencies to Expo SDK 56 (`expo-modules-core@^56`, `expo-module-scripts@^56`).
+* Example app pinned to Expo SDK 56.
+
 ## [1.0.0](https://github.com/wwdrew/expo-spotify-sdk/compare/v0.8.0...v1.0.0) (2026-05-28)
 
 **Expo SDK 55 lane** — install `1.x` when your app targets Expo SDK 55 (iOS 15.1+). See [ADR-0005](docs/adr/0005-sdk-lane-versioning.md).
