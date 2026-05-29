@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v1.0.0...expo-spotify-sdk-v2.0.0) (2026-05-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* Expo SDK 56 lane + typed config plugin (v2.0.0)
+
+### Features
+
+* Expo SDK 56 lane + typed config plugin (v2.0.0) ([4c025a3](https://github.com/wwdrew/expo-spotify-sdk/commit/4c025a39c1b7dc8445accfe108ac1cde3e9e2b79))
+
+
+### Bug Fixes
+
+* **ci:** bypass expo-module CLI after install EACCES ([#43](https://github.com/wwdrew/expo-spotify-sdk/issues/43)) ([e9a3e0a](https://github.com/wwdrew/expo-spotify-sdk/commit/e9a3e0a44e17c662e0716a06ffbfe490b223aba5))
+
+
+### Documentation
+
+* document main as SDK 56 (2.x) and v1 as SDK 55 (1.x) ([#44](https://github.com/wwdrew/expo-spotify-sdk/issues/44)) ([a4ae220](https://github.com/wwdrew/expo-spotify-sdk/commit/a4ae220a47402d5c2df144f0129f5782a8193ccd))
+
 ## [2.0.0](https://github.com/wwdrew/expo-spotify-sdk/compare/v1.0.0...v2.0.0) (unreleased)
 
 **Expo SDK 56 lane** — install `2.x` when your app targets Expo SDK 56+ (iOS 16.4+). For SDK 55, use `1.x` on the `v1` branch. See [ADR-0005](docs/adr/0005-sdk-lane-versioning.md).
