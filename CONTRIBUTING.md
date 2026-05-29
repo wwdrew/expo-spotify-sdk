@@ -36,7 +36,7 @@ npm test
 | Task | Requirement |
 |---|---|
 | Plugin tests | Node.js ≥ 20 |
-| iOS native development | Xcode 16+, macOS |
+| iOS native development | Xcode 26.4+ (Expo SDK 56), macOS |
 | Android native development | Android Studio Meerkat, JDK 17+ |
 | Example app | Expo Go or a development build |
 
