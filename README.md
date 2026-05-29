@@ -34,7 +34,7 @@ Both lanes ship the same public API (Auth + App Remote namespaces and hooks). Th
 
 The current `main` branch targets **Expo SDK 56** and releases as **`2.x`**. For Expo SDK 55, install **`1.x`** from the `v1` branch ([ADR-0005](./docs/adr/0005-sdk-lane-versioning.md)).
 
-## v1 namespaced API
+## Public API (Auth + App Remote)
 
 ```ts
 import {
@@ -63,8 +63,10 @@ Top-level v0-style functions (`authenticateAsync`, `isAvailable`, etc.) are stil
 ## Quick start (Expo)
 
 ```sh
-# 1. Install
+# 1. Install (Expo SDK 56+ — matches `main` / npm `2.x`)
 npx expo install @wwdrew/expo-spotify-sdk
+
+# Expo SDK 55 only: npx expo install @wwdrew/expo-spotify-sdk@1
 
 # 2. Add the config plugin to app.config.ts / app.json  (see Configuration below)
 # 3. Regenerate native projects
@@ -326,7 +328,7 @@ For iOS, if `connect()` fails with `CONNECTION_FAILED`, foreground the Spotify a
 
 ## Migration from v0.x
 
-v0.x top-level functions remain exported but are deprecated (removed in v2.0.0).
+v0.x top-level functions remain exported but are deprecated (scheduled for removal in a future major).
 
 | v0.x | v1 |
 | --- | --- |
@@ -696,8 +698,8 @@ App Remote player state is limited for non-Premium users. Check `GET /v1/me` →
 
 - [CONTEXT.md](./CONTEXT.md) — terminology (Auth SDK vs App Remote vs Web API)
 - [docs/V1_PLAN.md](./docs/V1_PLAN.md) — implementation plan and release criteria
-- [docs/QA_CHECKLIST.md](./docs/QA_CHECKLIST.md) — manual QA sign-off before `v1.0.0`
-- [docs/RELEASE.md](./docs/RELEASE.md) — tag `v1.0.0` and cut the `v1` branch
+- [docs/QA_CHECKLIST.md](./docs/QA_CHECKLIST.md) — manual QA before a `2.x` release on `main` (or `1.x` on `v1`)
+- [docs/RELEASE.md](./docs/RELEASE.md) — Release Please on `main` (`2.x`); maintenance releases from `v1` (`1.x`)
 - [ATTRIBUTION.md](./ATTRIBUTION.md) — third-party SDKs and scope boundaries
 
 ## Acknowledgements
