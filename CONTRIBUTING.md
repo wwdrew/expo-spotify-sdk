@@ -21,14 +21,14 @@ you need to get a PR merged.
 git clone https://github.com/<you>/expo-spotify-sdk.git
 cd expo-spotify-sdk
 
-# 2. Install dependencies
-npm install
+# 2. Install dependencies (Yarn v1 — matches CI)
+yarn install
 
 # 3. Bootstrap the example app
 cd example && npm install && cd ..
 
 # 4. Run plugin tests (fast, no Xcode/Android Studio needed)
-npm test
+yarn test
 ```
 
 ### What you need
@@ -45,10 +45,14 @@ npm test
 ### TypeScript / plugin
 
 ```sh
-npm test          # plugin Jest tests
-npm run typecheck # tsc --noEmit across the workspace
-npm run lint      # ESLint
+yarn test          # plugin Jest tests
+yarn typecheck     # tsc --noEmit (module src)
+yarn lint          # ESLint
+yarn build         # compile src/ → build/
+yarn build:plugin  # compile plugin/ → plugin/build/
 ```
+
+We keep `expo-module-scripts` for shared config (`tsconfig`, ESLint presets) but call `tsc` / `jest` / `eslint` directly instead of the `expo-module` CLI. The published `expo-module-scripts` tarball ships subcommand files without the executable bit, so `expo-module prepare` (and other subcommands) fail on a clean Linux install — see [ADR-0007](./docs/adr/0007-bypass-expo-module-cli.md).
 
 ### iOS native (`ios/`)
 
@@ -98,9 +102,7 @@ BREAKING CHANGE: SpotifyConfig.scopes has been renamed to SpotifyConfig.permissi
 Plugin tests live in `plugin/src/__tests__/`. Run them with:
 
 ```sh
-npm test
-# or directly
-npx expo-module test plugin
+yarn test
 ```
 
 When adding new plugin modifiers, add a corresponding test that checks:
@@ -110,9 +112,9 @@ When adding new plugin modifiers, add a corresponding test that checks:
 
 ## Pull request checklist
 
-- [ ] `npm test` passes locally.
-- [ ] `npm run typecheck` passes.
-- [ ] `npm run lint` passes (or only pre-existing warnings remain).
+- [ ] `yarn test` passes locally.
+- [ ] `yarn typecheck` passes.
+- [ ] `yarn lint` passes (or only pre-existing warnings remain).
 - [ ] Commit messages follow Conventional Commits.
 - [ ] New public API is annotated with JSDoc.
 - [ ] README updated if behaviour or public API changed.

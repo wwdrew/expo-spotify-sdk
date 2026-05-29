@@ -49,5 +49,5 @@ jobs:
         run: yarn build
 
       - name: Build plugin
-        run: npx tsc -p plugin/tsconfig.json
+        run: yarn build:plugin
 
