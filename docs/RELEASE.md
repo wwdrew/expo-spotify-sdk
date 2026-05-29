@@ -4,8 +4,8 @@ Follow after [QA_CHECKLIST.md](./QA_CHECKLIST.md) is signed off on `main` (SDK 5
 
 ## 1. Pre-release
 
-- [ ] `npm run typecheck` and `npm run lint` pass
-- [ ] `npm run build` produces `build/`
+- [ ] `yarn typecheck` and `yarn lint` pass
+- [ ] `yarn build` produces `build/` and `yarn build:plugin` produces `plugin/build/`
 - [ ] README, CHANGELOG, and coverage matrix in [V1_PLAN.md](./V1_PLAN.md) are current
 - [ ] `package.json` version is `1.0.0`
 
