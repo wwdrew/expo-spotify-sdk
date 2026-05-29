@@ -116,7 +116,7 @@ The phased plan (Phase 0 → Phase 6) lives in [V1_PLAN.md §6](../V1_PLAN.md#6-
 | 5 | `Content` + `Images`. |
 | 6 | Hardening, README rewrite, example app polish. |
 
-Each phase lands on both `main` (v2 / SDK 56) and `v1` (SDK 55) per [ADR-0005](./0005-sdk-lane-versioning.md).
+Phases 1–6 landed before the SDK 56 migration; the same API ships on **`v1`** (SDK 55) and **`main`** (SDK 56) per [ADR-0005](./0005-sdk-lane-versioning.md). New API work targets **`main`** first.
 
 ## Validation
 

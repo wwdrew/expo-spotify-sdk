@@ -2,7 +2,7 @@
 
 Plan for getting `@wwdrew/expo-spotify-sdk` from its current auth-only `0.8.x` state to a feature-complete native-SDK wrapper covering both halves of Spotify's mobile SDKs: the **Auth SDK** (today) and the **App Remote SDK** (new).
 
-**Status:** Phase 7 in progress on `main` (SDK 56 → `2.0.0`). Phase 6 complete; `v1.0.0` shipped on the `v1` branch (SDK 55). Source of truth for per-method status: the [Coverage matrix](#5-coverage-matrix). Remaining: manual QA on SDK 56, tag `v2.0.0` — see [RELEASE.md](./RELEASE.md) (update for v2 when ready).
+**Status:** **`main` = Expo SDK 56 / `2.x`** (Phase 7 complete in tree; pending npm `2.0.0` via Release Please). **`v1` branch = SDK 55 / `1.x`** (`1.0.0` on npm). Source of truth for per-method status: the [Coverage matrix](#5-coverage-matrix). Remaining before `2.0.0` ship: SDK 56 manual QA — [QA_CHECKLIST.md](./QA_CHECKLIST.md), then merge Release Please PR — [RELEASE.md](./RELEASE.md).
 
 **Related:** [CONTEXT.md](../CONTEXT.md) (terminology), [ADR-0004](./adr/0004-no-web-api-wrapper.md), [ADR-0005](./adr/0005-sdk-lane-versioning.md), [ADR-0006](./adr/0006-namespaced-api-and-app-remote-scope.md).
 
@@ -27,7 +27,7 @@ Plan for getting `@wwdrew/expo-spotify-sdk` from its current auth-only `0.8.x` s
 
 ## 2. What exists today (baseline)
 
-**Current release (pending tag):** `2.0.0` on `main` (Expo SDK 56). `1.x` is maintained on the `v1` branch (SDK 55).
+**Branches:** `main` → **`2.x`** (Expo SDK 56+, active development). `v1` → **`1.x`** (Expo SDK 55, maintenance). **`2.0.0`** on `main` is pending npm publish; **`1.0.0`** is live from `v1`.
 
 | Domain | Public API | iOS | Android |
 | --- | --- | --- | --- |
@@ -273,7 +273,7 @@ Legend: ✅ shipped · 🟡 in progress · ⬜ not started · ➖ N/A on this pl
 
 Ordered for vertical slices (each phase produces something demoable on device) and dependency order (foundation → connection → player → polish → branch cut → SDK 56 migration).
 
-**Development sequence:** All App Remote work (Phases 1–6) happens on `main` while `main` is still on Expo SDK 55 — the same toolchain `0.8.x` ships on today. Only after v1.0.0 is feature-complete and tagged on `main` do we cut the `v1` branch (as the long-lived SDK 55 lane) and then migrate `main` itself to SDK 56 in Phase 7 to become the v2.0.0 line. This avoids doing the App Remote work twice (once per SDK lane); the SDK 56 migration is then a focused, isolated change on top of a known-good v1.0.0.
+**Development sequence (completed):** Phases 1–6 landed on `main` while it still targeted SDK 55. `1.0.0` was tagged (`expo-spotify-sdk-v1.0.0`), then the **`v1` branch** was cut from that tag. **`main`** was migrated to SDK 56 in Phase 7 and now ships **`2.x`**. New feature work targets **`main`**; backports go to **`v1`** when needed ([ADR-0005](./adr/0005-sdk-lane-versioning.md)).
 
 ### Phase 0 — Repo & doc setup (no branch cuts, no SDK bumps yet)
 
@@ -356,10 +356,10 @@ Ordered for vertical slices (each phase produces something demoable on device) a
 | Example app polish | Save button gated by capabilities, structured error UI, a11y labels | ✅ |
 | Cross-platform parity audit | Documented in README § Platform differences | ✅ |
 | Manual QA on real devices | [QA_CHECKLIST.md](./QA_CHECKLIST.md) | ✅ maintainer |
-| Tag `v1.0.0` on `main` | [RELEASE.md](./RELEASE.md) | ✅ maintainer |
-| Cut `v1` branch from tag | `release-please` → `v1.x.y` from `v1` | ✅ maintainer |
+| Tag `v1.0.0` (`expo-spotify-sdk-v1.0.0`) | [RELEASE.md](./RELEASE.md) | ✅ |
+| Cut `v1` branch from tag | `origin/v1` at `d144507` | ✅ |
 
-**Exit:** `v1.0.0` is shipped on npm, the `v1` branch exists and is set up for `v1.x.y` releases. `main` is now free to migrate to SDK 56 in Phase 7.
+**Exit:** `v1.0.0` is on npm; `v1` is the SDK 55 lane. `main` proceeded to Phase 7.
 
 ### Phase 7 — Migrate `main` to Expo SDK 56 (v2.0.0)
 
@@ -373,10 +373,10 @@ Ordered for vertical slices (each phase produces something demoable on device) a
 | **Typed config plugin** (`@wwdrew/expo-spotify-sdk/plugin`) | Typed tuple helper + string/tuple backward compat | ✅ |
 | Update README on `main` to say "v2.x for SDK 56+; see v1.x for SDK 55" | Lane → version mapping | ✅ |
 | Bump `package.json` version → `2.0.0` | | ✅ |
-| Run full QA pass on SDK 56 toolchain | Same checklist as Phase 6, this time on SDK 56 | ⬜ maintainer |
-| Tag `v2.0.0` on `main` | Release on the SDK 56 toolchain | ⬜ maintainer |
+| Run full QA pass on SDK 56 toolchain | [QA_CHECKLIST.md](./QA_CHECKLIST.md) on `main` | ⬜ maintainer |
+| Ship `v2.0.0` on `main` | Merge Release Please PR → npm ([RELEASE.md](./RELEASE.md)) | ⬜ maintainer |
 
-**Exit:** `v2.0.0` is shipped on npm. Both lanes are now live: `v1.x` (on `v1` branch, SDK 55) and `v2.x` (on `main`, SDK 56+). Future feature work happens on `main` first; backporting to `v1` is at the maintainer's discretion per [ADR-0005](./adr/0005-sdk-lane-versioning.md).
+**Exit:** `v2.0.0` is on npm. Both lanes live: **`v1`** (`1.x`, SDK 55) and **`main`** (`2.x`, SDK 56+). Feature work on **`main`**; backports to **`v1`** at maintainer discretion ([ADR-0005](./adr/0005-sdk-lane-versioning.md)).
 
 ---
 
@@ -469,8 +469,9 @@ All required before tagging either major:
 - [x] README rewritten with new API + migration table + auto-connect recipe.
 - [x] Every error code has documented "when" and "what to do" in the README.
 - [x] [ATTRIBUTION.md](../ATTRIBUTION.md) reflects no Web API wrapping intent.
-- [ ] Manual QA on real devices, Premium and Free accounts ([checklist](./QA_CHECKLIST.md)).
-- [ ] Tag `v1.0.0` and cut `v1` branch ([release steps](./RELEASE.md)).
+- [x] `v1.0.0` on npm; `v1` branch cut from `expo-spotify-sdk-v1.0.0` ([RELEASE.md](./RELEASE.md)).
+- [ ] SDK 56 manual QA on `main` before shipping `2.0.0` ([checklist](./QA_CHECKLIST.md)).
+- [ ] `2.0.0` published from `main` via Release Please ([RELEASE.md](./RELEASE.md)).
 
 **Semver after v1 / v2:**
 

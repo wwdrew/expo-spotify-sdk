@@ -6,9 +6,18 @@ Reference for humans and agents. Use this file to keep terminology straight when
 
 This repo uses [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): description` (e.g. `fix(ios): …`, `feat(android): …`, `docs: …`). Use an optional scope when the change is platform- or area-specific.
 
+## Branches
+
+| Branch | npm | Expo SDK | Use for |
+| --- | --- | --- | --- |
+| **`main`** | `2.x` | 56+ | Default: features, fixes, releases |
+| **`v1`** | `1.x` | 55 | Maintenance backports only |
+
+Topic branch names follow conventional-commit prefixes: `feat/*`, `fix/*`, `docs/*`, etc. Open PRs against **`main`** unless you are intentionally targeting the SDK 55 lane (then branch from **`v1`** and merge back to **`v1`**).
+
 ## Branch naming
 
-Branch names follow the same `type/` prefix as conventional commits: `feat/*`, `fix/*`, `refactor/*`, `docs/*`, `chore/*`, `test/*`. Examples: `feat/auth-namespace`, `fix/android-token-flow`, `docs/v1-plan`.
+Branch names follow the same `type/` prefix as conventional commits: `feat/*`, `fix/*`, `refactor/*`, `docs/*`, `chore/*`, `test/*`. Examples: `feat/auth-namespace`, `fix/android-token-flow`, `docs/release-v2`.
 
 ## Terminology
 
@@ -33,13 +42,21 @@ Branch names follow the same `type/` prefix as conventional commits: `feat/*`, `
 
 **Rule of thumb:** This library wraps the **Auth SDK** and (in v1) the **App Remote SDK**. Anything that lives at `api.spotify.com` is the consumer's responsibility — they have the access token, they call REST.
 
-## v1.0.0 direction
+## Release lanes
 
-`v1.0.0` adds App Remote support (transport, now-playing, hooks) on top of the existing Auth surface. It targets Expo SDK 55 (iOS 15.1+). See [ADR-0005](./docs/adr/0005-sdk-lane-versioning.md) for the lane versioning strategy.
+Both lanes ship the full Auth + App Remote API ([ADR-0006](./docs/adr/0006-namespaced-api-and-app-remote-scope.md)). The major version selects the **Expo SDK runtime**, not a different feature set ([ADR-0005](./docs/adr/0005-sdk-lane-versioning.md)).
 
-## v2.0.0 direction (SDK 56 lane only)
+### `1.x` on `v1` (Expo SDK 55)
 
-`v2.0.0` is the Expo SDK 56+ line (`main` after Phase 7 in [V1_PLAN.md](./docs/V1_PLAN.md)). Besides the SDK / iOS floor bump, it ships **typed config plugins**: import from `@wwdrew/expo-spotify-sdk/plugin` in `app.config.ts` for autocomplete and type-checked `SpotifyConfig` options (Expo SDK 56 feature). The legacy string/tuple plugin entry (`["@wwdrew/expo-spotify-sdk", { … }]`) remains supported on v2; typed imports are **not** backported to the `v1` / SDK 55 branch.
+- npm **`1.x`**, branch **`v1`**, iOS 15.1+, `expo-modules-core@^3.x`
+- **`1.0.0`** is published; install with `npm install @wwdrew/expo-spotify-sdk@1` (or pin `1.x.y`)
+- Config plugin: string/tuple form in `app.json` / `app.config.ts` only
+
+### `2.x` on `main` (Expo SDK 56+)
+
+- npm **`2.x`**, branch **`main`**, iOS 16.4+, `expo-modules-core@^56`
+- Active development; **`2.0.0`** pending Release Please merge
+- **Typed config plugin** on `main` only: `import { withSpotifySdk } from "@wwdrew/expo-spotify-sdk/plugin"` in `app.config.ts`. Legacy string/tuple plugin syntax remains supported.
 
 **Explicitly not in v1 (or any version):**
 
@@ -50,5 +67,5 @@ Branch names follow the same `type/` prefix as conventional commits: `feat/*`, `
 
 ## Related docs
 
-- [README.md](./README.md) — install, v1 namespaced API (Auth + App Remote), and migration from v0.x.
+- [README.md](./README.md) — install, SDK lane table, public API (Auth + App Remote), migration from v0.x.
 - [docs/adr/](./docs/adr/) — architecture decision records.

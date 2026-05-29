@@ -1,10 +1,33 @@
-# Manual QA checklist — v1.0.0 (Expo SDK 55 lane)
+# Manual QA checklist
 
-Run on **real devices** before tagging `v1.0.0`. Sign off each row for iOS and Android.
+Run on **real devices** before a release. Use the checklist that matches your **branch and Expo SDK**, not both for every release.
 
-**Accounts:** at least one **Premium** and one **Free** tester (added under Spotify Dashboard → User Management for Development Mode apps).
+| Release | Branch | Expo SDK | When to use |
+| --- | --- | --- | --- |
+| **`2.x`** | `main` | 56+ | Before merging a Release Please PR on `main` |
+| **`1.x`** | `v1` | 55 | Before publishing a maintenance release from `v1` |
+
+**Accounts:** at least one **Premium** and one **Free** tester (Spotify Dashboard → User Management for Development Mode apps).
 
 **Environment:** Spotify app installed and logged in; for token-swap flows, Expo dev server serving `/swap` and `/refresh` (see [README](../README.md#token-swap-server)).
+
+**Setup:**
+
+```sh
+# SDK 56 (2.x) — default
+git checkout main && yarn install
+cd example && yarn install && cd ..
+npx expo prebuild   # if native projects changed
+
+# SDK 55 (1.x) — maintenance lane only
+git checkout v1 && yarn install
+cd example && yarn install && cd ..
+npx expo prebuild
+```
+
+On **`main`**, you can also exercise the **typed config plugin** in `app.config.ts` (`import { withSpotifySdk } from "@wwdrew/expo-spotify-sdk/plugin"`). That path is not on `v1`.
+
+---
 
 ## Auth
 
@@ -65,10 +88,11 @@ Run on **real devices** before tagging `v1.0.0`. Sign off each row for iOS and A
 | E1 | Full flow: connect → App Remote → now playing → browse | ☐ | ☐ |
 | E2 | Account tier label matches `/v1/me` `product` | ☐ | ☐ |
 | E3 | Errors show `[namespace] code: message` in UI | ☐ | ☐ |
+| E4 | **`main` only:** `withSpotifySdk` in `app.config.ts` prebuilds without errors | ☐ | ☐ |
 
 ## Sign-off
 
-| Role | Name | Date |
-| --- | --- | --- |
-| Tester | | |
-| Maintainer | | |
+| Release | Branch | Tester | Date |
+| --- | --- | --- | --- |
+| `2.x` | `main` | | |
+| `1.x` | `v1` | | |

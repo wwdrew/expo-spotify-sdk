@@ -61,21 +61,18 @@ The deprecation date for `v1.x.x` is **not set**. The maintainer reviews periodi
 
 ## Implementation
 
-The branch cut and SDK 56 migration happen **after** all v1.0.0 feature work is complete on `main` (still on SDK 55) — see [V1_PLAN.md §6 Phases 6–7](../V1_PLAN.md#6-implementation-phases). This avoids doing the App Remote work twice.
+Completed per [V1_PLAN.md §6 Phases 6–7](../V1_PLAN.md#6-implementation-phases).
 
-| Step | Where | When |
+| Step | Where | Status |
 | --- | --- | --- |
-| Develop App Remote + namespacing on `main` while it is still on Expo SDK 55 | `main` | Phases 1–6 |
-| Tag `v1.0.0` on `main` | `main` | End of Phase 6 |
-| Cut `v1` branch from the `v1.0.0` tag | git, branch `v1` | Immediately after tag |
-| `release-please-config.json` on `v1` configured to release `v1.x.y` from `v1` branch | `v1` | Immediately after branch cut |
-| Bump `main` to SDK 56: `ios/ExpoSpotifySDK.podspec` → `:ios, '16.4'`; `package.json` dev deps → `^56`; `example/` pinned to SDK 56 | `main` | Phase 7 |
-| Bump `package.json` version on `main` to `2.0.0` | `main` | Phase 7 |
-| Export typed config plugin at `@wwdrew/expo-spotify-sdk/plugin` (SDK 56 pattern) | `main` only | Phase 7 — not on `v1` |
-| README on both branches documents the lane → version mapping prominently | both | Phases 6 (main / v1) and 7 (main) |
-| CHANGELOG entries reference the lane (`v1.0.0 — Expo SDK 55 lane`, `v2.0.0 — Expo SDK 56 lane`) | both | At release |
-| GitHub Actions runs per branch with the appropriate Xcode / Android SDK matrix | `.github/workflows/` per branch | Phase 7 (main migration); pre-existing on `v1` |
-| Tag `v2.0.0` on `main` | `main` | End of Phase 7 |
+| App Remote + namespaced API (Phases 1–6) | `main` (then SDK 55) | ✅ |
+| Tag `expo-spotify-sdk-v1.0.0`, publish **`1.0.0`** | npm + git tag | ✅ |
+| Cut **`v1`** from that tag (`d144507`) | `origin/v1` | ✅ |
+| Migrate **`main`** to SDK 56; `package.json` → `2.0.0` | `main` | ✅ |
+| Typed config plugin `@wwdrew/expo-spotify-sdk/plugin` | `main` only | ✅ |
+| README lane table (`1.x` / `v1`, `2.x` / `main`) | `main` | ✅ |
+| Publish **`2.0.0`** via Release Please on `main` | npm | ⬜ pending |
+| Release Please for **`1.x.y`** from `v1` | `v1` | ⬜ optional follow-up |
 
 ## Validation
 
