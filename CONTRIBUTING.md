@@ -14,12 +14,24 @@ you need to get a PR merged.
 
 ---
 
+## Which branch?
+
+| You are… | Branch | Expo SDK |
+| --- | --- | --- |
+| Adding features or fixing bugs for current consumers | **`main`** | 56+ (`2.x`) |
+| Backporting a fix for SDK 55 users | **`v1`** | 55 (`1.x`) |
+
+PRs should target **`main`** by default. The **`v1`** branch is frozen at the SDK 55 toolchain — do not merge `main` into `v1`.
+
 ## Development setup
+
+Work on **`main`** unless you are explicitly maintaining the SDK 55 lane:
 
 ```sh
 # 1. Fork and clone
 git clone https://github.com/<you>/expo-spotify-sdk.git
 cd expo-spotify-sdk
+git checkout main
 
 # 2. Install dependencies (Yarn v1 — matches CI)
 yarn install
@@ -123,10 +135,7 @@ When adding new plugin modifiers, add a corresponding test that checks:
 
 ## Release process
 
-Releases are automated via [Release Please](https://github.com/googleapis/release-please).
-Merging a commit that triggers a release will open or update a release PR.
-When that PR is merged, the workflow publishes to npm automatically — no
-manual `npm publish` required.
+- **`2.x` from `main`** — [Release Please](https://github.com/googleapis/release-please) opens a release PR; merging it publishes to npm (see [docs/RELEASE.md](docs/RELEASE.md)).
+- **`1.x` from `v1`** — maintenance releases from the `v1` branch (see [docs/RELEASE.md](docs/RELEASE.md)).
 
-Maintainers don't need to do anything special beyond merging commits with
-well-formed Conventional Commit messages.
+Use Conventional Commits on the branch you are releasing from.
