@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from "react";
 
-import { AppRemote, ConnectionState } from "../app-remote";
-import { Auth, SpotifySession } from "../auth";
-import { Player, PlayerState, Track } from "../player";
-import { Capabilities, LibraryState, User } from "../user";
+import { AppRemote, type ConnectionState } from "../app-remote";
+import { Auth, type SpotifySession } from "../auth";
+import { Player, type PlayerState, type Track } from "../player";
+import { type Capabilities, type LibraryState, User } from "../user";
 import type { SpotifyURI as SpotifyURIType } from "../uri";
 
 // ---------------------------------------------------------------------------

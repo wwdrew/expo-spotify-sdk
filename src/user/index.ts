@@ -5,11 +5,11 @@ export { UserError } from "./error";
 // Types
 // ---------------------------------------------------------------------------
 
-import { EventSubscription } from "expo-modules-core";
+import type { EventSubscription } from "expo-modules-core";
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
 import type { SpotifyURI as SpotifyURIType } from "../uri";
-import { UserError, UserErrorCode } from "./error";
+import { UserError, type UserErrorCode } from "./error";
 
 /** Capabilities of the current user in Spotify's App Remote context. */
 export interface Capabilities {

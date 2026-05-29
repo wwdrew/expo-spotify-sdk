@@ -1,8 +1,8 @@
-import { EventSubscription } from "expo-modules-core";
+import type { EventSubscription } from "expo-modules-core";
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
 import { SpotifyURI } from "../uri";
-import { PlayerError, PlayerErrorCode } from "./error";
+import { PlayerError, type PlayerErrorCode } from "./error";
 
 export type { PlayerErrorCode } from "./error";
 export { PlayerError } from "./error";

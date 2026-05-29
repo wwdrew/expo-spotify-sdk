@@ -32,7 +32,7 @@ Install the major that matches your Expo SDK:
 
 Both lanes ship the same public API (Auth + App Remote namespaces and hooks). The major version signals **runtime lane**, not a different feature set. See [ADR-0005](./docs/adr/0005-sdk-lane-versioning.md).
 
-The current `main` branch targets **Expo SDK 55** and releases as **`1.0.0`**. SDK 56 migration is [Phase 7](./docs/V1_PLAN.md#phase-7--migrate-main-to-expo-sdk-56-v200) (`2.0.0` on `main`).
+The current `main` branch targets **Expo SDK 56** and releases as **`2.x`**. For Expo SDK 55, install **`1.x`** from the `v1` branch ([ADR-0005](./docs/adr/0005-sdk-lane-versioning.md)).
 
 ## v1 namespaced API
 
@@ -137,7 +137,29 @@ Replace `myapp`, `spotify-auth`, and `your-spotify-client-id` with your own valu
 
 ## Configuration
 
-Add the plugin to your `app.config.ts` (or `app.json`):
+Add the plugin to your `app.config.ts` (or `app.json`).
+
+### Typed plugin (Expo SDK 56+)
+
+Import from `@wwdrew/expo-spotify-sdk/plugin` for autocomplete and type-checked options:
+
+```ts
+import type { ExpoConfig } from "expo/config";
+import withSpotifySdk from "@wwdrew/expo-spotify-sdk/plugin";
+
+export default ({ config }: { config: ExpoConfig }): ExpoConfig => ({
+  ...config,
+  plugins: [
+    withSpotifySdk({
+      clientID: "your-spotify-client-id",
+      scheme: "myapp",
+      host: "spotify-auth",
+    }),
+  ],
+});
+```
+
+### String tuple (all SDK versions)
 
 ```ts
 export default {

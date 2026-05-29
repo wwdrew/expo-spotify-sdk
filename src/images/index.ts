@@ -8,7 +8,7 @@ export { ImagesError } from "./error";
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
 import type { ContentItem } from "../content";
 import type { Track } from "../player";
-import { ImagesError, ImagesErrorCode } from "./error";
+import { ImagesError, type ImagesErrorCode } from "./error";
 
 export type ImageSize = "small" | "medium" | "large";
 

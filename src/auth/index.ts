@@ -1,7 +1,8 @@
-import { EventSubscription, Platform } from "expo-modules-core";
+import type { EventSubscription } from "expo-modules-core";
+import { Platform } from "expo-modules-core";
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
-import { AuthError, AuthErrorCode } from "./error";
+import { AuthError, type AuthErrorCode } from "./error";
 
 export type { AuthErrorCode } from "./error";
 export { AuthError } from "./error";
@@ -128,7 +129,7 @@ function rethrowAsAuthError(err: unknown): never {
     }
     const m = reason.match(LEGACY_CODE_PREFIX_RE);
     if (m && VALID_AUTH_CODES.has(m[1] as AuthErrorCode)) {
-      throw new AuthError(m[1] as AuthErrorCode, m[2]);
+      throw new AuthError(m[1] as AuthErrorCode, m[2]!);
     }
     throw new AuthError("UNKNOWN", reason);
   }

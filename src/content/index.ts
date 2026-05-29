@@ -6,7 +6,7 @@ export { ContentError } from "./error";
 // ---------------------------------------------------------------------------
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
-import { ContentError, ContentErrorCode } from "./error";
+import { ContentError, type ContentErrorCode } from "./error";
 
 export type ContentType = "default" | "navigation" | "fitness" | "gaming";
 

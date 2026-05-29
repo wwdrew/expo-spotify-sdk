@@ -1,36 +1,27 @@
-import { ConfigPlugin } from "@expo/config-plugins";
-
-import { withSpotifyAndroidAppBuildGradle } from "./android/withSpotifyAndroidAppBuildGradle";
-import { withSpotifyConfigValues } from "./ios/withSpotifyConfigValues";
-import { withSpotifyQueryScheme } from "./ios/withSpotifyQueryScheme";
-import { withSpotifyURLScheme } from "./ios/withSpotifyURLScheme";
 import { SpotifyConfig } from "./types";
 
-export const withSpotifySdkConfig: ConfigPlugin<SpotifyConfig> = (
-  config,
-  spotifyConfig,
-) => {
-  if (!spotifyConfig.host) {
-    throw new Error("Missing required Spotify config value: host");
-  }
+const PACKAGE_NAME = "@wwdrew/expo-spotify-sdk";
 
-  if (!spotifyConfig.scheme) {
-    throw new Error("Missing required Spotify config value: scheme");
-  }
+/**
+ * Typed config plugin helper for `app.config.ts` (Expo SDK 56+).
+ *
+ * @example
+ * import withSpotifySdk from "@wwdrew/expo-spotify-sdk/plugin";
+ *
+ * export default ({ config }) => ({
+ *   ...config,
+ *   plugins: [
+ *     withSpotifySdk({
+ *       clientID: "your-spotify-client-id",
+ *       scheme: "myapp",
+ *       host: "spotify-auth",
+ *     }),
+ *   ],
+ * });
+ */
+export default (props: SpotifyConfig): [string, SpotifyConfig] => [
+  PACKAGE_NAME,
+  props,
+];
 
-  if (!spotifyConfig.clientID) {
-    throw new Error("Missing required Spotify config value: clientID");
-  }
-
-  // Android specific
-  config = withSpotifyAndroidAppBuildGradle(config, spotifyConfig);
-
-  // iOS specific
-  config = withSpotifyConfigValues(config, spotifyConfig);
-  config = withSpotifyQueryScheme(config, spotifyConfig);
-  config = withSpotifyURLScheme(config, spotifyConfig);
-
-  return config;
-};
-
-export default withSpotifySdkConfig;
+export type { SpotifyConfig, SpotifyScopes } from "./types";

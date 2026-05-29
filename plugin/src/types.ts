@@ -27,7 +27,23 @@ export type SpotifyScopes =
  * Configuration accepted by the `@wwdrew/expo-spotify-sdk` Expo config plugin.
  *
  * @example
- * // app.config.ts
+ * // app.config.ts (Expo SDK 56+ — typed import)
+ * import withSpotifySdk from "@wwdrew/expo-spotify-sdk/plugin";
+ *
+ * export default ({ config }) => ({
+ *   ...config,
+ *   plugins: [
+ *     withSpotifySdk({
+ *       clientID: "<spotify-client-id>",
+ *       scheme: "myapp",
+ *       host: "spotify-auth",
+ *       redirectPathPattern: ".*",
+ *     }),
+ *   ],
+ * });
+ *
+ * @example
+ * // app.config.ts / app.json (string tuple — all SDK versions)
  * export default {
  *   plugins: [
  *     ["@wwdrew/expo-spotify-sdk", {
