@@ -70,7 +70,9 @@ import { Auth, AppRemote, Player, User, Content, Images } from "@wwdrew/expo-spo
 | `Content` | Curated content browsing. |
 | `Images` | Cover art loader. |
 
-The flat top-level functions from v0.x are **removed**, not soft-deprecated. Migration is a mechanical rename — see [V1_PLAN.md §8](../V1_PLAN.md#8-migration-from-v0x). The major bump is the right time to do this; carrying both shapes forever would mean permanent two-stylistic-worlds drift.
+The flat top-level functions from v0.x are **removed in `2.x`**, not soft-deprecated. Migration is a mechanical rename — see [V1_PLAN.md §8](../archive/V1_PLAN.md#8-migration-from-v0x). The major bump is the right time to do this; carrying both shapes forever would mean permanent two-stylistic-worlds drift.
+
+> **Amendment (2026-05-30):** `1.0.0` on the SDK 55 lane shipped temporary `@deprecated` v0 shims as a pragmatic upgrade path. **`2.0.0`** on the SDK 56 lane removes them per this decision. The `v1` maintenance branch retains shims until that lane EOLs.
 
 Naming style across namespaces:
 
@@ -105,7 +107,7 @@ This includes the `Content` and `Images` APIs even though they're the most "data
 
 ## Implementation
 
-The phased plan (Phase 0 → Phase 6) lives in [V1_PLAN.md §6](../V1_PLAN.md#6-implementation-phases). Highlights:
+The phased plan (Phase 0 → Phase 6) lives in [V1_PLAN.md §6](../archive/V1_PLAN.md#6-implementation-phases). Highlights:
 
 | Phase | What |
 | --- | --- |
@@ -120,7 +122,7 @@ Phases 1–6 landed before the SDK 56 migration; the same API ships on **`v1`** 
 
 ## Validation
 
-Per-phase exit criteria in [V1_PLAN.md §6](../V1_PLAN.md#6-implementation-phases). Final release criteria in [V1_PLAN.md §9](../V1_PLAN.md#9-v100--v200-release-criteria) — both v1.0.0 and v2.0.0 require:
+Per-phase exit criteria in [V1_PLAN.md §6](../archive/V1_PLAN.md#6-implementation-phases). Final release criteria in [V1_PLAN.md §9](../archive/V1_PLAN.md#9-v100--v200-release-criteria) — both v1.0.0 and v2.0.0 require:
 
 - Every method `✅` on iOS and Android in the coverage matrix.
 - Example app demonstrating all six namespaces (Auth, AppRemote connect/disconnect, Player transport + now-playing state via hooks, User save gated by capabilities, Content browse, Images load).

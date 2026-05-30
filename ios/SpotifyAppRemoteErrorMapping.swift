@@ -2,6 +2,7 @@ import Foundation
 import SpotifyiOS
 
 /// Maps `SPTAppRemote` NSError payloads into per-namespace native error enums.
+/// Keep aligned with [docs/app-remote-error-mapping.md](../docs/app-remote-error-mapping.md).
 enum SpotifyAppRemoteErrorMapping {
   private static func isSPTError(_ error: NSError) -> Bool {
     error.domain == SPTAppRemoteErrorDomain
@@ -36,6 +37,10 @@ enum SpotifyAppRemoteErrorMapping {
       return .connectionLost(connectionLostMessage(callsite: callsite))
     }
     if isInvalidArguments(error) {
+      let desc = error.localizedDescription.lowercased()
+      if desc.contains("uri") {
+        return .invalidURI("\(callsite): \(error.localizedDescription)")
+      }
       return .invalidParameter(error.localizedDescription)
     }
     if isRequestFailed(error) {

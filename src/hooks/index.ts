@@ -72,11 +72,15 @@ function normalizePlayerState(
   return nextState;
 }
 
+let playerHydrationVersion = 0;
+
 async function hydratePlayerState(
   store: ReturnType<typeof createSyncExternalStore<PlayerState | null>>,
+  version: number,
 ) {
   try {
     const state = await Player.getPlayerState();
+    if (version !== playerHydrationVersion) return;
     store.update((previous) => normalizePlayerState(state, previous));
   } catch {
     // Ignore one-shot hydration failures (e.g., connection races). Event stream
@@ -87,18 +91,21 @@ async function hydratePlayerState(
 const playerStore = createSyncExternalStore<PlayerState | null>(
   null,
   (store) => {
-  AppRemote.getConnectionState().then((state) => {
-    if (state === "connected") {
-      hydratePlayerState(store).catch(() => {});
-    }
-  });
+    AppRemote.getConnectionState().then((state) => {
+      if (state === "connected") {
+        const version = ++playerHydrationVersion;
+        hydratePlayerState(store, version).catch(() => {});
+      }
+    });
 
-  AppRemote.addListener("connectionStateChange", ({ state }) => {
-    if (state === "connected") {
-      hydratePlayerState(store).catch(() => {});
-      return;
-    }
+    AppRemote.addListener("connectionStateChange", ({ state }) => {
+      if (state === "connected") {
+        const version = ++playerHydrationVersion;
+        hydratePlayerState(store, version).catch(() => {});
+        return;
+      }
 
+      ++playerHydrationVersion;
       store.update((current) => (current === null ? current : null));
     });
 

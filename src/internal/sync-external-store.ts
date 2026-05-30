@@ -32,7 +32,12 @@ export function createSyncExternalStore<T>(
     subscribe(listener) {
       if (!initialised) {
         initialised = true;
-        init(store);
+        try {
+          init(store);
+        } catch (error) {
+          initialised = false;
+          throw error;
+        }
       }
       listeners.add(listener);
       return () => listeners.delete(listener);
