@@ -1,13 +1,9 @@
-import {
-  authenticateAsync,
-  isAvailable,
-  refreshSessionAsync,
-} from "expo-spotify-sdk";
+import { Auth } from "expo-spotify-sdk";
 
 export function useSpotifyAuthentication() {
   return {
-    isAvailable,
-    authenticateAsync,
-    refreshSessionAsync,
+    isAvailable: Auth.isAvailable,
+    authenticate: Auth.authenticate,
+    refresh: Auth.refresh,
   };
 }

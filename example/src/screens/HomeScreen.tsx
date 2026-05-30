@@ -14,7 +14,7 @@ import {
   useIsPlaying,
   usePlaybackPosition,
 } from "expo-spotify-sdk";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -51,9 +51,10 @@ export function HomeScreen() {
   const playbackPositionMs = usePlaybackPosition();
   const [positionAnchor, setPositionAnchor] = useState<{ positionMs: number; capturedAt: number }>({
     positionMs: 0,
-    capturedAt: Date.now(),
+    capturedAt: 0,
   });
   const [clockTick, setClockTick] = useState(0);
+  const nowMsRef = useRef(0);
 
   const [session, setSession] = useState<SpotifySession | null>(null);
   const [hasHydratedSession, setHasHydratedSession] = useState(false);
@@ -102,14 +103,18 @@ export function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    setPositionAnchor({ positionMs: playbackPositionMs, capturedAt: Date.now() });
+    nowMsRef.current = Date.now();
+    setPositionAnchor({ positionMs: playbackPositionMs, capturedAt: nowMsRef.current });
   }, [playbackPositionMs, currentTrack?.uri, isPlaying]);
 
   useEffect(() => {
     if (connectionState !== "connected" || currentTrack == null || !isPlaying) {
       return;
     }
-    const timer = setInterval(() => setClockTick((v) => v + 1), 500);
+    const timer = setInterval(() => {
+      nowMsRef.current = Date.now();
+      setClockTick((v) => v + 1);
+    }, 500);
     return () => clearInterval(timer);
   }, [connectionState, currentTrack?.uri, isPlaying]);
 
@@ -117,7 +122,7 @@ export function HomeScreen() {
     if (connectionState !== "connected" || currentTrack == null) return 0;
     if (!isPlaying) return positionAnchor.positionMs;
 
-    const elapsedMs = Date.now() - positionAnchor.capturedAt;
+    const elapsedMs = nowMsRef.current - positionAnchor.capturedAt;
     const durationMs = currentTrack.duration ?? 0;
     if (durationMs > 0) {
       return Math.min(positionAnchor.positionMs + elapsedMs, durationMs);
@@ -125,13 +130,16 @@ export function HomeScreen() {
     return positionAnchor.positionMs + elapsedMs;
   }, [clockTick, connectionState, currentTrack, isPlaying, positionAnchor]);
 
+  const attemptedAutoRefreshRef = useRef<number | null>(null);
+
   const loadProfile = useCallback(async (token: string) => {
+    setProfile(null);
     setBusy("profile");
     try {
       const p = await fetchProfile(token);
-      if (p !== null) setProfile(p);
+      setProfile(p);
     } catch {
-      // Non-fatal for this demo.
+      setProfile(null);
     } finally {
       setBusy(null);
     }
@@ -253,7 +261,9 @@ export function HomeScreen() {
     if (busy !== null) return;
     if (session.expirationDate > Date.now()) return;
     if (!session.refreshToken) return;
+    if (attemptedAutoRefreshRef.current === session.expirationDate) return;
 
+    attemptedAutoRefreshRef.current = session.expirationDate;
     void handleRefresh();
   }, [busy, handleRefresh, session]);
 

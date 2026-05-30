@@ -67,5 +67,7 @@ Both lanes ship the full Auth + App Remote API ([ADR-0006](./docs/adr/0006-names
 
 ## Related docs
 
-- [README.md](./README.md) — install, SDK lane table, public API (Auth + App Remote), migration from v0.x.
+- [README.md](./README.md) — install, quick start, troubleshooting, migration from v0.x.
+- [docs/api-reference.md](./docs/api-reference.md) — method reference.
+- [docs/error-codes.md](./docs/error-codes.md) — per-namespace error codes.
 - [docs/adr/](./docs/adr/) — architecture decision records.

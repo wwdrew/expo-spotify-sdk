@@ -18,7 +18,6 @@ import com.spotify.protocol.types.ListItems
 import com.spotify.protocol.types.PlayerState
 import com.spotify.protocol.types.PlaybackSpeed
 import com.spotify.protocol.types.Repeat
-import expo.modules.kotlin.exception.CodedException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import java.io.File
@@ -336,7 +335,7 @@ class SpotifyAppRemoteCoordinator {
     suspendCancellableCoroutine { continuation ->
       setResultCallback { continuation.resume(Unit) }
       setErrorCallback { throwable ->
-        continuation.resumeWithException(normalizePlayerError(throwable, callsite))
+        continuation.resumeWithException(SpotifyAppRemoteErrorMapping.mapPlayerError(throwable, callsite))
       }
     }
   }
@@ -347,7 +346,7 @@ class SpotifyAppRemoteCoordinator {
     return suspendCancellableCoroutine { continuation ->
       setResultCallback { result -> continuation.resume(result) }
       setErrorCallback { throwable ->
-        continuation.resumeWithException(normalizePlayerError(throwable, callsite))
+        continuation.resumeWithException(SpotifyAppRemoteErrorMapping.mapPlayerError(throwable, callsite))
       }
     }
   }
@@ -357,7 +356,7 @@ class SpotifyAppRemoteCoordinator {
     return suspendCancellableCoroutine { continuation ->
       setResultCallback { result -> continuation.resume(result) }
       setErrorCallback { throwable ->
-        continuation.resumeWithException(normalizeUserError(throwable, callsite, uri))
+        continuation.resumeWithException(SpotifyAppRemoteErrorMapping.mapUserError(throwable, callsite, uri))
       }
     }
   }
@@ -366,7 +365,7 @@ class SpotifyAppRemoteCoordinator {
     return suspendCancellableCoroutine { continuation ->
       setResultCallback { result -> continuation.resume(result) }
       setErrorCallback { throwable ->
-        continuation.resumeWithException(normalizeUserError(throwable, callsite, ""))
+        continuation.resumeWithException(SpotifyAppRemoteErrorMapping.mapUserError(throwable, callsite, ""))
       }
     }
   }
@@ -375,7 +374,7 @@ class SpotifyAppRemoteCoordinator {
     return suspendCancellableCoroutine { continuation ->
       setResultCallback { result -> continuation.resume(result) }
       setErrorCallback { throwable ->
-        continuation.resumeWithException(normalizeContentError(throwable, callsite))
+        continuation.resumeWithException(SpotifyAppRemoteErrorMapping.mapContentError(throwable, callsite))
       }
     }
   }
@@ -384,65 +383,8 @@ class SpotifyAppRemoteCoordinator {
     return suspendCancellableCoroutine { continuation ->
       setResultCallback { result -> continuation.resume(result) }
       setErrorCallback { throwable ->
-        continuation.resumeWithException(normalizeImagesError(throwable, callsite))
+        continuation.resumeWithException(SpotifyAppRemoteErrorMapping.mapImagesError(throwable, callsite))
       }
-    }
-  }
-
-  private fun normalizePlayerError(throwable: Throwable, callsite: String): CodedException {
-    val msg = throwable.message ?: "Unknown error"
-    return when {
-      msg.contains("premium", ignoreCase = true) -> PlayerPremiumRequiredException(callsite)
-      msg.contains("disconnected", ignoreCase = true) ||
-        msg.contains("not connected", ignoreCase = true) ->
-        PlayerConnectionLostException("$callsite: $msg", throwable)
-      msg.contains("not allowed", ignoreCase = true) ||
-        msg.contains("restriction", ignoreCase = true) ->
-        PlayerOperationNotAllowedException("$callsite: $msg", throwable)
-      else -> PlayerUnknownException("$callsite: $msg", throwable)
-    }
-  }
-
-  private fun normalizeUserError(throwable: Throwable, callsite: String, uri: String): CodedException {
-    val msg = throwable.message ?: "Unknown error"
-    return when {
-      msg.contains("disconnected", ignoreCase = true) ||
-        msg.contains("not connected", ignoreCase = true) ->
-        UserConnectionLostException("$callsite: $msg", throwable)
-      msg.contains("uri", ignoreCase = true) ||
-        msg.contains("invalid", ignoreCase = true) ->
-        UserInvalidURIException(uri, throwable)
-      msg.contains("not allowed", ignoreCase = true) ||
-        msg.contains("restriction", ignoreCase = true) ->
-        UserOperationNotAllowedException("$callsite: $msg", throwable)
-      else -> UserUnknownException("$callsite: $msg", throwable)
-    }
-  }
-
-  private fun normalizeContentError(throwable: Throwable, callsite: String): CodedException {
-    val msg = throwable.message ?: "Unknown error"
-    return when {
-      msg.contains("disconnected", ignoreCase = true) ||
-        msg.contains("not connected", ignoreCase = true) ->
-        ContentConnectionLostException("$callsite: $msg", throwable)
-      msg.contains("not supported", ignoreCase = true) ||
-        msg.contains("unsupported", ignoreCase = true) ->
-        ContentApiUnavailableException("$callsite: content API unavailable on this Spotify app version", throwable)
-      else -> ContentUnknownException("$callsite: $msg", throwable)
-    }
-  }
-
-  private fun normalizeImagesError(throwable: Throwable, callsite: String): CodedException {
-    val msg = throwable.message ?: "Unknown error"
-    return when {
-      msg.contains("disconnected", ignoreCase = true) ||
-        msg.contains("not connected", ignoreCase = true) ->
-        ImagesNotConnectedException(callsite)
-      msg.contains("invalid", ignoreCase = true) ->
-        ImagesInvalidURIException("$callsite: invalid image identifier", throwable)
-      msg.contains("load", ignoreCase = true) || msg.contains("image", ignoreCase = true) ->
-        ImagesLoadFailedException("$callsite: $msg", throwable)
-      else -> ImagesUnknownException("$callsite: $msg", throwable)
     }
   }
 

@@ -19,7 +19,7 @@
     "build:plugin": "tsc -p plugin/tsconfig.json",
     "clean": "rm -rf build plugin/build",
     "lint": "eslint src",
-    "test": "jest --rootDir plugin --config plugin/jest.config.js",
+    "test": "jest --config jest.config.js",
     "prepublishOnly": "yarn clean && yarn build && yarn build:plugin",
     "typecheck": "tsc --noEmit",
     "open:ios": "open -a \"Xcode\" example/ios",

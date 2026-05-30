@@ -40,23 +40,24 @@ export function LibrarySaveButton({
     }
   }
 
+  const buttonLabel =
+    busy
+      ? "Saving…"
+      : !capabilities
+        ? "Loading capabilities…"
+        : !capabilities.canPlayOnDemand
+          ? "Save (Premium required)"
+          : isSaved
+            ? "Saved — tap to remove"
+            : "Save to library";
+
   return (
     <Btn
-      label={
-        busy
-          ? "Saving…"
-          : !capabilities
-            ? "Loading capabilities…"
-            : !capabilities.canPlayOnDemand
-              ? "Save (Premium required)"
-              : isSaved
-                ? "Saved — tap to remove"
-                : "Save to library"
-      }
+      label={buttonLabel}
       onPress={toggleSave}
       disabled={busy || !canSave}
       variant="secondary"
-      accessibilityLabel={isSaved ? "Remove from library" : "Save to library"}
+      accessibilityLabel={buttonLabel}
     />
   );
 }
