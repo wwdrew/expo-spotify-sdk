@@ -33,6 +33,8 @@
     "Spotify"
   ],
   "files": [
+    "plugin/index.js",
+    "plugin/index.d.ts",
     "plugin/build",
     "build",
     "android",
