@@ -46,9 +46,12 @@ actor SpotifyAppRemoteCoordinator {
 
   private init(sptConfiguration: SPTConfiguration) {
     self.sptConfiguration = sptConfiguration
-    self.connectionBridge = SpotifyAppRemoteDelegateBridge()
-    self.playerStateBridge = SpotifyPlayerStateDelegateBridge()
-    self.userCapabilitiesBridge = SpotifyUserCapabilitiesDelegateBridge()
+    let connectionBridge = SpotifyAppRemoteDelegateBridge()
+    let playerStateBridge = SpotifyPlayerStateDelegateBridge()
+    let userCapabilitiesBridge = SpotifyUserCapabilitiesDelegateBridge()
+    self.connectionBridge = connectionBridge
+    self.playerStateBridge = playerStateBridge
+    self.userCapabilitiesBridge = userCapabilitiesBridge
     connectionBridge.coordinator = self
     playerStateBridge.coordinator = self
     userCapabilitiesBridge.coordinator = self
