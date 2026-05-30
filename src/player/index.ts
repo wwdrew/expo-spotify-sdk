@@ -1,6 +1,7 @@
 import type { EventSubscription } from "expo-modules-core";
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
+import { createNativeErrorRethrow } from "../internal/native-errors";
 import { SpotifyURI } from "../uri";
 import { PlayerError, type PlayerErrorCode } from "./error";
 
@@ -89,35 +90,19 @@ export interface CrossfadeState {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-const VALID_PLAYER_CODES = new Set<PlayerErrorCode>([
-  "NOT_CONNECTED",
-  "CONNECTION_LOST",
-  "PREMIUM_REQUIRED",
-  "INVALID_URI",
-  "INVALID_PARAMETER",
-  "OPERATION_NOT_ALLOWED",
-  "UNKNOWN",
-]);
-
-const CAUSE_SEPARATOR = "→ Caused by: ";
-
-function unwrapReason(message: string): string {
-  const idx = message.lastIndexOf(CAUSE_SEPARATOR);
-  return idx === -1 ? message : message.slice(idx + CAUSE_SEPARATOR.length);
-}
-
-function rethrowAsPlayerError(err: unknown): never {
-  if (err instanceof PlayerError) throw err;
-  if (err instanceof Error) {
-    const reason = unwrapReason(err.message);
-    const maybeCode = (err as Error & { code?: string }).code;
-    if (maybeCode && VALID_PLAYER_CODES.has(maybeCode as PlayerErrorCode)) {
-      throw new PlayerError(maybeCode as PlayerErrorCode, reason);
-    }
-    throw new PlayerError("UNKNOWN", reason);
-  }
-  throw new PlayerError("UNKNOWN", String(err));
-}
+const rethrowAsPlayerError = createNativeErrorRethrow({
+  ErrorClass: PlayerError,
+  unknownCode: "UNKNOWN",
+  validCodes: new Set<PlayerErrorCode>([
+    "NOT_CONNECTED",
+    "CONNECTION_LOST",
+    "PREMIUM_REQUIRED",
+    "INVALID_URI",
+    "INVALID_PARAMETER",
+    "OPERATION_NOT_ALLOWED",
+    "UNKNOWN",
+  ]),
+});
 
 // ---------------------------------------------------------------------------
 // Player namespace
@@ -167,7 +152,9 @@ export const Player = {
 
   /** Skips to the previous track. */
   skipPrevious(): Promise<void> {
-    return ExpoSpotifySDKModule.playerSkipPrevious().catch(rethrowAsPlayerError);
+    return ExpoSpotifySDKModule.playerSkipPrevious().catch(
+      rethrowAsPlayerError,
+    );
   },
 
   /**
@@ -175,12 +162,16 @@ export const Player = {
    * Only valid when `PlaybackRestrictions.canSeek` is `true`.
    */
   seekTo(positionMs: number): Promise<void> {
-    return ExpoSpotifySDKModule.playerSeekTo(positionMs).catch(rethrowAsPlayerError);
+    return ExpoSpotifySDKModule.playerSeekTo(positionMs).catch(
+      rethrowAsPlayerError,
+    );
   },
 
   /** Enables or disables shuffle. */
   setShuffle(enabled: boolean): Promise<void> {
-    return ExpoSpotifySDKModule.playerSetShuffle(enabled).catch(rethrowAsPlayerError);
+    return ExpoSpotifySDKModule.playerSetShuffle(enabled).catch(
+      rethrowAsPlayerError,
+    );
   },
 
   /**
@@ -188,7 +179,9 @@ export const Player = {
    * @param mode 0 = off, 1 = repeat track, 2 = repeat context.
    */
   setRepeatMode(mode: RepeatMode): Promise<void> {
-    return ExpoSpotifySDKModule.playerSetRepeatMode(mode).catch(rethrowAsPlayerError);
+    return ExpoSpotifySDKModule.playerSetRepeatMode(mode).catch(
+      rethrowAsPlayerError,
+    );
   },
 
   /**
@@ -208,12 +201,16 @@ export const Player = {
 
   /** Returns the current {@link PlayerState} as a one-shot pull. */
   getPlayerState(): Promise<PlayerState> {
-    return ExpoSpotifySDKModule.playerGetPlayerState().catch(rethrowAsPlayerError);
+    return ExpoSpotifySDKModule.playerGetPlayerState().catch(
+      rethrowAsPlayerError,
+    );
   },
 
   /** Returns the current {@link CrossfadeState} as a one-shot pull. */
   getCrossfadeState(): Promise<CrossfadeState> {
-    return ExpoSpotifySDKModule.playerGetCrossfadeState().catch(rethrowAsPlayerError);
+    return ExpoSpotifySDKModule.playerGetCrossfadeState().catch(
+      rethrowAsPlayerError,
+    );
   },
 
   /**
