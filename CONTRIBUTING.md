@@ -82,6 +82,13 @@ cd example
 npx expo run:android
 ```
 
+The example app's Android `namespace` / `applicationId` is
+`expo.modules.spotifysdk.example` (see `example/app.json`). After
+`npx expo prebuild`, Kotlin sources should live only under
+`example/android/app/src/main/java/expo/modules/spotifysdk/example/`.
+Delete any orphan `com/` tree left over from an old package name — CI runs
+`scripts/verify-example-android-package.sh` to catch this.
+
 ## Commit messages
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/).
