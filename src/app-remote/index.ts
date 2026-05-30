@@ -2,6 +2,7 @@ import type { EventSubscription } from "expo-modules-core";
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
 import { AppRemoteError, type AppRemoteErrorCode } from "./error";
+import { createNativeErrorRethrow } from "../internal/native-errors";
 
 export type { AppRemoteErrorCode } from "./error";
 export { AppRemoteError } from "./error";
@@ -28,32 +29,16 @@ export interface ConnectionErrorEvent {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-const VALID_APPREMOTE_CODES = new Set<AppRemoteErrorCode>([
-  "CONNECTION_FAILED",
-  "CONNECTION_LOST",
-  "NOT_CONNECTED",
-  "UNKNOWN",
-]);
-
-const CAUSE_SEPARATOR = "→ Caused by: ";
-
-function unwrapReason(message: string): string {
-  const idx = message.lastIndexOf(CAUSE_SEPARATOR);
-  return idx === -1 ? message : message.slice(idx + CAUSE_SEPARATOR.length);
-}
-
-function rethrowAsAppRemoteError(err: unknown): never {
-  if (err instanceof AppRemoteError) throw err;
-  if (err instanceof Error) {
-    const reason = unwrapReason(err.message);
-    const maybeCode = (err as Error & { code?: string }).code;
-    if (maybeCode && VALID_APPREMOTE_CODES.has(maybeCode as AppRemoteErrorCode)) {
-      throw new AppRemoteError(maybeCode as AppRemoteErrorCode, reason);
-    }
-    throw new AppRemoteError("UNKNOWN", reason);
-  }
-  throw new AppRemoteError("UNKNOWN", String(err));
-}
+const rethrowAsAppRemoteError = createNativeErrorRethrow({
+  ErrorClass: AppRemoteError,
+  unknownCode: "UNKNOWN",
+  validCodes: new Set<AppRemoteErrorCode>([
+    "CONNECTION_FAILED",
+    "CONNECTION_LOST",
+    "NOT_CONNECTED",
+    "UNKNOWN",
+  ]),
+});
 
 // ---------------------------------------------------------------------------
 // AppRemote namespace

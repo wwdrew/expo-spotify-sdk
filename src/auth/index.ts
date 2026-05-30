@@ -3,6 +3,7 @@ import { Platform } from "expo-modules-core";
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
 import { AuthError, type AuthErrorCode } from "./error";
+import { createNativeErrorRethrow } from "../internal/native-errors";
 
 export type { AuthErrorCode } from "./error";
 export { AuthError } from "./error";
@@ -99,46 +100,29 @@ const ANDROID_TOKEN_FLOW_WARNING =
 
 let warnedAboutAndroidTokenFlow = false;
 
-const VALID_AUTH_CODES = new Set<AuthErrorCode>([
-  "USER_CANCELLED",
-  "AUTH_IN_PROGRESS",
-  "INVALID_CONFIG",
-  "NETWORK_ERROR",
-  "TOKEN_SWAP_FAILED",
-  "TOKEN_SWAP_PARSE_ERROR",
-  "SPOTIFY_NOT_INSTALLED",
-  "AUTH_ERROR",
-  "UNKNOWN",
-]);
-
-const CAUSE_SEPARATOR = "→ Caused by: ";
-const LEGACY_CODE_PREFIX_RE = /^([A-Z_][A-Z0-9_]*):\s*(.*)$/s;
-
-function unwrapReason(message: string): string {
-  const idx = message.lastIndexOf(CAUSE_SEPARATOR);
-  return idx === -1 ? message : message.slice(idx + CAUSE_SEPARATOR.length);
-}
-
-function rethrowAsAuthError(err: unknown): never {
-  if (err instanceof AuthError) throw err;
-  if (err instanceof Error) {
-    const reason = unwrapReason(err.message);
-    const maybeCode = (err as Error & { code?: string }).code;
-    if (maybeCode && VALID_AUTH_CODES.has(maybeCode as AuthErrorCode)) {
-      throw new AuthError(maybeCode as AuthErrorCode, reason);
-    }
-    const m = reason.match(LEGACY_CODE_PREFIX_RE);
-    if (m && VALID_AUTH_CODES.has(m[1] as AuthErrorCode)) {
-      throw new AuthError(m[1] as AuthErrorCode, m[2]!);
-    }
-    throw new AuthError("UNKNOWN", reason);
-  }
-  throw new AuthError("UNKNOWN", String(err));
-}
+const rethrowAsAuthError = createNativeErrorRethrow({
+  ErrorClass: AuthError,
+  unknownCode: "UNKNOWN",
+  legacyCodePrefix: true,
+  validCodes: new Set<AuthErrorCode>([
+    "USER_CANCELLED",
+    "AUTH_IN_PROGRESS",
+    "INVALID_CONFIG",
+    "NETWORK_ERROR",
+    "TOKEN_SWAP_FAILED",
+    "TOKEN_SWAP_PARSE_ERROR",
+    "SPOTIFY_NOT_INSTALLED",
+    "AUTH_ERROR",
+    "UNKNOWN",
+  ]),
+});
 
 function normaliseSession(raw: unknown): SpotifySession {
   if (!raw || typeof raw !== "object") {
-    throw new AuthError("UNKNOWN", "Native module returned a non-object session");
+    throw new AuthError(
+      "UNKNOWN",
+      "Native module returned a non-object session",
+    );
   }
   const r = raw as Record<string, unknown>;
   const accessToken = r.accessToken;
@@ -190,7 +174,10 @@ export const Auth = {
   authenticate(config: AuthenticateConfig): Promise<SpotifySession> {
     if (!config.scopes || config.scopes.length === 0) {
       return Promise.reject(
-        new AuthError("INVALID_CONFIG", "scopes must contain at least one entry"),
+        new AuthError(
+          "INVALID_CONFIG",
+          "scopes must contain at least one entry",
+        ),
       );
     }
     if (
