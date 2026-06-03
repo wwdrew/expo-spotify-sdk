@@ -8,27 +8,45 @@ An Expo module that wraps the native [Spotify iOS SDK](https://github.com/spotif
 
 **Why this exists:** Spotify ships native SDKs for iOS and Android that enable authentication via the installed Spotify app (no browser redirect, better UX) but there is no maintained Expo module for them. This library fills that gap.
 
+## Table of contents
+
+- [Platform support](#platform-support)
+- [Versioning and Expo SDK lanes](#versioning-and-expo-sdk-lanes)
+- [Public API (Auth + App Remote)](#public-api-auth--app-remote)
+- [Quick start (Expo)](#quick-start-expo)
+- [Installation in bare React Native](#installation-in-bare-react-native)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Spotify Premium and App Remote](#spotify-premium-and-app-remote)
+- [Migration from v0.x](#migration-from-v0x)
+- [Documentation](#documentation)
+- [Troubleshooting](#troubleshooting)
+- [Related docs](#related-docs)
+- [Acknowledgements](#acknowledgements)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Platform support
 
 **iOS and Android only.** This module will not support Expo Web or any browser target — there is no web implementation and none is planned.
 
-| Feature | iOS | Android |
-| --- | --- | --- |
-| `Auth.*` | ✅ | ✅ |
-| `AppRemote.*` | ✅ | ✅ |
-| `Player.*` | ✅ | ✅ |
-| `User.*` | ✅ | ✅ |
-| `Content.*` | ✅ | ✅ |
-| `Images.*` | ✅ | ✅ |
+| Feature       | iOS | Android |
+| ------------- | --- | ------- |
+| `Auth.*`      | ✅  | ✅      |
+| `AppRemote.*` | ✅  | ✅      |
+| `Player.*`    | ✅  | ✅      |
+| `User.*`      | ✅  | ✅      |
+| `Content.*`   | ✅  | ✅      |
+| `Images.*`    | ✅  | ✅      |
 
 ## Versioning and Expo SDK lanes
 
 Install the major that matches your Expo SDK:
 
-| npm version | Expo SDK | iOS minimum | Branch |
-| --- | --- | --- | --- |
-| **`1.x`** | 55 | 15.1 | `v1` (long-lived maintenance) |
-| **`2.x`** | 56+ | 16.4 | `main` |
+| npm version | Expo SDK | iOS minimum | Branch                        |
+| ----------- | -------- | ----------- | ----------------------------- |
+| **`1.x`**   | 55       | 15.1        | `v1` (long-lived maintenance) |
+| **`2.x`**   | 56+      | 16.4        | `main`                        |
 
 Both lanes ship the same public API (Auth + App Remote namespaces and hooks). The major version signals **runtime lane**, not a different feature set. See [ADR-0005](./docs/adr/0005-sdk-lane-versioning.md).
 
@@ -294,7 +312,11 @@ Avoid reconnect loops by gating on connection state and attempting at most once 
 
 ```ts
 import { useEffect, useRef } from "react";
-import { AppRemote, useConnectionState, useSession } from "@wwdrew/expo-spotify-sdk";
+import {
+  AppRemote,
+  useConnectionState,
+  useSession,
+} from "@wwdrew/expo-spotify-sdk";
 
 /**
  * Connect when a session exists and App Remote is disconnected.
@@ -322,12 +344,12 @@ For iOS, if `connect()` fails with `CONNECTION_FAILED`, foreground the Spotify a
 
 ## Spotify Premium and App Remote
 
-| Concern | Auth (`Auth.*`) | App Remote (`AppRemote.*`, `Player.*`, …) |
-| --- | --- | --- |
-| Spotify app installed | Recommended (native UX) | **Required** |
-| Spotify app running | No | **Required** — connect talks to the running Spotify process over IPC |
-| Spotify Premium | No | **Required** for reliable on-demand playback and rich player state (track name, transport, browse) |
-| Free account | Auth works | `Player.play()` may fail with `PREMIUM_REQUIRED`; `User.getCapabilities().canPlayOnDemand` is `false` |
+| Concern               | Auth (`Auth.*`)         | App Remote (`AppRemote.*`, `Player.*`, …)                                                             |
+| --------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| Spotify app installed | Recommended (native UX) | **Required**                                                                                          |
+| Spotify app running   | No                      | **Required** — connect talks to the running Spotify process over IPC                                  |
+| Spotify Premium       | No                      | **Required** for reliable on-demand playback and rich player state (track name, transport, browse)    |
+| Free account          | Auth works              | `Player.play()` may fail with `PREMIUM_REQUIRED`; `User.getCapabilities().canPlayOnDemand` is `false` |
 
 **This library does not play audio.** It remote-controls the official Spotify app. On Android especially, Free accounts often see empty or incomplete now-playing metadata even when connected.
 

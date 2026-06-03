@@ -1,5 +1,6 @@
 import type { ExpoConfig } from "expo/config";
-import withSpotifySdk from "../plugin/index.js";
+
+import withSpotifySdk from "../plugin/build/index.js";
 
 export default ({ config }: { config: ExpoConfig }): ExpoConfig => ({
   ...config,
