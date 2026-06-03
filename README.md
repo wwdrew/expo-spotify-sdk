@@ -34,6 +34,11 @@ Both lanes ship the same public API (Auth + App Remote namespaces and hooks). Th
 
 The current `main` branch targets **Expo SDK 56** and releases as **`2.x`**. For Expo SDK 55, install **`1.x`** from the `v1` branch ([ADR-0005](./docs/adr/0005-sdk-lane-versioning.md)).
 
+Auth payload note by lane:
+
+- **`2.x` (`main`)**: Android token swap/refresh requests are normalized to match iOS (`code` for swap, `refresh_token` for refresh).
+- **`1.x` (`v1`)**: Android keeps the legacy payload shape that includes additional form fields for compatibility with existing backends.
+
 ## Public API (Auth + App Remote)
 
 ```ts

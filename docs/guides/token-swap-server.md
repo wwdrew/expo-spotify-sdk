@@ -2,15 +2,63 @@
 
 The `tokenSwapURL` / `tokenRefreshURL` endpoints must be a server you control — **never** put your Spotify `CLIENT_SECRET` in the app bundle.
 
-### Swap endpoint (`POST {tokenSwapURL}`)
+Think of this server as a small OAuth bridge:
 
-The native module sends a `application/x-www-form-urlencoded` body:
+1. The native SDK sends your backend an auth artifact (`code` or `refresh_token`).
+2. Your backend exchanges that artifact with Spotify Accounts.
+3. Your backend returns Spotify's JSON token payload to the app.
 
+## Server-side values to keep internally
+
+Store these on the server (env/config), not in mobile code:
+
+- `SPOTIFY_CLIENT_ID`
+- `SPOTIFY_CLIENT_SECRET`
+- `SPOTIFY_REDIRECT_URI` (must match the redirect URI registered in Spotify Dashboard and used during auth)
+
+## What the endpoints must do
+
+- Accept `application/x-www-form-urlencoded` requests from the SDK.
+- Validate required input (`code` for swap, `refresh_token` for refresh).
+- Call Spotify `https://accounts.spotify.com/api/token` with the correct `grant_type`.
+- Authenticate to Spotify using your app credentials (typically Basic auth header built from Base64-encoded `client_id:client_secret`).
+- Return Spotify's JSON token response to the SDK.
+
+## Swap endpoint (`POST {tokenSwapURL}`)
+
+The native SDK sends an `application/x-www-form-urlencoded` body:
+
+```text
+code=<authorization-code>
 ```
-code=<authorization-code>&redirect_uri=<redirect-uri>&client_id=<client-id>
+
+When your server exchanges the code with Spotify Accounts, include
+`redirect_uri` and ensure it matches the redirect URI used in the original
+authorization request (for example, from `SPOTIFY_REDIRECT_URI` in env).
+
+Your server POSTs to `https://accounts.spotify.com/api/token` with
+`grant_type=authorization_code`, the authorization `code`, the matching
+`redirect_uri`, and your `CLIENT_SECRET` in the `Authorization` header, then
+returns Spotify's response verbatim as `application/json`:
+
+Request shape to Spotify Accounts:
+
+```text
+POST https://accounts.spotify.com/api/token
+Authorization: Basic <base64(client_id:client_secret)>
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+code=<authorization-code>
+redirect_uri=<exact redirect URI used in authorize step>
 ```
 
-Your server POSTs these to `https://accounts.spotify.com/api/token` with `grant_type=authorization_code` and your `CLIENT_SECRET` in the `Authorization` header, then returns Spotify's response verbatim as `application/json`:
+Header construction detail:
+
+```text
+credentials = base64(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)
+Authorization = `Basic ${credentials}`
+```
 
 ```json
 {
@@ -22,21 +70,36 @@ Your server POSTs these to `https://accounts.spotify.com/api/token` with `grant_
 }
 ```
 
-### Refresh endpoint (`POST {tokenRefreshURL}`)
+## Refresh endpoint (`POST {tokenRefreshURL}`)
 
 The native module sends:
 
-```
-refresh_token=<token>&client_id=<client-id>
+```text
+refresh_token=<token>
 ```
 
-Your server POSTs to `https://accounts.spotify.com/api/token` with `grant_type=refresh_token`. Return Spotify's response verbatim. If Spotify rotates the refresh token the response will contain a new `refresh_token`; if not, the field is absent — the library handles both cases correctly.
+Your server POSTs to `https://accounts.spotify.com/api/token` with
+`grant_type=refresh_token` and the `refresh_token` value, then returns Spotify's
+response verbatim. If Spotify rotates the refresh token the response will
+contain a new `refresh_token`; if not, the field is absent — the library
+handles both cases correctly.
 
-### Error responses
+Request shape to Spotify Accounts:
+
+```text
+POST https://accounts.spotify.com/api/token
+Authorization: Basic <base64(client_id:client_secret)>
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token
+refresh_token=<previous refresh token>
+```
+
+## Error responses
 
 Return a non-2xx HTTP status with a JSON body for structured error propagation. The library will reject with `TOKEN_SWAP_FAILED` and include the status code and (truncated) response body in `e.message`.
 
-### Reference implementation
+## Reference implementation
 
 The example app uses [Expo Router API routes](https://docs.expo.dev/router/reference/api-routes/) for the swap and refresh endpoints — no separate server process needed.
 
