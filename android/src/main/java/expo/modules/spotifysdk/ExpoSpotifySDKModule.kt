@@ -176,7 +176,6 @@ class ExpoSpotifySDKModule : Module() {
         if (options.tokenRefreshURL.isBlank()) {
           throw InvalidConfigException("`tokenRefreshURL` is required")
         }
-        val manifest = readManifestConfig()
         val client = SpotifyTokenSwapClient(SDK_VERSION)
         val payload = client.refresh(
           refreshToken = options.refreshToken,
