@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.0.0...expo-spotify-sdk-v2.1.0) (2026-06-03)
+
+
+### Features
+
+* GH-46 improve tokenSwap endpoint contract clarity ([#49](https://github.com/wwdrew/expo-spotify-sdk/issues/49)) ([88c3760](https://github.com/wwdrew/expo-spotify-sdk/commit/88c37600f0fe00f1308274a31d24de0bc64d3dc1))
+
+
+### Documentation
+
+* SDK lane model + maintainability refactors (recreated) ([#51](https://github.com/wwdrew/expo-spotify-sdk/issues/51)) ([903b9e0](https://github.com/wwdrew/expo-spotify-sdk/commit/903b9e00ef0afd88385240d256c4e2d0b713a2af))
+
 ## [2.0.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v1.0.0...expo-spotify-sdk-v2.0.0) (2026-05-29)
 
 
