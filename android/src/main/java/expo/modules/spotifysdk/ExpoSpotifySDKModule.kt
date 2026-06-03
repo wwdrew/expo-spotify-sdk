@@ -141,11 +141,10 @@ class ExpoSpotifySDKModule : Module() {
               ?: throw InvalidConfigException(
                 "Received CODE response but no tokenSwapURL was configured",
               )
-            val client = SpotifyTokenSwapClient(SDK_VERSION, manifest.clientId)
+            val client = SpotifyTokenSwapClient(SDK_VERSION)
             client.swap(
               code = response.code
                 ?: throw TokenSwapParseException("Spotify returned CODE without a code"),
-              redirectUri = manifest.redirectUri,
               tokenSwapURL = swapURL,
               requestedScopes = config.scopes,
             )
@@ -177,8 +176,7 @@ class ExpoSpotifySDKModule : Module() {
         if (options.tokenRefreshURL.isBlank()) {
           throw InvalidConfigException("`tokenRefreshURL` is required")
         }
-        val manifest = readManifestConfig()
-        val client = SpotifyTokenSwapClient(SDK_VERSION, manifest.clientId)
+        val client = SpotifyTokenSwapClient(SDK_VERSION)
         val payload = client.refresh(
           refreshToken = options.refreshToken,
           tokenRefreshURL = options.tokenRefreshURL,

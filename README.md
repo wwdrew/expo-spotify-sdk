@@ -8,31 +8,58 @@ An Expo module that wraps the native [Spotify iOS SDK](https://github.com/spotif
 
 **Why this exists:** Spotify ships native SDKs for iOS and Android that enable authentication via the installed Spotify app (no browser redirect, better UX) but there is no maintained Expo module for them. This library fills that gap.
 
+## Table of contents
+
+- [Platform support](#platform-support)
+- [Versioning and Expo SDK lanes](#versioning-and-expo-sdk-lanes)
+- [Public API (Auth + App Remote)](#public-api-auth--app-remote)
+- [Quick start (Expo)](#quick-start-expo)
+- [Installation in bare React Native](#installation-in-bare-react-native)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Spotify Premium and App Remote](#spotify-premium-and-app-remote)
+- [Migration from v0.x](#migration-from-v0x)
+- [API reference](#api-reference)
+- [Error codes by namespace](#error-codes-by-namespace)
+- [Platform differences (parity)](#platform-differences-parity)
+- [Android implicit (TOKEN) flow is not recommended](#android-implicit-token-flow-is-not-recommended)
+- [Token swap server](#token-swap-server)
+- [Troubleshooting](#troubleshooting)
+- [Related docs](#related-docs)
+- [Acknowledgements](#acknowledgements)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Platform support
 
 **iOS and Android only.** This module will not support Expo Web or any browser target — there is no web implementation and none is planned.
 
-| Feature | iOS | Android |
-| --- | --- | --- |
-| `Auth.*` | ✅ | ✅ |
-| `AppRemote.*` | ✅ | ✅ |
-| `Player.*` | ✅ | ✅ |
-| `User.*` | ✅ | ✅ |
-| `Content.*` | ✅ | ✅ |
-| `Images.*` | ✅ | ✅ |
+| Feature       | iOS | Android |
+| ------------- | --- | ------- |
+| `Auth.*`      | ✅  | ✅      |
+| `AppRemote.*` | ✅  | ✅      |
+| `Player.*`    | ✅  | ✅      |
+| `User.*`      | ✅  | ✅      |
+| `Content.*`   | ✅  | ✅      |
+| `Images.*`    | ✅  | ✅      |
 
 ## Versioning and Expo SDK lanes
 
 Install the major that matches your Expo SDK:
 
-| npm version | Expo SDK | iOS minimum | Branch |
-| --- | --- | --- | --- |
-| **`1.x`** | 55 | 15.1 | `v1` (long-lived maintenance) |
-| **`2.x`** | 56+ | 16.4 | `main` |
+| npm version | Expo SDK | iOS minimum | Branch                        |
+| ----------- | -------- | ----------- | ----------------------------- |
+| **`1.x`**   | 55       | 15.1        | `v1` (long-lived maintenance) |
+| **`2.x`**   | 56+      | 16.4        | `main`                        |
 
 Both lanes ship the same public API (Auth + App Remote namespaces and hooks). The major version signals **runtime lane**, not a different feature set. See [ADR-0005](./docs/adr/0005-sdk-lane-versioning.md).
 
 The current `main` branch targets **Expo SDK 56** and releases as **`2.x`**. For Expo SDK 55, install **`1.x`** from the `v1` branch ([ADR-0005](./docs/adr/0005-sdk-lane-versioning.md)).
+
+Auth payload note by lane:
+
+- **`2.x` (`main`)**: Android token swap/refresh requests are normalized to match iOS (`code` for swap, `refresh_token` for refresh).
+- **`1.x` (`v1`)**: Android keeps the legacy payload shape that includes additional form fields for compatibility with existing backends.
 
 ## Public API (Auth + App Remote)
 
@@ -289,7 +316,11 @@ Avoid reconnect loops by gating on connection state and attempting at most once 
 
 ```ts
 import { useEffect, useRef } from "react";
-import { AppRemote, useConnectionState, useSession } from "@wwdrew/expo-spotify-sdk";
+import {
+  AppRemote,
+  useConnectionState,
+  useSession,
+} from "@wwdrew/expo-spotify-sdk";
 
 /**
  * Connect when a session exists and App Remote is disconnected.
@@ -317,12 +348,12 @@ For iOS, if `connect()` fails with `CONNECTION_FAILED`, foreground the Spotify a
 
 ## Spotify Premium and App Remote
 
-| Concern | Auth (`Auth.*`) | App Remote (`AppRemote.*`, `Player.*`, …) |
-| --- | --- | --- |
-| Spotify app installed | Recommended (native UX) | **Required** |
-| Spotify app running | No | **Required** — connect talks to the running Spotify process over IPC |
-| Spotify Premium | No | **Required** for reliable on-demand playback and rich player state (track name, transport, browse) |
-| Free account | Auth works | `Player.play()` may fail with `PREMIUM_REQUIRED`; `User.getCapabilities().canPlayOnDemand` is `false` |
+| Concern               | Auth (`Auth.*`)         | App Remote (`AppRemote.*`, `Player.*`, …)                                                             |
+| --------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| Spotify app installed | Recommended (native UX) | **Required**                                                                                          |
+| Spotify app running   | No                      | **Required** — connect talks to the running Spotify process over IPC                                  |
+| Spotify Premium       | No                      | **Required** for reliable on-demand playback and rich player state (track name, transport, browse)    |
+| Free account          | Auth works              | `Player.play()` may fail with `PREMIUM_REQUIRED`; `User.getCapabilities().canPlayOnDemand` is `false` |
 
 **This library does not play audio.** It remote-controls the official Spotify app. On Android especially, Free accounts often see empty or incomplete now-playing metadata even when connected.
 
@@ -330,15 +361,15 @@ For iOS, if `connect()` fails with `CONNECTION_FAILED`, foreground the Spotify a
 
 v0.x top-level functions remain exported but are deprecated (scheduled for removal in a future major).
 
-| v0.x | v1 |
-| --- | --- |
-| `isAvailable()` | `Auth.isAvailable()` |
-| `authenticateAsync(config)` | `Auth.authenticate(config)` |
-| `refreshSessionAsync(config)` | `Auth.refresh(config)` |
-| `cancelPendingAuthAsync()` | `Auth.cancelPending()` |
-| `addSessionChangeListener(cb)` | `Auth.addListener("sessionChange", cb)` |
-| `SpotifyError` (auth throws) | `AuthError` (or `instanceof SpotifyError` as catch-all) |
-| `SpotifyErrorCode` | `AuthErrorCode` |
+| v0.x                           | v1                                                      |
+| ------------------------------ | ------------------------------------------------------- |
+| `isAvailable()`                | `Auth.isAvailable()`                                    |
+| `authenticateAsync(config)`    | `Auth.authenticate(config)`                             |
+| `refreshSessionAsync(config)`  | `Auth.refresh(config)`                                  |
+| `cancelPendingAuthAsync()`     | `Auth.cancelPending()`                                  |
+| `addSessionChangeListener(cb)` | `Auth.addListener("sessionChange", cb)`                 |
+| `SpotifyError` (auth throws)   | `AuthError` (or `instanceof SpotifyError` as catch-all) |
+| `SpotifyErrorCode`             | `AuthErrorCode`                                         |
 
 `SpotifySession`, `SpotifyScope`, and config shapes are unchanged. For auth-specific `e.code` narrowing, use `instanceof AuthError` instead of `instanceof SpotifyError`.
 
@@ -354,19 +385,19 @@ Returns `true` if the Spotify app is installed. Does not throw (not available on
 
 Starts OAuth via the installed Spotify app (or web fallback). Throws [`AuthError`](#autherror) on failure.
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `scopes` | `SpotifyScope[]` | ✅ | At least one scope. Include `app-remote-control` for App Remote. |
-| `tokenSwapURL` | `string` | — | Code flow + server swap (recommended). Required on Android for a `refreshToken`. |
-| `tokenRefreshURL` | `string` | — | Refresh endpoint for iOS SDK and `Auth.refresh()`. |
-| `showDialog` | `boolean` | — | Force the consent screen. Default `false`. |
+| Field             | Type             | Required | Description                                                                      |
+| ----------------- | ---------------- | -------- | -------------------------------------------------------------------------------- |
+| `scopes`          | `SpotifyScope[]` | ✅       | At least one scope. Include `app-remote-control` for App Remote.                 |
+| `tokenSwapURL`    | `string`         | —        | Code flow + server swap (recommended). Required on Android for a `refreshToken`. |
+| `tokenRefreshURL` | `string`         | —        | Refresh endpoint for iOS SDK and `Auth.refresh()`.                               |
+| `showDialog`      | `boolean`        | —        | Force the consent screen. Default `false`.                                       |
 
-| Return field | Type | Description |
-| --- | --- | --- |
-| `accessToken` | `string` | Bearer token for Web API and `AppRemote.connect()`. |
-| `refreshToken` | `string \| null` | `null` on Android without `tokenSwapURL`. |
-| `expirationDate` | `number` | Expiry as Unix epoch **milliseconds**. |
-| `scopes` | `SpotifyScope[]` | Granted scopes (requested-only on Android TOKEN flow). |
+| Return field     | Type             | Description                                            |
+| ---------------- | ---------------- | ------------------------------------------------------ |
+| `accessToken`    | `string`         | Bearer token for Web API and `AppRemote.connect()`.    |
+| `refreshToken`   | `string \| null` | `null` on Android without `tokenSwapURL`.              |
+| `expirationDate` | `number`         | Expiry as Unix epoch **milliseconds**.                 |
+| `scopes`         | `SpotifyScope[]` | Granted scopes (requested-only on Android TOKEN flow). |
 
 #### `Auth.cancelPending(): Promise<void>`
 
@@ -382,6 +413,7 @@ A cancelled call rejects with `AuthError` `code: "USER_CANCELLED"`.
 #### `Auth.refresh(config): Promise<SpotifySession>`
 
 Exchanges a refresh token via your refresh server. Pass through `scopes` from the previous session when the refresh response omits `scope`.
+`Auth.refresh()` requires a valid `refreshToken` and `tokenRefreshURL`.
 
 ```ts
 const refreshed = await Auth.refresh({
@@ -395,11 +427,11 @@ const refreshed = await Auth.refresh({
 
 Central place to persist tokens. Fires for every `authenticate` / `refresh` — including calls you did not `await`.
 
-| `type` | Payload | When |
-| --- | --- | --- |
-| `"didInitiate"` | `{ session }` | `Auth.authenticate()` succeeded |
-| `"didRenew"` | `{ session }` | `Auth.refresh()` succeeded |
-| `"didFail"` | `{ error: { code, message } }` | Either call failed |
+| `type`          | Payload                        | When                            |
+| --------------- | ------------------------------ | ------------------------------- |
+| `"didInitiate"` | `{ session }`                  | `Auth.authenticate()` succeeded |
+| `"didRenew"`    | `{ session }`                  | `Auth.refresh()` succeeded      |
+| `"didFail"`     | `{ error: { code, message } }` | Either call failed              |
 
 #### `AuthError`
 
@@ -433,14 +465,14 @@ try {
 
 Connects to the **running** Spotify app. All `Player`, `User`, `Content`, and `Images` calls require an active connection.
 
-| Method | Description |
-| --- | --- |
-| `connect(accessToken)` | Open IPC to Spotify. Resolves when connected. |
-| `disconnect()` | Tear down connection. |
-| `isConnected()` | Synchronous snapshot. |
-| `getConnectionState()` | `"disconnected"` \| `"connecting"` \| `"connected"`. |
-| `addListener("connectionStateChange", cb)` | State transitions. |
-| `addListener("connectionError", cb)` | Failures and drops (`AppRemoteError` codes). |
+| Method                                     | Description                                          |
+| ------------------------------------------ | ---------------------------------------------------- |
+| `connect(accessToken)`                     | Open IPC to Spotify. Resolves when connected.        |
+| `disconnect()`                             | Tear down connection.                                |
+| `isConnected()`                            | Synchronous snapshot.                                |
+| `getConnectionState()`                     | `"disconnected"` \| `"connecting"` \| `"connected"`. |
+| `addListener("connectionStateChange", cb)` | State transitions.                                   |
+| `addListener("connectionError", cb)`       | Failures and drops (`AppRemoteError` codes).         |
 
 **Platform notes:**
 
@@ -500,77 +532,77 @@ Every rejection is an instance of a namespace-specific subclass (`AuthError`, `A
 
 ### `AuthErrorCode`
 
-| Code | When | What to do |
-| --- | --- | --- |
-| `USER_CANCELLED` | User closed auth or `Auth.cancelPending()` ran | Benign — no action |
-| `AUTH_IN_PROGRESS` | Concurrent `Auth.authenticate()` or iOS stuck pending auth | `await Auth.cancelPending()` then retry |
-| `INVALID_CONFIG` | Missing `clientID`, empty `scopes`, or bad plugin setup | Fix config plugin / `app.config`; run `expo prebuild` |
-| `NETWORK_ERROR` | Device cannot reach `tokenSwapURL` / `tokenRefreshURL` | Check dev server URL, HTTPS, device network |
-| `TOKEN_SWAP_FAILED` | Swap server returned non-2xx | Fix server; read status + body in `e.message` |
-| `TOKEN_SWAP_PARSE_ERROR` | Swap response was not valid token JSON | Fix server response shape |
-| `SPOTIFY_NOT_INSTALLED` | Spotify app not found (rare — web fallback may still run) | Prompt install or use web auth |
-| `AUTH_ERROR` | Spotify rejected the authorization | Check Dashboard redirect URI, scopes, test users |
-| `UNKNOWN` | Unexpected native failure | Read `e.message` / `e.cause`; file an issue with logs |
+| Code                     | When                                                       | What to do                                            |
+| ------------------------ | ---------------------------------------------------------- | ----------------------------------------------------- |
+| `USER_CANCELLED`         | User closed auth or `Auth.cancelPending()` ran             | Benign — no action                                    |
+| `AUTH_IN_PROGRESS`       | Concurrent `Auth.authenticate()` or iOS stuck pending auth | `await Auth.cancelPending()` then retry               |
+| `INVALID_CONFIG`         | Missing `clientID`, empty `scopes`, or bad plugin setup    | Fix config plugin / `app.config`; run `expo prebuild` |
+| `NETWORK_ERROR`          | Device cannot reach `tokenSwapURL` / `tokenRefreshURL`     | Check dev server URL, HTTPS, device network           |
+| `TOKEN_SWAP_FAILED`      | Swap server returned non-2xx                               | Fix server; read status + body in `e.message`         |
+| `TOKEN_SWAP_PARSE_ERROR` | Swap response was not valid token JSON                     | Fix server response shape                             |
+| `SPOTIFY_NOT_INSTALLED`  | Spotify app not found (rare — web fallback may still run)  | Prompt install or use web auth                        |
+| `AUTH_ERROR`             | Spotify rejected the authorization                         | Check Dashboard redirect URI, scopes, test users      |
+| `UNKNOWN`                | Unexpected native failure                                  | Read `e.message` / `e.cause`; file an issue with logs |
 
 ### `AppRemoteErrorCode`
 
-| Code | When | What to do |
-| --- | --- | --- |
+| Code                | When                                                       | What to do                                                  |
+| ------------------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
 | `CONNECTION_FAILED` | `connect()` failed (app missing, refused, handshake error) | Open Spotify foreground; re-auth if token stale; retry once |
-| `CONNECTION_LOST` | Connection dropped mid-session | `AppRemote.connect()` again with fresh token |
-| `NOT_CONNECTED` | `AppRemote.*` called before connect completed | `await AppRemote.connect()` first |
-| `UNKNOWN` | Unexpected IPC failure | Read `e.message`; retry connect |
+| `CONNECTION_LOST`   | Connection dropped mid-session                             | `AppRemote.connect()` again with fresh token                |
+| `NOT_CONNECTED`     | `AppRemote.*` called before connect completed              | `await AppRemote.connect()` first                           |
+| `UNKNOWN`           | Unexpected IPC failure                                     | Read `e.message`; retry connect                             |
 
 ### `PlayerErrorCode`
 
-| Code | When | What to do |
-| --- | --- | --- |
-| `NOT_CONNECTED` | `Player.*` before `AppRemote.connect()` | Connect App Remote first |
-| `CONNECTION_LOST` | Dropped during a player call | Reconnect, then retry |
-| `PREMIUM_REQUIRED` | `canPlayOnDemand === false` (Free tier) | Upgrade account or use shuffle/context play only |
-| `INVALID_URI` | URI failed validation | Use `SpotifyURI.from()` |
-| `INVALID_PARAMETER` | Bad argument (e.g. negative seek) | Fix caller |
-| `OPERATION_NOT_ALLOWED` | Player restriction (can't skip, etc.) | Check `PlayerState` restrictions |
-| `UNKNOWN` | Other native player error | Read `e.message` |
+| Code                    | When                                    | What to do                                       |
+| ----------------------- | --------------------------------------- | ------------------------------------------------ |
+| `NOT_CONNECTED`         | `Player.*` before `AppRemote.connect()` | Connect App Remote first                         |
+| `CONNECTION_LOST`       | Dropped during a player call            | Reconnect, then retry                            |
+| `PREMIUM_REQUIRED`      | `canPlayOnDemand === false` (Free tier) | Upgrade account or use shuffle/context play only |
+| `INVALID_URI`           | URI failed validation                   | Use `SpotifyURI.from()`                          |
+| `INVALID_PARAMETER`     | Bad argument (e.g. negative seek)       | Fix caller                                       |
+| `OPERATION_NOT_ALLOWED` | Player restriction (can't skip, etc.)   | Check `PlayerState` restrictions                 |
+| `UNKNOWN`               | Other native player error               | Read `e.message`                                 |
 
 ### `UserErrorCode`
 
-| Code | When | What to do |
-| --- | --- | --- |
-| `NOT_CONNECTED` | `User.*` before connect | Connect App Remote first |
-| `CONNECTION_LOST` | Dropped during user API call | Reconnect |
-| `INVALID_URI` | Bad library URI | Use `SpotifyURI.from()` |
+| Code                    | When                               | What to do                                 |
+| ----------------------- | ---------------------------------- | ------------------------------------------ |
+| `NOT_CONNECTED`         | `User.*` before connect            | Connect App Remote first                   |
+| `CONNECTION_LOST`       | Dropped during user API call       | Reconnect                                  |
+| `INVALID_URI`           | Bad library URI                    | Use `SpotifyURI.from()`                    |
 | `OPERATION_NOT_ALLOWED` | Save/remove blocked (tier, region) | Check `LibraryState.canAdd` / capabilities |
-| `UNKNOWN` | Other native user error | Read `e.message` |
+| `UNKNOWN`               | Other native user error            | Read `e.message`                           |
 
 ### `ContentErrorCode`
 
-| Code | When | What to do |
-| --- | --- | --- |
-| `NOT_CONNECTED` | `Content.*` before connect | Connect App Remote first |
-| `CONNECTION_LOST` | Dropped during browse | Reconnect |
-| `CONTENT_API_UNAVAILABLE` | Spotify app too old for Content API | Update Spotify app |
-| `UNKNOWN` | Other content error | Read `e.message` |
+| Code                      | When                                | What to do               |
+| ------------------------- | ----------------------------------- | ------------------------ |
+| `NOT_CONNECTED`           | `Content.*` before connect          | Connect App Remote first |
+| `CONNECTION_LOST`         | Dropped during browse               | Reconnect                |
+| `CONTENT_API_UNAVAILABLE` | Spotify app too old for Content API | Update Spotify app       |
+| `UNKNOWN`                 | Other content error                 | Read `e.message`         |
 
 ### `ImagesErrorCode`
 
-| Code | When | What to do |
-| --- | --- | --- |
-| `NOT_CONNECTED` | `Images.load()` before connect | Connect App Remote first |
-| `INVALID_URI` | Item has no loadable image | Skip artwork or use placeholder |
-| `IMAGE_LOAD_FAILED` | Spotify or disk write failed | Retry; check free space |
-| `UNKNOWN` | Other image error | Read `e.message` |
+| Code                | When                           | What to do                      |
+| ------------------- | ------------------------------ | ------------------------------- |
+| `NOT_CONNECTED`     | `Images.load()` before connect | Connect App Remote first        |
+| `INVALID_URI`       | Item has no loadable image     | Skip artwork or use placeholder |
+| `IMAGE_LOAD_FAILED` | Spotify or disk write failed   | Retry; check free space         |
+| `UNKNOWN`           | Other image error              | Read `e.message`                |
 
 ## Platform differences (parity)
 
-| Topic | iOS | Android |
-| --- | --- | --- |
-| `AppRemote.connect(accessToken)` | Token passed to `SPTAppRemote` | Token accepted for API parity; SDK uses session cached in Spotify app from prior auth |
-| `Auth.cancelPending()` | Clears stuck `SPTSessionManager` state | No-op |
-| Refresh token without swap | Possible (iOS TOKEN flow) | Not available — use `tokenSwapURL` |
-| `session.scopes` without swap | Granted scopes returned | Requested scopes only (not granted list) |
-| Premium / player metadata | Full App Remote when Premium | Free accounts often lack track titles / on-demand play |
-| Content / Images | Requires recent Spotify app | Same |
+| Topic                            | iOS                                    | Android                                                                               |
+| -------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------- |
+| `AppRemote.connect(accessToken)` | Token passed to `SPTAppRemote`         | Token accepted for API parity; SDK uses session cached in Spotify app from prior auth |
+| `Auth.cancelPending()`           | Clears stuck `SPTSessionManager` state | No-op                                                                                 |
+| Refresh token without swap       | Possible (iOS TOKEN flow)              | Not available — use `tokenSwapURL`                                                    |
+| `session.scopes` without swap    | Granted scopes returned                | Requested scopes only (not granted list)                                              |
+| Premium / player metadata        | Full App Remote when Premium           | Free accounts often lack track titles / on-demand play                                |
+| Content / Images                 | Requires recent Spotify app            | Same                                                                                  |
 
 ## Android implicit (TOKEN) flow is not recommended
 
@@ -589,15 +621,63 @@ See [Spotify's migration guide](https://developer.spotify.com/documentation/andr
 
 The `tokenSwapURL` / `tokenRefreshURL` endpoints must be a server you control — **never** put your Spotify `CLIENT_SECRET` in the app bundle.
 
+Think of this server as a small OAuth bridge:
+
+1. The native SDK sends your backend an auth artifact (`code` or `refresh_token`).
+2. Your backend exchanges that artifact with Spotify Accounts.
+3. Your backend returns Spotify's JSON token payload to the app.
+
+### Server-side values to keep internally
+
+Store these on the server (env/config), not in mobile code:
+
+- `SPOTIFY_CLIENT_ID`
+- `SPOTIFY_CLIENT_SECRET`
+- `SPOTIFY_REDIRECT_URI` (must match the redirect URI registered in Spotify Dashboard and used during auth)
+
+### What the endpoints must do
+
+- Accept `application/x-www-form-urlencoded` requests from the SDK.
+- Validate required input (`code` for swap, `refresh_token` for refresh).
+- Call Spotify `https://accounts.spotify.com/api/token` with the correct `grant_type`.
+- Authenticate to Spotify using your app credentials (typically Basic auth header built from Base64-encoded `client_id:client_secret`).
+- Return Spotify's JSON token response to the SDK.
+
 ### Swap endpoint (`POST {tokenSwapURL}`)
 
-The native module sends a `application/x-www-form-urlencoded` body:
+The native SDK sends an `application/x-www-form-urlencoded` body:
 
-```
-code=<authorization-code>&redirect_uri=<redirect-uri>&client_id=<client-id>
+```text
+code=<authorization-code>
 ```
 
-Your server POSTs these to `https://accounts.spotify.com/api/token` with `grant_type=authorization_code` and your `CLIENT_SECRET` in the `Authorization` header, then returns Spotify's response verbatim as `application/json`:
+When your server exchanges the code with Spotify Accounts, include
+`redirect_uri` and ensure it matches the redirect URI used in the original
+authorization request (for example, from `SPOTIFY_REDIRECT_URI` in env).
+
+Your server POSTs to `https://accounts.spotify.com/api/token` with
+`grant_type=authorization_code`, the authorization `code`, the matching
+`redirect_uri`, and your `CLIENT_SECRET` in the `Authorization` header, then
+returns Spotify's response verbatim as `application/json`:
+
+Request shape to Spotify Accounts:
+
+```text
+POST https://accounts.spotify.com/api/token
+Authorization: Basic <base64(client_id:client_secret)>
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+code=<authorization-code>
+redirect_uri=<exact redirect URI used in authorize step>
+```
+
+Header construction detail:
+
+```text
+credentials = base64(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)
+Authorization = `Basic ${credentials}`
+```
 
 ```json
 {
@@ -613,11 +693,26 @@ Your server POSTs these to `https://accounts.spotify.com/api/token` with `grant_
 
 The native module sends:
 
-```
-refresh_token=<token>&client_id=<client-id>
+```text
+refresh_token=<token>
 ```
 
-Your server POSTs to `https://accounts.spotify.com/api/token` with `grant_type=refresh_token`. Return Spotify's response verbatim. If Spotify rotates the refresh token the response will contain a new `refresh_token`; if not, the field is absent — the library handles both cases correctly.
+Your server POSTs to `https://accounts.spotify.com/api/token` with
+`grant_type=refresh_token` and the `refresh_token` value, then returns Spotify's
+response verbatim. If Spotify rotates the refresh token the response will
+contain a new `refresh_token`; if not, the field is absent — the library
+handles both cases correctly.
+
+Request shape to Spotify Accounts:
+
+```text
+POST https://accounts.spotify.com/api/token
+Authorization: Basic <base64(client_id:client_secret)>
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token
+refresh_token=<previous refresh token>
+```
 
 ### Error responses
 
