@@ -1,226 +1,6 @@
-import ExpoModulesCore
 import Foundation
 import SpotifyiOS
 import UIKit
-
-// MARK: — App Remote error types
-
-enum AppRemoteError: Error {
-  case connectionFailed(String)
-  case connectionLost(String)
-  case notConnected(String)
-  case unknown(String)
-
-  var code: String {
-    switch self {
-    case .connectionFailed: return "CONNECTION_FAILED"
-    case .connectionLost:   return "CONNECTION_LOST"
-    case .notConnected:     return "NOT_CONNECTED"
-    case .unknown:          return "UNKNOWN"
-    }
-  }
-
-  var message: String {
-    switch self {
-    case .connectionFailed(let m): return m
-    case .connectionLost(let m):   return m
-    case .notConnected(let m):     return m
-    case .unknown(let m):          return m
-    }
-  }
-}
-
-/// Bridges an `AppRemoteError` through expo-modules-core's exception system so
-/// JS callers receive a structured `code` and `reason`, not "undefined reason".
-final class AppRemoteException: Exception, @unchecked Sendable {
-  private let appRemoteCode: String
-  private let appRemoteMessage: String
-
-  init(_ error: AppRemoteError, file: String = #fileID, line: UInt = #line, function: String = #function) {
-    self.appRemoteCode = error.code
-    self.appRemoteMessage = error.message
-    super.init(file: file, line: line, function: function)
-  }
-
-  override var code: String { appRemoteCode }
-  override var reason: String { appRemoteMessage }
-}
-
-// MARK: — Player error types
-
-enum NativePlayerError: Error {
-  case notConnected(String)
-  case connectionLost(String)
-  case premiumRequired(String)
-  case invalidURI(String)
-  case invalidParameter(String)
-  case operationNotAllowed(String)
-  case unknown(String)
-
-  var code: String {
-    switch self {
-    case .notConnected:        return "NOT_CONNECTED"
-    case .connectionLost:      return "CONNECTION_LOST"
-    case .premiumRequired:     return "PREMIUM_REQUIRED"
-    case .invalidURI:          return "INVALID_URI"
-    case .invalidParameter:    return "INVALID_PARAMETER"
-    case .operationNotAllowed: return "OPERATION_NOT_ALLOWED"
-    case .unknown:             return "UNKNOWN"
-    }
-  }
-
-  var message: String {
-    switch self {
-    case .notConnected(let m):        return m
-    case .connectionLost(let m):      return m
-    case .premiumRequired(let m):     return m
-    case .invalidURI(let m):          return m
-    case .invalidParameter(let m):    return m
-    case .operationNotAllowed(let m): return m
-    case .unknown(let m):             return m
-    }
-  }
-}
-
-final class PlayerException: Exception, @unchecked Sendable {
-  private let playerCode: String
-  private let playerMessage: String
-
-  init(_ error: NativePlayerError, file: String = #fileID, line: UInt = #line, function: String = #function) {
-    self.playerCode = error.code
-    self.playerMessage = error.message
-    super.init(file: file, line: line, function: function)
-  }
-
-  override var code: String { playerCode }
-  override var reason: String { playerMessage }
-}
-
-// MARK: — User error types
-
-enum NativeUserError: Error {
-  case notConnected(String)
-  case connectionLost(String)
-  case invalidURI(String)
-  case operationNotAllowed(String)
-  case unknown(String)
-
-  var code: String {
-    switch self {
-    case .notConnected:      return "NOT_CONNECTED"
-    case .connectionLost:    return "CONNECTION_LOST"
-    case .invalidURI:        return "INVALID_URI"
-    case .operationNotAllowed: return "OPERATION_NOT_ALLOWED"
-    case .unknown:           return "UNKNOWN"
-    }
-  }
-
-  var message: String {
-    switch self {
-    case .notConnected(let m):      return m
-    case .connectionLost(let m):    return m
-    case .invalidURI(let m):        return m
-    case .operationNotAllowed(let m): return m
-    case .unknown(let m):           return m
-    }
-  }
-}
-
-final class UserException: Exception, @unchecked Sendable {
-  private let userCode: String
-  private let userMessage: String
-
-  init(_ error: NativeUserError, file: String = #fileID, line: UInt = #line, function: String = #function) {
-    self.userCode = error.code
-    self.userMessage = error.message
-    super.init(file: file, line: line, function: function)
-  }
-
-  override var code: String { userCode }
-  override var reason: String { userMessage }
-}
-
-// MARK: — Content error types
-
-enum NativeContentError: Error {
-  case notConnected(String)
-  case connectionLost(String)
-  case contentAPIUnavailable(String)
-  case unknown(String)
-
-  var code: String {
-    switch self {
-    case .notConnected: return "NOT_CONNECTED"
-    case .connectionLost: return "CONNECTION_LOST"
-    case .contentAPIUnavailable: return "CONTENT_API_UNAVAILABLE"
-    case .unknown: return "UNKNOWN"
-    }
-  }
-
-  var message: String {
-    switch self {
-    case .notConnected(let m): return m
-    case .connectionLost(let m): return m
-    case .contentAPIUnavailable(let m): return m
-    case .unknown(let m): return m
-    }
-  }
-}
-
-final class ContentException: Exception, @unchecked Sendable {
-  private let contentCode: String
-  private let contentMessage: String
-
-  init(_ error: NativeContentError, file: String = #fileID, line: UInt = #line, function: String = #function) {
-    self.contentCode = error.code
-    self.contentMessage = error.message
-    super.init(file: file, line: line, function: function)
-  }
-
-  override var code: String { contentCode }
-  override var reason: String { contentMessage }
-}
-
-// MARK: — Images error types
-
-enum NativeImagesError: Error {
-  case notConnected(String)
-  case invalidURI(String)
-  case imageLoadFailed(String)
-  case unknown(String)
-
-  var code: String {
-    switch self {
-    case .notConnected: return "NOT_CONNECTED"
-    case .invalidURI: return "INVALID_URI"
-    case .imageLoadFailed: return "IMAGE_LOAD_FAILED"
-    case .unknown: return "UNKNOWN"
-    }
-  }
-
-  var message: String {
-    switch self {
-    case .notConnected(let m): return m
-    case .invalidURI(let m): return m
-    case .imageLoadFailed(let m): return m
-    case .unknown(let m): return m
-    }
-  }
-}
-
-final class ImagesException: Exception, @unchecked Sendable {
-  private let imagesCode: String
-  private let imagesMessage: String
-
-  init(_ error: NativeImagesError, file: String = #fileID, line: UInt = #line, function: String = #function) {
-    self.imagesCode = error.code
-    self.imagesMessage = error.message
-    super.init(file: file, line: line, function: function)
-  }
-
-  override var code: String { imagesCode }
-  override var reason: String { imagesMessage }
-}
 
 // MARK: — Coordinator
 
@@ -266,9 +46,12 @@ actor SpotifyAppRemoteCoordinator {
 
   private init(sptConfiguration: SPTConfiguration) {
     self.sptConfiguration = sptConfiguration
-    self.connectionBridge = SpotifyAppRemoteDelegateBridge()
-    self.playerStateBridge = SpotifyPlayerStateDelegateBridge()
-    self.userCapabilitiesBridge = SpotifyUserCapabilitiesDelegateBridge()
+    let connectionBridge = SpotifyAppRemoteDelegateBridge()
+    let playerStateBridge = SpotifyPlayerStateDelegateBridge()
+    let userCapabilitiesBridge = SpotifyUserCapabilitiesDelegateBridge()
+    self.connectionBridge = connectionBridge
+    self.playerStateBridge = playerStateBridge
+    self.userCapabilitiesBridge = userCapabilitiesBridge
     connectionBridge.coordinator = self
     playerStateBridge.coordinator = self
     userCapabilitiesBridge.coordinator = self
@@ -381,7 +164,7 @@ actor SpotifyAppRemoteCoordinator {
 
   /// Called by `SpotifyPlayerStateDelegateBridge` when a state update arrives.
   func playerStateDidChange(_ state: any SPTAppRemotePlayerState) {
-    onPlayerStateChange?(Self.playerStateToMap(state))
+    onPlayerStateChange?(SpotifyAppRemoteMappers.playerStateToMap(state))
   }
 
   // MARK: — User subscription
@@ -400,7 +183,7 @@ actor SpotifyAppRemoteCoordinator {
 
   /// Called by `SpotifyUserCapabilitiesDelegateBridge` on each capabilities update.
   func userCapabilitiesDidChange(_ capabilities: any SPTAppRemoteUserCapabilities) {
-    onCapabilitiesChange?(Self.capabilitiesToMap(capabilities))
+    onCapabilitiesChange?(SpotifyAppRemoteMappers.capabilitiesToMap(capabilities))
   }
 
   // MARK: — Player transport
@@ -458,9 +241,9 @@ actor SpotifyAppRemoteCoordinator {
     return try await withCheckedThrowingContinuation { cont in
       playerAPI.getPlayerState { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizePlayerError(error as NSError, callsite: "Player.getPlayerState"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapPlayerError(error as NSError, callsite: "Player.getPlayerState"))
         } else if let state = result as? any SPTAppRemotePlayerState {
-          cont.resume(returning: Self.playerStateToMap(state))
+          cont.resume(returning: SpotifyAppRemoteMappers.playerStateToMap(state))
         } else {
           cont.resume(throwing: NativePlayerError.unknown("Player.getPlayerState: unexpected result type"))
         }
@@ -473,7 +256,7 @@ actor SpotifyAppRemoteCoordinator {
     return try await withCheckedThrowingContinuation { cont in
       playerAPI.getCrossfadeState { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizePlayerError(error as NSError, callsite: "Player.getCrossfadeState"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapPlayerError(error as NSError, callsite: "Player.getCrossfadeState"))
         } else if let state = result as? any SPTAppRemoteCrossfadeState {
           cont.resume(returning: ["isEnabled": state.isEnabled, "duration": state.duration])
         } else {
@@ -489,7 +272,7 @@ actor SpotifyAppRemoteCoordinator {
     let speeds: [any SPTAppRemotePodcastPlaybackSpeed] = try await withCheckedThrowingContinuation { cont in
       playerAPI.getAvailablePodcastPlaybackSpeeds { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizePlayerError(error as NSError, callsite: "Player.setPodcastPlaybackSpeed"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapPlayerError(error as NSError, callsite: "Player.setPodcastPlaybackSpeed"))
         } else if let speeds = result as? [any SPTAppRemotePodcastPlaybackSpeed] {
           cont.resume(returning: speeds)
         } else {
@@ -515,9 +298,9 @@ actor SpotifyAppRemoteCoordinator {
     return try await withCheckedThrowingContinuation { cont in
       userAPI.fetchCapabilities { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.getCapabilities"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapUserError(error as NSError, callsite: "User.getCapabilities"))
         } else if let capabilities = result as? any SPTAppRemoteUserCapabilities {
-          cont.resume(returning: Self.capabilitiesToMap(capabilities))
+          cont.resume(returning: SpotifyAppRemoteMappers.capabilitiesToMap(capabilities))
         } else {
           cont.resume(throwing: NativeUserError.unknown("User.getCapabilities: unexpected result type"))
         }
@@ -530,9 +313,9 @@ actor SpotifyAppRemoteCoordinator {
     return try await withCheckedThrowingContinuation { cont in
       userAPI.fetchLibraryState(forURI: uri) { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.getLibraryState"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapUserError(error as NSError, callsite: "User.getLibraryState"))
         } else if let state = result as? any SPTAppRemoteLibraryState {
-          cont.resume(returning: Self.libraryStateToMap(state))
+          cont.resume(returning: SpotifyAppRemoteMappers.libraryStateToMap(state))
         } else {
           cont.resume(throwing: NativeUserError.unknown("User.getLibraryState: unexpected result type"))
         }
@@ -545,9 +328,9 @@ actor SpotifyAppRemoteCoordinator {
     return try await withCheckedThrowingContinuation { cont in
       userAPI.addItemToLibrary(withURI: uri) { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.addToLibrary"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapUserError(error as NSError, callsite: "User.addToLibrary"))
         } else if let state = result as? any SPTAppRemoteLibraryState {
-          cont.resume(returning: Self.libraryStateToMap(state))
+          cont.resume(returning: SpotifyAppRemoteMappers.libraryStateToMap(state))
         } else {
           cont.resume(throwing: NativeUserError.unknown("User.addToLibrary: unexpected result type"))
         }
@@ -560,9 +343,9 @@ actor SpotifyAppRemoteCoordinator {
     return try await withCheckedThrowingContinuation { cont in
       userAPI.removeItemFromLibrary(withURI: uri) { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizeUserError(error as NSError, callsite: "User.removeFromLibrary"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapUserError(error as NSError, callsite: "User.removeFromLibrary"))
         } else if let state = result as? any SPTAppRemoteLibraryState {
-          cont.resume(returning: Self.libraryStateToMap(state))
+          cont.resume(returning: SpotifyAppRemoteMappers.libraryStateToMap(state))
         } else {
           cont.resume(throwing: NativeUserError.unknown("User.removeFromLibrary: unexpected result type"))
         }
@@ -575,11 +358,11 @@ actor SpotifyAppRemoteCoordinator {
   func contentGetRecommendedContentItems(type: String) async throws -> [[String: Any]] {
     let contentAPI = try requireContentAPI(callsite: "Content.getRecommendedContentItems")
     return try await withCheckedThrowingContinuation { cont in
-      contentAPI.fetchRecommendedContentItems(forType: Self.mapContentType(type), flattenContainers: false) { result, error in
+      contentAPI.fetchRecommendedContentItems(forType: SpotifyAppRemoteMappers.mapContentType(type), flattenContainers: false) { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizeContentError(error as NSError, callsite: "Content.getRecommendedContentItems"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapContentError(error as NSError, callsite: "Content.getRecommendedContentItems"))
         } else if let list = result as? [any SPTAppRemoteContentItem] {
-          cont.resume(returning: list.map(Self.contentItemToMap))
+          cont.resume(returning: list.map(SpotifyAppRemoteMappers.contentItemToMap))
         } else {
           cont.resume(throwing: NativeContentError.unknown("Content.getRecommendedContentItems: unexpected result type"))
         }
@@ -596,7 +379,7 @@ actor SpotifyAppRemoteCoordinator {
     let contentItem: any SPTAppRemoteContentItem = try await withCheckedThrowingContinuation { cont in
       contentAPI.fetchContentItem(forURI: uri) { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizeContentError(error as NSError, callsite: "Content.getChildren"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapContentError(error as NSError, callsite: "Content.getChildren"))
         } else if let item = result as? any SPTAppRemoteContentItem {
           cont.resume(returning: item)
         } else {
@@ -608,9 +391,9 @@ actor SpotifyAppRemoteCoordinator {
     return try await withCheckedThrowingContinuation { cont in
       contentAPI.fetchChildren(of: contentItem, callback: { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizeContentError(error as NSError, callsite: "Content.getChildren"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapContentError(error as NSError, callsite: "Content.getChildren"))
         } else if let children = result as? [any SPTAppRemoteContentItem] {
-          cont.resume(returning: children.map(Self.contentItemToMap))
+          cont.resume(returning: children.map(SpotifyAppRemoteMappers.contentItemToMap))
         } else {
           cont.resume(throwing: NativeContentError.unknown("Content.getChildren: unexpected result type"))
         }
@@ -626,12 +409,12 @@ actor SpotifyAppRemoteCoordinator {
     }
     let imageAPI = try requireImageAPI(callsite: "Images.load")
     let representable = LocalImageRepresentable(imageIdentifier: imageIdentifier)
-    let targetSize = Self.mapImageSize(size)
+    let targetSize = SpotifyAppRemoteMappers.mapImageSize(size)
 
     let image: UIImage = try await withCheckedThrowingContinuation { cont in
       imageAPI.fetchImage(forItem: representable, with: targetSize) { result, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizeImagesError(error as NSError, callsite: "Images.load"))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapImagesError(error as NSError, callsite: "Images.load"))
         } else if let image = result as? UIImage {
           cont.resume(returning: image)
         } else {
@@ -699,170 +482,12 @@ actor SpotifyAppRemoteCoordinator {
     try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
       block { _, error in
         if let error = error {
-          cont.resume(throwing: Self.normalizePlayerError(error as NSError, callsite: callsite))
+          cont.resume(throwing: SpotifyAppRemoteErrorMapping.mapPlayerError(error as NSError, callsite: callsite))
         } else {
           cont.resume()
         }
       }
     }
-  }
-
-  private static func normalizePlayerError(_ error: NSError, callsite: String) -> NativePlayerError {
-    guard error.domain == SPTAppRemoteErrorDomain else {
-      return .unknown(error.localizedDescription)
-    }
-    switch error.code {
-    case SPTAppRemoteErrorCode.connectionTerminatedError.rawValue:
-      return .connectionLost("\(callsite): connection to Spotify app was terminated")
-    case SPTAppRemoteErrorCode.invalidArgumentsError.rawValue:
-      return .invalidParameter(error.localizedDescription)
-    case SPTAppRemoteErrorCode.requestFailedError.rawValue:
-      let desc = error.localizedDescription.lowercased()
-      if desc.contains("premium") {
-        return .premiumRequired("\(callsite): Spotify Premium is required for on-demand playback")
-      }
-      if desc.contains("not allowed") || desc.contains("restriction") {
-        return .operationNotAllowed("\(callsite): \(error.localizedDescription)")
-      }
-      return .unknown(error.localizedDescription)
-    default:
-      return .unknown(error.localizedDescription)
-    }
-  }
-
-  private static func playerStateToMap(_ state: any SPTAppRemotePlayerState) -> [String: Any] {
-    let track = state.track
-    let restrictions = state.playbackRestrictions
-    let options = state.playbackOptions
-    return [
-      "track": [
-        "uri": track.uri,
-        "name": track.name,
-        "imageIdentifier": track.imageIdentifier,
-        "duration": track.duration,
-        "artist": ["name": track.artist.name, "uri": track.artist.uri],
-        "album": ["name": track.album.name, "uri": track.album.uri],
-        "isSaved": track.isSaved,
-        "isEpisode": track.isEpisode,
-        "isPodcast": track.isPodcast,
-        "isAdvertisement": track.isAdvertisement,
-      ] as [String: Any],
-      "playbackPosition": state.playbackPosition,
-      "playbackSpeed": state.playbackSpeed,
-      "isPaused": state.isPaused,
-      "playbackOptions": [
-        "isShuffling": options.isShuffling,
-        "repeatMode": options.repeatMode.rawValue,
-      ] as [String: Any],
-      "playbackRestrictions": [
-        "canSkipNext": restrictions.canSkipNext,
-        "canSkipPrevious": restrictions.canSkipPrevious,
-        "canRepeatTrack": restrictions.canRepeatTrack,
-        "canRepeatContext": restrictions.canRepeatContext,
-        "canToggleShuffle": restrictions.canToggleShuffle,
-        "canSeek": restrictions.canSeek,
-      ] as [String: Any],
-      "contextTitle": state.contextTitle,
-      "contextUri": state.contextURI.absoluteString,
-    ]
-  }
-
-  private static func capabilitiesToMap(_ capabilities: any SPTAppRemoteUserCapabilities) -> [String: Any] {
-    ["canPlayOnDemand": capabilities.canPlayOnDemand]
-  }
-
-  private static func libraryStateToMap(_ state: any SPTAppRemoteLibraryState) -> [String: Any] {
-    ["uri": state.uri, "isAdded": state.isAdded, "canAdd": state.canAdd]
-  }
-
-  private static func normalizeUserError(_ error: NSError, callsite: String) -> NativeUserError {
-    guard error.domain == SPTAppRemoteErrorDomain else {
-      return .unknown(error.localizedDescription)
-    }
-    switch error.code {
-    case SPTAppRemoteErrorCode.connectionTerminatedError.rawValue:
-      return .connectionLost("\(callsite): connection to Spotify app was terminated")
-    case SPTAppRemoteErrorCode.invalidArgumentsError.rawValue:
-      return .invalidURI("\(callsite): \(error.localizedDescription)")
-    case SPTAppRemoteErrorCode.requestFailedError.rawValue:
-      let desc = error.localizedDescription.lowercased()
-      if desc.contains("not allowed") || desc.contains("restriction") {
-        return .operationNotAllowed("\(callsite): \(error.localizedDescription)")
-      }
-      return .unknown(error.localizedDescription)
-    default:
-      return .unknown(error.localizedDescription)
-    }
-  }
-
-  private static func normalizeContentError(_ error: NSError, callsite: String) -> NativeContentError {
-    guard error.domain == SPTAppRemoteErrorDomain else {
-      return .unknown(error.localizedDescription)
-    }
-    switch error.code {
-    case SPTAppRemoteErrorCode.connectionTerminatedError.rawValue:
-      return .connectionLost("\(callsite): connection to Spotify app was terminated")
-    case SPTAppRemoteErrorCode.requestFailedError.rawValue:
-      let desc = error.localizedDescription.lowercased()
-      if desc.contains("not supported") || desc.contains("unsupported") {
-        return .contentAPIUnavailable("\(callsite): content API is unavailable on this Spotify app version")
-      }
-      return .unknown(error.localizedDescription)
-    default:
-      return .unknown(error.localizedDescription)
-    }
-  }
-
-  private static func normalizeImagesError(_ error: NSError, callsite: String) -> NativeImagesError {
-    guard error.domain == SPTAppRemoteErrorDomain else {
-      return .unknown(error.localizedDescription)
-    }
-    switch error.code {
-    case SPTAppRemoteErrorCode.connectionTerminatedError.rawValue:
-      return .notConnected("\(callsite): connection to Spotify app was terminated")
-    case SPTAppRemoteErrorCode.invalidArgumentsError.rawValue:
-      return .invalidURI("\(callsite): invalid image identifier")
-    case SPTAppRemoteErrorCode.requestFailedError.rawValue:
-      return .imageLoadFailed("\(callsite): Spotify rejected image request")
-    default:
-      return .unknown(error.localizedDescription)
-    }
-  }
-
-  private static func mapContentType(_ type: String) -> String {
-    switch type {
-    case "navigation": return SPTAppRemoteContentTypeNavigation
-    case "fitness": return SPTAppRemoteContentTypeFitness
-    case "gaming": return SPTAppRemoteContentTypeGaming
-    default: return SPTAppRemoteContentTypeDefault
-    }
-  }
-
-  private static func mapImageSize(_ size: String) -> CGSize {
-    switch size {
-    case "small": return CGSize(width: 64, height: 64)
-    case "medium": return CGSize(width: 300, height: 300)
-    default: return CGSize(width: 640, height: 640)
-    }
-  }
-
-  private static func contentItemToMap(_ item: any SPTAppRemoteContentItem) -> [String: Any] {
-    var map: [String: Any] = [
-      "title": item.title as Any,
-      "subtitle": item.subtitle as Any,
-      "contentDescription": item.contentDescription as Any,
-      "identifier": item.identifier,
-      "uri": item.uri,
-      "imageIdentifier": item.imageIdentifier,
-      "isAvailableOffline": item.isAvailableOffline,
-      "isPlayable": item.isPlayable,
-      "isContainer": item.isContainer,
-      "isPinned": item.isPinned,
-    ]
-    if let children = item.children {
-      map["children"] = children.map(Self.contentItemToMap)
-    }
-    return map
   }
 
   private func transitionState(_ state: String) {

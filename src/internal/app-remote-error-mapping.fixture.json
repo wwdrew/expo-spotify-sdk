@@ -1,0 +1,230 @@
+{
+  "version": 1,
+  "description": "Canonical App Remote native-error → public JS code mapping. iOS and Android implementations must stay aligned with this matrix.",
+  "namespaces": {
+    "Player": {
+      "codes": [
+        "NOT_CONNECTED",
+        "CONNECTION_LOST",
+        "PREMIUM_REQUIRED",
+        "INVALID_URI",
+        "INVALID_PARAMETER",
+        "OPERATION_NOT_ALLOWED",
+        "UNKNOWN"
+      ],
+      "rules": [
+        {
+          "code": "CONNECTION_LOST",
+          "when": "Connection dropped during a player API call",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.connectionTerminatedError"],
+            "messageContains": []
+          },
+          "android": {
+            "typed": [
+              "SpotifyConnectionTerminatedException",
+              "SpotifyDisconnectedException"
+            ],
+            "messageContains": ["disconnected", "not connected"]
+          }
+        },
+        {
+          "code": "PREMIUM_REQUIRED",
+          "when": "Free-tier user attempted on-demand playback",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.requestFailedError"],
+            "messageContains": ["premium"]
+          },
+          "android": {
+            "typed": [],
+            "messageContains": ["premium"]
+          }
+        },
+        {
+          "code": "INVALID_PARAMETER",
+          "when": "Invalid argument to a player method",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.invalidArgumentsError"],
+            "messageContains": []
+          },
+          "android": {
+            "typed": ["RemoteClientException", "SpotifyAppRemoteException", "SpotifyRemoteServiceException"],
+            "messageContains": ["invalid"]
+          }
+        },
+        {
+          "code": "OPERATION_NOT_ALLOWED",
+          "when": "Playback restriction blocked the operation",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.requestFailedError"],
+            "messageContains": ["not allowed", "restriction"]
+          },
+          "android": {
+            "typed": [],
+            "messageContains": ["not allowed", "restriction"]
+          }
+        },
+        {
+          "code": "UNKNOWN",
+          "when": "Unrecognised native failure",
+          "ios": { "typed": [], "messageContains": [] },
+          "android": { "typed": [], "messageContains": [] }
+        }
+      ]
+    },
+    "User": {
+      "codes": [
+        "NOT_CONNECTED",
+        "CONNECTION_LOST",
+        "INVALID_URI",
+        "OPERATION_NOT_ALLOWED",
+        "UNKNOWN"
+      ],
+      "rules": [
+        {
+          "code": "CONNECTION_LOST",
+          "when": "Connection dropped during a user API call",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.connectionTerminatedError"],
+            "messageContains": []
+          },
+          "android": {
+            "typed": [
+              "SpotifyConnectionTerminatedException",
+              "SpotifyDisconnectedException"
+            ],
+            "messageContains": ["disconnected", "not connected"]
+          }
+        },
+        {
+          "code": "INVALID_URI",
+          "when": "Library URI failed validation",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.invalidArgumentsError"],
+            "messageContains": []
+          },
+          "android": {
+            "typed": ["RemoteClientException", "SpotifyAppRemoteException", "SpotifyRemoteServiceException"],
+            "messageContains": ["uri", "invalid"]
+          }
+        },
+        {
+          "code": "OPERATION_NOT_ALLOWED",
+          "when": "Save/remove blocked by tier or region",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.requestFailedError"],
+            "messageContains": ["not allowed", "restriction"]
+          },
+          "android": {
+            "typed": [],
+            "messageContains": ["not allowed", "restriction"]
+          }
+        },
+        {
+          "code": "UNKNOWN",
+          "when": "Unrecognised native failure",
+          "ios": { "typed": [], "messageContains": [] },
+          "android": { "typed": [], "messageContains": [] }
+        }
+      ]
+    },
+    "Content": {
+      "codes": [
+        "NOT_CONNECTED",
+        "CONNECTION_LOST",
+        "CONTENT_API_UNAVAILABLE",
+        "UNKNOWN"
+      ],
+      "rules": [
+        {
+          "code": "CONNECTION_LOST",
+          "when": "Connection dropped during content browse",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.connectionTerminatedError"],
+            "messageContains": []
+          },
+          "android": {
+            "typed": [
+              "SpotifyConnectionTerminatedException",
+              "SpotifyDisconnectedException"
+            ],
+            "messageContains": ["disconnected", "not connected"]
+          }
+        },
+        {
+          "code": "CONTENT_API_UNAVAILABLE",
+          "when": "Spotify app version lacks Content API",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.requestFailedError"],
+            "messageContains": ["not supported", "unsupported"]
+          },
+          "android": {
+            "typed": ["RemoteClientException", "SpotifyAppRemoteException", "SpotifyRemoteServiceException"],
+            "messageContains": ["not supported", "unsupported"]
+          }
+        },
+        {
+          "code": "UNKNOWN",
+          "when": "Unrecognised native failure",
+          "ios": { "typed": [], "messageContains": [] },
+          "android": { "typed": [], "messageContains": [] }
+        }
+      ]
+    },
+    "Images": {
+      "codes": [
+        "NOT_CONNECTED",
+        "INVALID_URI",
+        "IMAGE_LOAD_FAILED",
+        "UNKNOWN"
+      ],
+      "rules": [
+        {
+          "code": "NOT_CONNECTED",
+          "when": "Connection dropped during image load",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.connectionTerminatedError"],
+            "messageContains": []
+          },
+          "android": {
+            "typed": [
+              "SpotifyConnectionTerminatedException",
+              "SpotifyDisconnectedException"
+            ],
+            "messageContains": ["disconnected", "not connected"]
+          }
+        },
+        {
+          "code": "INVALID_URI",
+          "when": "Image identifier failed validation",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.invalidArgumentsError"],
+            "messageContains": []
+          },
+          "android": {
+            "typed": ["RemoteClientException", "SpotifyAppRemoteException", "SpotifyRemoteServiceException"],
+            "messageContains": ["invalid"]
+          }
+        },
+        {
+          "code": "IMAGE_LOAD_FAILED",
+          "when": "Spotify rejected or failed the image request",
+          "ios": {
+            "typed": ["SPTAppRemoteErrorCode.requestFailedError"],
+            "messageContains": []
+          },
+          "android": {
+            "typed": ["RemoteClientException", "SpotifyAppRemoteException", "SpotifyRemoteServiceException"],
+            "messageContains": []
+          }
+        },
+        {
+          "code": "UNKNOWN",
+          "when": "Unrecognised native failure",
+          "ios": { "typed": [], "messageContains": [] },
+          "android": { "typed": [], "messageContains": [] }
+        }
+      ]
+    }
+  }
+}

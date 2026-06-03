@@ -82,6 +82,13 @@ cd example
 npx expo run:android
 ```
 
+The example app's Android `namespace` / `applicationId` is
+`expo.modules.spotifysdk.example` (see `example/app.json`). After
+`npx expo prebuild`, Kotlin sources should live only under
+`example/android/app/src/main/java/expo/modules/spotifysdk/example/`.
+Delete any orphan `com/` tree left over from an old package name — CI runs
+`scripts/verify-example-android-package.sh` to catch this.
+
 ## Commit messages
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/).
@@ -121,6 +128,8 @@ When adding new plugin modifiers, add a corresponding test that checks:
 
 1. The modifier applies the expected change.
 2. Running the modifier a second time is idempotent.
+
+When changing App Remote error mapping on iOS or Android, update both native mappers and [`src/internal/app-remote-error-mapping.fixture.json`](src/internal/app-remote-error-mapping.fixture.json). Run `yarn test` — the fixture test guards drift between platforms and the TypeScript error unions.
 
 ## Pull request checklist
 

@@ -1,6 +1,3 @@
-export type { UserErrorCode } from "./error";
-export { UserError } from "./error";
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -8,8 +5,12 @@ export { UserError } from "./error";
 import type { EventSubscription } from "expo-modules-core";
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
+import { createNativeErrorRethrow } from "../internal/native-errors";
 import type { SpotifyURI as SpotifyURIType } from "../uri";
 import { UserError, type UserErrorCode } from "./error";
+
+export type { UserErrorCode } from "./error";
+export { UserError } from "./error";
 
 /** Capabilities of the current user in Spotify's App Remote context. */
 export interface Capabilities {
@@ -28,33 +29,17 @@ export interface LibraryState {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-const VALID_USER_CODES = new Set<UserErrorCode>([
-  "NOT_CONNECTED",
-  "CONNECTION_LOST",
-  "INVALID_URI",
-  "OPERATION_NOT_ALLOWED",
-  "UNKNOWN",
-]);
-
-const CAUSE_SEPARATOR = "→ Caused by: ";
-
-function unwrapReason(message: string): string {
-  const idx = message.lastIndexOf(CAUSE_SEPARATOR);
-  return idx === -1 ? message : message.slice(idx + CAUSE_SEPARATOR.length);
-}
-
-function rethrowAsUserError(err: unknown): never {
-  if (err instanceof UserError) throw err;
-  if (err instanceof Error) {
-    const reason = unwrapReason(err.message);
-    const maybeCode = (err as Error & { code?: string }).code;
-    if (maybeCode && VALID_USER_CODES.has(maybeCode as UserErrorCode)) {
-      throw new UserError(maybeCode as UserErrorCode, reason);
-    }
-    throw new UserError("UNKNOWN", reason);
-  }
-  throw new UserError("UNKNOWN", String(err));
-}
+const rethrowAsUserError = createNativeErrorRethrow({
+  ErrorClass: UserError,
+  unknownCode: "UNKNOWN",
+  validCodes: new Set<UserErrorCode>([
+    "NOT_CONNECTED",
+    "CONNECTION_LOST",
+    "INVALID_URI",
+    "OPERATION_NOT_ALLOWED",
+    "UNKNOWN",
+  ]),
+});
 
 type LibraryListener = (state: LibraryState) => void;
 const libraryListeners = new Map<string, Set<LibraryListener>>();
@@ -77,7 +62,9 @@ export const User = {
 
   /** Returns the current library state for a track or album URI. */
   getLibraryState(uri: SpotifyURIType): Promise<LibraryState> {
-    return ExpoSpotifySDKModule.userGetLibraryState(uri).catch(rethrowAsUserError);
+    return ExpoSpotifySDKModule.userGetLibraryState(uri).catch(
+      rethrowAsUserError,
+    );
   },
 
   /** Adds a track or album URI to the user's library. */

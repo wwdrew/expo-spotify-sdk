@@ -31,6 +31,9 @@ jobs:
       - name: Test
         run: yarn test
 
+      - name: Verify example Android package layout
+        run: bash scripts/verify-example-android-package.sh
+
   build-ts:
     name: TypeScript build
     runs-on: ubuntu-latest

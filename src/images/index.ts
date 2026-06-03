@@ -1,14 +1,15 @@
-export type { ImagesErrorCode } from "./error";
-export { ImagesError } from "./error";
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 import ExpoSpotifySDKModule from "../ExpoSpotifySDKModule";
 import type { ContentItem } from "../content";
+import { createNativeErrorRethrow } from "../internal/native-errors";
 import type { Track } from "../player";
 import { ImagesError, type ImagesErrorCode } from "./error";
+
+export type { ImagesErrorCode } from "./error";
+export { ImagesError } from "./error";
 
 export type ImageSize = "small" | "medium" | "large";
 
@@ -26,34 +27,22 @@ interface BasicImageEntity {
   imageIdentifier?: string | null;
 }
 
-export type ImageRepresentable = Track | ContentItem | BasicImageEntity | HasImageIdentifier;
+export type ImageRepresentable =
+  | Track
+  | ContentItem
+  | BasicImageEntity
+  | HasImageIdentifier;
 
-const VALID_IMAGE_CODES = new Set<ImagesErrorCode>([
-  "NOT_CONNECTED",
-  "INVALID_URI",
-  "IMAGE_LOAD_FAILED",
-  "UNKNOWN",
-]);
-
-const CAUSE_SEPARATOR = "→ Caused by: ";
-
-function unwrapReason(message: string): string {
-  const idx = message.lastIndexOf(CAUSE_SEPARATOR);
-  return idx === -1 ? message : message.slice(idx + CAUSE_SEPARATOR.length);
-}
-
-function rethrowAsImagesError(err: unknown): never {
-  if (err instanceof ImagesError) throw err;
-  if (err instanceof Error) {
-    const reason = unwrapReason(err.message);
-    const maybeCode = (err as Error & { code?: string }).code;
-    if (maybeCode && VALID_IMAGE_CODES.has(maybeCode as ImagesErrorCode)) {
-      throw new ImagesError(maybeCode as ImagesErrorCode, reason);
-    }
-    throw new ImagesError("UNKNOWN", reason);
-  }
-  throw new ImagesError("UNKNOWN", String(err));
-}
+const rethrowAsImagesError = createNativeErrorRethrow({
+  ErrorClass: ImagesError,
+  unknownCode: "UNKNOWN",
+  validCodes: new Set<ImagesErrorCode>([
+    "NOT_CONNECTED",
+    "INVALID_URI",
+    "IMAGE_LOAD_FAILED",
+    "UNKNOWN",
+  ]),
+});
 
 function getImageIdentifier(item: ImageRepresentable): string {
   const value = item?.imageIdentifier;
