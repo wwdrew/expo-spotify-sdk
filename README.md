@@ -8,6 +8,28 @@ An Expo module that wraps the native [Spotify iOS SDK](https://github.com/spotif
 
 **Why this exists:** Spotify ships native SDKs for iOS and Android that enable authentication via the installed Spotify app (no browser redirect, better UX) but there is no maintained Expo module for them. This library fills that gap.
 
+## Table of contents
+
+- [Platform support](#platform-support)
+- [Versioning and Expo SDK lanes](#versioning-and-expo-sdk-lanes)
+- [Public API (Auth + App Remote)](#public-api-auth--app-remote)
+- [Quick start (Expo)](#quick-start-expo)
+- [Installation in bare React Native](#installation-in-bare-react-native)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Spotify Premium and App Remote](#spotify-premium-and-app-remote)
+- [Migration from v0.x](#migration-from-v0x)
+- [API reference](#api-reference)
+- [Error codes by namespace](#error-codes-by-namespace)
+- [Platform differences (parity)](#platform-differences-parity)
+- [Android implicit (TOKEN) flow is not recommended](#android-implicit-token-flow-is-not-recommended)
+- [Token swap server](#token-swap-server)
+- [Troubleshooting](#troubleshooting)
+- [Related docs](#related-docs)
+- [Acknowledgements](#acknowledgements)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Platform support
 
 **iOS and Android only.** This module will not support Expo Web or any browser target — there is no web implementation and none is planned.
@@ -33,6 +55,11 @@ Install the major that matches your Expo SDK:
 Both lanes ship the same public API (Auth + App Remote namespaces and hooks). The major version signals **runtime lane**, not a different feature set. See [ADR-0005](./docs/adr/0005-sdk-lane-versioning.md).
 
 The current `main` branch targets **Expo SDK 56** and releases as **`2.x`**. For Expo SDK 55, install **`1.x`** from the `v1` branch ([ADR-0005](./docs/adr/0005-sdk-lane-versioning.md)).
+
+Auth payload note by lane:
+
+- **`2.x` (`main`)**: Android token swap/refresh requests are normalized to match iOS (`code` for swap, `refresh_token` for refresh).
+- **`1.x` (`v1`)**: Android keeps the legacy payload shape that includes additional form fields for compatibility with existing backends.
 
 ## Public API (Auth + App Remote)
 
@@ -589,15 +616,63 @@ See [Spotify's migration guide](https://developer.spotify.com/documentation/andr
 
 The `tokenSwapURL` / `tokenRefreshURL` endpoints must be a server you control — **never** put your Spotify `CLIENT_SECRET` in the app bundle.
 
+Think of this server as a small OAuth bridge:
+
+1. The native SDK sends your backend an auth artifact (`code` or `refresh_token`).
+2. Your backend exchanges that artifact with Spotify Accounts.
+3. Your backend returns Spotify's JSON token payload to the app.
+
+### Server-side values to keep internally
+
+Store these on the server (env/config), not in mobile code:
+
+- `SPOTIFY_CLIENT_ID`
+- `SPOTIFY_CLIENT_SECRET`
+- `SPOTIFY_REDIRECT_URI` (must match the redirect URI registered in Spotify Dashboard and used during auth)
+
+### What the endpoints must do
+
+- Accept `application/x-www-form-urlencoded` requests from the SDK.
+- Validate required input (`code` for swap, `refresh_token` for refresh).
+- Call Spotify `https://accounts.spotify.com/api/token` with the correct `grant_type`.
+- Authenticate to Spotify using your app credentials (typically Basic auth header built from Base64-encoded `client_id:client_secret`).
+- Return Spotify's JSON token response to the SDK.
+
 ### Swap endpoint (`POST {tokenSwapURL}`)
 
-The native module sends a `application/x-www-form-urlencoded` body:
+The native SDK sends an `application/x-www-form-urlencoded` body:
 
-```
-code=<authorization-code>&redirect_uri=<redirect-uri>&client_id=<client-id>
+```text
+code=<authorization-code>
 ```
 
-Your server POSTs these to `https://accounts.spotify.com/api/token` with `grant_type=authorization_code` and your `CLIENT_SECRET` in the `Authorization` header, then returns Spotify's response verbatim as `application/json`:
+When your server exchanges the code with Spotify Accounts, include
+`redirect_uri` and ensure it matches the redirect URI used in the original
+authorization request (for example, from `SPOTIFY_REDIRECT_URI` in env).
+
+Your server POSTs to `https://accounts.spotify.com/api/token` with
+`grant_type=authorization_code`, the authorization `code`, the matching
+`redirect_uri`, and your `CLIENT_SECRET` in the `Authorization` header, then
+returns Spotify's response verbatim as `application/json`:
+
+Request shape to Spotify Accounts:
+
+```text
+POST https://accounts.spotify.com/api/token
+Authorization: Basic <base64(client_id:client_secret)>
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+code=<authorization-code>
+redirect_uri=<exact redirect URI used in authorize step>
+```
+
+Header construction detail:
+
+```text
+credentials = base64(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`)
+Authorization = `Basic ${credentials}`
+```
 
 ```json
 {
@@ -613,11 +688,26 @@ Your server POSTs these to `https://accounts.spotify.com/api/token` with `grant_
 
 The native module sends:
 
-```
-refresh_token=<token>&client_id=<client-id>
+```text
+refresh_token=<token>
 ```
 
-Your server POSTs to `https://accounts.spotify.com/api/token` with `grant_type=refresh_token`. Return Spotify's response verbatim. If Spotify rotates the refresh token the response will contain a new `refresh_token`; if not, the field is absent — the library handles both cases correctly.
+Your server POSTs to `https://accounts.spotify.com/api/token` with
+`grant_type=refresh_token` and the `refresh_token` value, then returns Spotify's
+response verbatim. If Spotify rotates the refresh token the response will
+contain a new `refresh_token`; if not, the field is absent — the library
+handles both cases correctly.
+
+Request shape to Spotify Accounts:
+
+```text
+POST https://accounts.spotify.com/api/token
+Authorization: Basic <base64(client_id:client_secret)>
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token
+refresh_token=<previous refresh token>
+```
 
 ### Error responses
 

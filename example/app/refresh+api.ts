@@ -5,12 +5,15 @@
  * service. The server rotates refresh tokens when Spotify issues a new one.
  *
  * Expected request body (application/x-www-form-urlencoded):
- *   refresh_token — the refresh token from a previous swap or refresh
- *   client_id     — the Spotify client ID (sent by the native SDK)
+ *   refresh_token — required; refresh token from a previous swap or refresh
  *
  * Required environment variables (.env.local):
  *   SPOTIFY_CLIENT_ID
  *   SPOTIFY_CLIENT_SECRET
+ *
+ * The server exchanges this with Spotify Accounts at:
+ *   POST https://accounts.spotify.com/api/token
+ *   grant_type=refresh_token
  */
 export async function POST(request: Request): Promise<Response> {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -29,8 +32,8 @@ export async function POST(request: Request): Promise<Response> {
   let refreshToken: string | null;
 
   try {
-    const body = await request.formData();
-    refreshToken = body.get("refresh_token") as string | null;
+    const body = new URLSearchParams(await request.text());
+    refreshToken = body.get("refresh_token");
   } catch {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }

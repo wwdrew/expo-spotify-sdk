@@ -20,16 +20,15 @@ import kotlin.coroutines.resumeWithException
  *
  * Server contract:
  *   POST {tokenSwapURL}
- *     body: code=<auth-code>&redirect_uri=<redirect-uri>&client_id=<client-id>
+ *     body: code=<auth-code>
  *     200 -> { access_token, expires_in, refresh_token?, scope? }
  *
  *   POST {tokenRefreshURL}
- *     body: refresh_token=<token>&client_id=<client-id>
+ *     body: refresh_token=<token>
  *     200 -> { access_token, expires_in, refresh_token?, scope? }
  */
 class SpotifyTokenSwapClient(
   private val sdkVersion: String,
-  private val clientId: String,
 ) {
   private val client: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(30, TimeUnit.SECONDS)
@@ -41,14 +40,11 @@ class SpotifyTokenSwapClient(
 
   suspend fun swap(
     code: String,
-    redirectUri: String,
     tokenSwapURL: String,
     requestedScopes: List<String>,
   ): SpotifySessionPayload {
     val body = FormBody.Builder()
       .add("code", code)
-      .add("redirect_uri", redirectUri)
-      .add("client_id", clientId)
       .build()
     val request = Request.Builder()
       .url(tokenSwapURL)
@@ -66,7 +62,6 @@ class SpotifyTokenSwapClient(
   ): SpotifySessionPayload {
     val body = FormBody.Builder()
       .add("refresh_token", refreshToken)
-      .add("client_id", clientId)
       .build()
     val request = Request.Builder()
       .url(tokenRefreshURL)
