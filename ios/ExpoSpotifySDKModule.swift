@@ -138,6 +138,21 @@ public class ExpoSpotifySDKModule: Module {
       }
     }
 
+    AsyncFunction("appRemoteAuthorizeAndPlay") { (accessToken: String, uri: String) async throws -> Void in
+      guard let coordinator = SpotifyAppRemoteCoordinator.shared else {
+        throw AppRemoteException(AppRemoteError.connectionFailed(
+          "Missing `ExpoSpotifySDK` configuration in Info.plist."
+        ))
+      }
+      do {
+        try await coordinator.authorizeAndPlay(uri: uri, accessToken: accessToken)
+      } catch let error as AppRemoteError {
+        throw AppRemoteException(error)
+      } catch let error as NativePlayerError {
+        throw PlayerException(error)
+      }
+    }
+
     AsyncFunction("appRemoteDisconnect") { () async -> Void in
       await SpotifyAppRemoteCoordinator.shared?.disconnect()
     }

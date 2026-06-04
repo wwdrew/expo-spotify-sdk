@@ -25,6 +25,14 @@ actor SpotifyAppRemoteCoordinator {
   private var appRemote: SPTAppRemote?
   private var connectContinuation: CheckedContinuation<Void, Error>?
 
+  /// The `SPTAppRemote` awaiting an `authorizeAndPlay()` redirect, exposed
+  /// synchronously to the URL-redirect path. Mirrors the auth coordinator's
+  /// `nonisolated(unsafe)` `sessionManager`: it is only written from the
+  /// actor's executor (or the main-thread redirect handler) and read on the
+  /// main thread, so occasional cross-actor access is acceptable. `nil`
+  /// whenever no authorize-and-play flow is in flight.
+  nonisolated(unsafe) private var pendingAuthorizeRemote: SPTAppRemote?
+
   nonisolated(unsafe) private(set) var connectionStateString: String = "disconnected"
 
   var onConnectionStateChange: ((String) -> Void)?
@@ -97,6 +105,102 @@ actor SpotifyAppRemoteCoordinator {
     }
   }
 
+  /// Wakes the Spotify app (via `authorizeAndPlayURI`), starts playback, and
+  /// then completes the App Remote connection once Spotify redirects back.
+  ///
+  /// Unlike `connect()`, this works even when the Spotify app has been
+  /// suspended: `authorizeAndPlayURI` performs an app-switch to Spotify, which
+  /// revives it. Spotify then redirects back to the host app with an access
+  /// token; `handleAuthorizeRedirect(_:)` consumes that redirect and calls
+  /// `connect()` on the same `SPTAppRemote` instance.
+  ///
+  /// The `connectContinuation` is reused for the whole flow, so `didConnect()`
+  /// / `didFailToConnect(error:)` resolve it exactly as for `connect()`.
+  func authorizeAndPlay(uri: String, accessToken: String) async throws {
+    if appRemote?.isConnected == true {
+      // Already connected — honour the request by (re)starting playback.
+      if uri.isEmpty {
+        try await playerResume()
+      } else {
+        try await playerPlay(uri: uri)
+      }
+      return
+    }
+    guard connectContinuation == nil else {
+      throw AppRemoteError.connectionFailed("A connection attempt is already in progress")
+    }
+
+    transitionState("connecting")
+
+    let params = SPTAppRemoteConnectionParams(
+      accessToken: accessToken,
+      defaultImageSize: CGSize.zero,
+      imageFormat: .any
+    )
+    let remote = SPTAppRemote(
+      configuration: sptConfiguration,
+      connectionParameters: params,
+      logLevel: .error
+    )
+    remote.delegate = connectionBridge
+    appRemote = remote
+    pendingAuthorizeRemote = remote
+
+    try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+      self.connectContinuation = cont
+      Task { @MainActor in
+        // `authorizeAndPlayURI` returns false synchronously when the Spotify
+        // app is not installed — no redirect will ever arrive, so fail now.
+        let launched = remote.authorizeAndPlayURI(uri)
+        if !launched {
+          Task {
+            await self.didFailToConnect(error: NSError(
+              domain: "ExpoSpotifySDK",
+              code: -1,
+              userInfo: [NSLocalizedDescriptionKey: "authorizeAndPlay: the Spotify app is not installed"]
+            ))
+          }
+        }
+      }
+    }
+  }
+
+  /// Consumes a redirect URL produced by an `authorizeAndPlay()` app-switch.
+  /// Returns `true` if an authorize flow was pending and the URL was handled
+  /// (so the AppDelegate should not also forward it to the auth coordinator).
+  ///
+  /// Synchronous + `nonisolated` because the AppDelegate `open url` hook
+  /// expects an immediate `Bool`, matching `SpotifyAuthCoordinator.handleOpenURL`.
+  nonisolated func handleAuthorizeRedirect(_ url: URL) -> Bool {
+    guard let remote = pendingAuthorizeRemote else { return false }
+    let consume: () -> Bool = { [self] in
+      MainActor.assumeIsolated {
+        let params = remote.authorizationParameters(from: url)
+        if let token = params?[SPTAppRemoteAccessTokenKey] {
+          remote.connectionParameters.accessToken = token
+          pendingAuthorizeRemote = nil
+          remote.connect()
+          return true
+        } else if let errorDescription = params?[SPTAppRemoteErrorDescriptionKey] {
+          pendingAuthorizeRemote = nil
+          Task {
+            await self.didFailToConnect(error: NSError(
+              domain: "ExpoSpotifySDK",
+              code: -2,
+              userInfo: [NSLocalizedDescriptionKey: errorDescription]
+            ))
+          }
+          return true
+        }
+        return false
+      }
+    }
+    if Thread.isMainThread {
+      return consume()
+    }
+    return DispatchQueue.main.sync(execute: consume)
+  }
+
   func disconnect() {
     if let cont = connectContinuation {
       connectContinuation = nil
@@ -106,6 +210,7 @@ actor SpotifyAppRemoteCoordinator {
     teardownCapabilitiesSubscription()
     appRemote?.disconnect()
     appRemote = nil
+    pendingAuthorizeRemote = nil
     transitionState("disconnected")
   }
 
@@ -120,6 +225,7 @@ actor SpotifyAppRemoteCoordinator {
   // MARK: — Connection delegate callbacks
 
   func didConnect() {
+    pendingAuthorizeRemote = nil
     transitionState("connected")
     setupPlayerSubscription()
     setupCapabilitiesSubscription()
@@ -130,6 +236,7 @@ actor SpotifyAppRemoteCoordinator {
 
   func didFailToConnect(error: Error?) {
     appRemote = nil
+    pendingAuthorizeRemote = nil
     let msg = error.map { describeNSError($0 as NSError) } ?? "Unknown connection failure"
     let remoteError = AppRemoteError.connectionFailed(msg)
     transitionState("disconnected")
