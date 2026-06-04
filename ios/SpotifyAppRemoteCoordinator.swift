@@ -149,16 +149,20 @@ actor SpotifyAppRemoteCoordinator {
     try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
       self.connectContinuation = cont
       Task { @MainActor in
-        // `authorizeAndPlayURI` returns false synchronously when the Spotify
-        // app is not installed — no redirect will ever arrive, so fail now.
-        let launched = remote.authorizeAndPlayURI(uri)
-        if !launched {
-          Task {
-            await self.didFailToConnect(error: NSError(
-              domain: "ExpoSpotifySDK",
-              code: -1,
-              userInfo: [NSLocalizedDescriptionKey: "authorizeAndPlay: the Spotify app is not installed"]
-            ))
+        // `authorizeAndPlayURI` app-switches to Spotify to wake it. `success`
+        // is false when the Spotify app could not be opened (e.g. not
+        // installed) — no redirect will arrive, so fail the continuation now.
+        // On success we await the redirect, handled by
+        // `handleAuthorizeRedirect(_:)`, which completes the connection.
+        remote.authorizeAndPlayURI(uri) { success in
+          if !success {
+            Task {
+              await self.didFailToConnect(error: NSError(
+                domain: "ExpoSpotifySDK",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "authorizeAndPlay: could not open the Spotify app (is it installed?)"]
+              ))
+            }
           }
         }
       }
