@@ -45,7 +45,8 @@
     "android/libs/spotify-app-remote-release-0.8.0.aar",
     "ios/SpotifySDK/SpotifyiOS.xcframework",
     "ios/SpotifySDK/Licenses",
-    "ios",
+    "ios/*.swift",
+    "ios/*.podspec",
     "app.plugin.js",
     "expo-module.config.json"
   ],

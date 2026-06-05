@@ -8,7 +8,7 @@ cd "$ROOT"
 LIST="$(mktemp)"
 trap 'rm -f "$LIST"' EXIT
 
-npm pack --dry-run 2>&1 | tee "$LIST" >/dev/null
+npm pack --dry-run 2>&1 | tee "$LIST"
 
 FAIL=0
 
