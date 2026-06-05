@@ -71,8 +71,8 @@ Completed per [V1_PLAN.md §6 Phases 6–7](../V1_PLAN.md#6-implementation-phase
 | Migrate **`main`** to SDK 56; `package.json` → `2.0.0` | `main` | ✅ |
 | Typed config plugin `@wwdrew/expo-spotify-sdk/plugin` | `main` only | ✅ |
 | README lane table (`1.x` / `v1`, `2.x` / `main`) | `main` | ✅ |
-| Publish **`2.0.0`** via Release Please on `main` | npm | ⬜ pending |
-| Release Please for **`1.x.y`** from `v1` | `v1` | ⬜ optional follow-up |
+| Publish **`2.x`** via Release Please on `main` | npm `latest` | ✅ |
+| Release Please for **`1.x.y`** from `v1` | npm `sdk55` | ✅ (workflow; merge `release.yml` onto `v1` before first run) |
 
 ## Validation
 

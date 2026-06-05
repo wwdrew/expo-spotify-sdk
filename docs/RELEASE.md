@@ -2,10 +2,10 @@
 
 Two long-lived branches, two npm majors. See [ADR-0005](./adr/0005-sdk-lane-versioning.md).
 
-| Branch | npm major | Expo SDK | iOS min | Status |
-| --- | --- | --- | --- | --- |
-| **`main`** | `2.x` | 56+ | 16.4 | Active development; default for new work |
-| **`v1`** | `1.x` | 55 | 15.1 | Maintenance; bugfixes and security backports |
+| Branch | npm major | npm dist-tag | Expo SDK | iOS min | Status |
+| --- | --- | --- | --- | --- | --- |
+| **`main`** | `2.x` | `latest` (default) | 56+ | 16.4 | Active development; default for new work |
+| **`v1`** | `1.x` | `sdk55` | 55 | 15.1 | Maintenance; bugfixes and security backports |
 
 ---
 
@@ -61,13 +61,36 @@ Follow [QA_CHECKLIST.md](./QA_CHECKLIST.md) on the **SDK 55** toolchain (`v1` ch
 
 ### Publish
 
-Configure Release Please (or your process) so **`1.x.y` releases run from `v1`**, not `main`. Until that is wired, maintainers can publish manually from `v1` after a version bump.
+Releases are automated via [Release Please](https://github.com/googleapis/release-please) on **`v1`** (same workflow as `main`, scoped with `target-branch`):
 
-`1.0.0` is already on npm from the initial SDK 55 release (tag `expo-spotify-sdk-v1.0.0`).
+1. Cherry-pick or land conventional commits on `v1` (`fix:`, `feat:`, etc.).
+2. Release Please opens/updates a release PR on `v1` (e.g. `chore(v1): release expo-spotify-sdk 1.0.1`).
+3. Merge that PR → GitHub Release + **npm publish** with dist-tag **`sdk55`** (not `latest`).
+
+Install for consumers:
+
+```sh
+npm install @wwdrew/expo-spotify-sdk@1
+# or explicitly:
+npm install @wwdrew/expo-spotify-sdk@sdk55
+```
+
+`1.0.0` is already on npm from the initial SDK 55 release (git tag `expo-spotify-sdk-v1.0.0`).
+
+#### One-time setup
+
+1. **Workflow on `v1`** — GitHub Actions runs the workflow file **from the branch that was pushed**. Merge `.github/workflows/release.yml` into **`v1`** (cherry-pick from `main`) before the first automated `1.x.y` release. Until then, pushes to `v1` will not trigger Release Please.
+
+2. **`sdk55` dist-tag on `1.0.0`** (if not already set):
+
+   ```sh
+   npm dist-tag add @wwdrew/expo-spotify-sdk@1.0.0 sdk55
+   ```
 
 ### Post-release
 
 - [ ] GitHub Release notes mention **Expo SDK 55**
+- [ ] npm **`latest`** still points at the current **`2.x`** (a mistaken `v1` publish without `--tag sdk55` would steal `latest` — fix with `npm dist-tag add @wwdrew/expo-spotify-sdk@<2.x> latest`)
 - [ ] README on `v1` (if branched docs differ) still directs SDK 56 consumers to `2.x` on `main`
 
 ---
