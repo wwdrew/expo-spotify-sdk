@@ -40,7 +40,11 @@ Branch names follow the same `type/` prefix as conventional commits: `feat/*`, `
 | **Library state** | For a given URI, whether it is in the user's saved library (`isAdded`) and whether it can be added (`canAdd`). Pushed via `User.addLibraryStateListener(uri)`. | The user's full saved library. App Remote only reports state for one URI at a time. |
 | **Content item** | The browseable unit returned by `Content.getRecommendedContentItems()` — represents a section, playlist, album, or track in Spotify's curated browse tree. Children navigated via `Content.getChildren(item)`. Each item carries an image-representable handle usable with `Images.load()`. | A full catalog object. Content items are a navigation surface, not the Web-API catalog. |
 
-**Rule of thumb:** This library wraps the **Auth SDK** and (in v1) the **App Remote SDK**. Anything that lives at `api.spotify.com` is the consumer's responsibility — they have the access token, they call REST.
+**Rule of thumb:** This library wraps the **Auth SDK** and the **App Remote SDK**. Anything that lives at `api.spotify.com` is the consumer's responsibility — they have the access token, they call REST.
+
+## Native SDK binaries
+
+Spotify's iOS xcframework and Android App Remote AAR are **bundled in the npm package** (fetched from Spotify's GitHub during `prepublishOnly`, not committed to git). npm consumers need no extra setup; git contributors run `yarn fetch-native-sdks` after clone. See [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md).
 
 ## Release lanes
 
@@ -68,6 +72,7 @@ Both lanes ship the full Auth + App Remote API ([ADR-0006](./docs/adr/0006-names
 ## Related docs
 
 - [README.md](./README.md) — install, quick start, troubleshooting, migration from v0.x.
+- [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md) — native SDK fetch, npm packaging, version bumps.
 - [docs/api-reference.md](./docs/api-reference.md) — method reference.
 - [docs/error-codes.md](./docs/error-codes.md) — per-namespace error codes.
 - [docs/adr/](./docs/adr/) — architecture decision records.

@@ -6,6 +6,7 @@ you need to get a PR merged.
 ## Table of contents
 
 - [Development setup](#development-setup)
+- [Spotify native SDK binaries](#spotify-native-sdk-binaries)
 - [Making changes](#making-changes)
 - [Commit messages](#commit-messages)
 - [Tests](#tests)
@@ -43,6 +44,23 @@ cd example && npm install && cd ..
 yarn test
 ```
 
+### Spotify native SDK binaries
+
+Binaries are **not** committed to git. They are **bundled in the npm tarball** at publish time.
+
+```sh
+yarn fetch-native-sdks   # once after clone, before native builds
+```
+
+| Script | When |
+| --- | --- |
+| `yarn fetch-native-sdks` | Local dev from git; downloads xcframework + AAR from Spotify GitHub (SHA-256 pinned) |
+| `scripts/verify-npm-pack.sh` | CI + `prepublishOnly` — fails if npm tarball is missing either binary |
+
+Full details: [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md).
+
+**Bumping Spotify SDK versions:** update pinned constants in `scripts/fetch-spotify-sdks.sh` and the AAR path in `android/build.gradle`, then run `yarn fetch-native-sdks && yarn prepublishOnly`.
+
 ### What you need
 
 | Task | Requirement |
@@ -68,7 +86,7 @@ We keep `expo-module-scripts` for shared config (`tsconfig`, ESLint presets) but
 
 ### iOS native (`ios/`)
 
-Open the example app's workspace and build on a simulator or device:
+Requires `yarn fetch-native-sdks` first when working from a git clone.
 
 ```sh
 cd example
@@ -76,6 +94,8 @@ npx expo run:ios
 ```
 
 ### Android native (`android/`)
+
+Requires `yarn fetch-native-sdks` first when working from a git clone.
 
 ```sh
 cd example

@@ -98,6 +98,17 @@ npx expo prebuild
 
 For bare React Native (no Expo CLI), see [Installation in bare React Native](#installation-in-bare-react-native).
 
+## Native SDK binaries
+
+Spotify's iOS `SpotifyiOS.xcframework` and Android App Remote `.aar` are **bundled inside the npm package** (~1.5 MB). After `npm install`, `pod install` and Gradle builds work without downloading anything extra.
+
+| You are… | Action |
+| --- | --- |
+| **Using the published npm package** | Nothing — binaries are already in `node_modules/@wwdrew/expo-spotify-sdk`. |
+| **Developing this repo from git** | Run `yarn fetch-native-sdks` once after clone (binaries are gitignored). |
+
+Release CI fetches the binaries from Spotify's GitHub before every `npm publish`. See [Native SDK distribution](./docs/guides/native-sdk-distribution.md) and [ADR-0001](./docs/adr/0001-build-time-download-of-spotify-native-sdks.md).
+
 ## Installation in bare React Native
 
 This library is an [Expo Module](https://docs.expo.dev/modules/overview/) and therefore requires `expo-modules-core` as a peer. If your project does not use the Expo managed workflow you will need to set this up manually.
@@ -379,6 +390,7 @@ Need the deprecated shims temporarily? Pin **`1.x`**: `npm install @wwdrew/expo-
 | [Error codes](./docs/error-codes.md) | Per-namespace codes with when/what-to-do |
 | [App Remote error mapping](./docs/app-remote-error-mapping.md) | iOS/Android native → JS mapping matrix |
 | [Platform differences](./docs/guides/platform-differences.md) | iOS vs Android parity |
+| [Native SDK distribution](./docs/guides/native-sdk-distribution.md) | How iOS/Android binaries are fetched, packaged, and bumped |
 | [Token swap server](./docs/guides/token-swap-server.md) | Swap/refresh endpoints + example app setup |
 
 ## Troubleshooting
@@ -414,6 +426,7 @@ App Remote player state is limited for non-Premium users. Check `GET /v1/me` →
 ## Related docs
 
 - [CONTEXT.md](./CONTEXT.md) — terminology (Auth SDK vs App Remote vs Web API)
+- [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md) — how native binaries are fetched and packaged
 - [docs/api-reference.md](./docs/api-reference.md) — method reference
 - [docs/error-codes.md](./docs/error-codes.md) — error code tables
 - [docs/QA_CHECKLIST.md](./docs/QA_CHECKLIST.md) — manual QA before a `2.x` release on `main` (or `1.x` on `v1`)

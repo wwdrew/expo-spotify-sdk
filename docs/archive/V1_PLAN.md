@@ -501,7 +501,7 @@ All required before tagging either major:
 | App Remote connection lifecycle is flaky in practice (token expiry, Spotify app being killed by OS) | Explicit `connect()` model + clear `CONNECTION_LOST` error code; example app demonstrates reconnect flow. |
 | Premium-required errors are surfaced inconsistently by the SDKs across iOS/Android | Mapper layer per platform normalises to `PREMIUM_REQUIRED`. Document iOS vs Android error-shape differences in error code reference. |
 | Maintaining two SDK lanes in parallel becomes too expensive | Deprecation date for v1 (SDK 55) is left open; can convert to "bug-fix only" at any time. |
-| Spotify ships an SDK update that breaks the bundled xcframework / AAR | Already on ADR-0001 build-time download model; pin the SDK version and bump deliberately. |
+| Spotify ships an SDK update that breaks the bundled xcframework / AAR | Fetch-at-publish model ([ADR-0001](../adr/0001-build-time-download-of-spotify-native-sdks.md)); pin the SDK version in `scripts/fetch-spotify-sdks.sh` and bump deliberately. |
 | Spotify Web API tightening makes consumers expect this library to fill the gap | Document the no-Web-API policy prominently. Point consumers at the access token + their own `fetch`. |
 
 ---

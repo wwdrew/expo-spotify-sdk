@@ -19,6 +19,7 @@ Follow [QA_CHECKLIST.md](./QA_CHECKLIST.md) on the **SDK 56** toolchain (`main` 
 
 - [ ] `yarn typecheck` and `yarn lint` pass on `main`
 - [ ] `yarn build` → `build/` and `yarn build:plugin` → `plugin/build/`
+- [ ] `yarn fetch-native-sdks && bash scripts/verify-npm-pack.sh` passes (native binaries present in tarball)
 - [ ] README and CHANGELOG on `main` reflect the SDK 56 / `2.x` lane
 
 ### Publish
@@ -27,7 +28,9 @@ Releases are automated via [Release Please](https://github.com/googleapis/releas
 
 1. Merge conventional commits to `main`.
 2. Release Please opens/updates a release PR (e.g. `chore(main): release expo-spotify-sdk 2.0.0`).
-3. Merge that PR → GitHub Release + **npm publish** (`.github/workflows/release.yml` runs `yarn prepublishOnly` then `npm publish`).
+3. Merge that PR → GitHub Release + **npm publish** (`.github/workflows/release.yml` runs `yarn prepublishOnly` — which fetches Spotify SDK binaries from GitHub, builds TypeScript, and verifies the npm tarball includes them — then `npm publish`).
+
+See [guides/native-sdk-distribution.md](./guides/native-sdk-distribution.md).
 
 No manual `npm publish` unless automation is broken.
 

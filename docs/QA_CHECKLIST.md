@@ -16,14 +16,18 @@ Run on **real devices** before a release. Use the checklist that matches your **
 ```sh
 # SDK 56 (2.x) — default
 git checkout main && yarn install
+yarn fetch-native-sdks   # gitignored binaries; skip if testing from npm install only
 cd example && yarn install && cd ..
 npx expo prebuild   # if native projects changed
 
 # SDK 55 (1.x) — maintenance lane only
 git checkout v1 && yarn install
+yarn fetch-native-sdks
 cd example && yarn install && cd ..
 npx expo prebuild
 ```
+
+When QAing a **published npm version** (not a git checkout), install from npm — the tarball already includes the native binaries; no `fetch-native-sdks` step needed.
 
 On **`main`**, you can also exercise the **typed config plugin** in `app.config.ts` (`import { withSpotifySdk } from "@wwdrew/expo-spotify-sdk/plugin"`). That path is not on `v1`.
 
