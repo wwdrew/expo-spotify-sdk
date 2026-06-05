@@ -9,6 +9,8 @@ This project wraps (does not fork) Spotify's official mobile SDKs:
 
 Use of those SDKs is subject to [Spotify's Developer Terms](https://developer.spotify.com/terms) and the licenses bundled with each SDK distribution.
 
+The iOS xcframework and Android App Remote AAR are **re-distributed inside the `@wwdrew/expo-spotify-sdk` npm package** (~1.5 MB). They are fetched from Spotify's official GitHub sources at publish time, not committed to this repository. See [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md).
+
 ## What this library does not include
 
 - **Spotify Web API** (`https://api.spotify.com`) — not wrapped. Consumers call REST with the access token from `Auth.authenticate()`.

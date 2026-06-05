@@ -39,8 +39,13 @@ android.iml
 android/app/libs
 android/keystores/debug.keystore
 
-# Android local SDK binaries
+# Spotify native SDK binaries (gitignored; fetched via scripts/fetch-spotify-sdks.sh, bundled in npm)
 android/libs/*.aar
+android/libs/.version
+android/build/
+ios/SpotifySDK/SpotifyiOS.xcframework/
+ios/SpotifySDK/.version
+ios/SpotifySDK/Licenses/
 
 # Cocoapods
 #
