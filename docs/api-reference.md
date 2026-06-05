@@ -93,7 +93,8 @@ Connects to the **running** Spotify app. All `Player`, `User`, `Content`, and `I
 
 | Method | Description |
 | --- | --- |
-| `connect(accessToken)` | Open IPC to Spotify. Resolves when connected. |
+| `connect(accessToken)` | Open IPC to Spotify. Resolves when connected. Requires Spotify to be **already running**. |
+| `authorizeAndPlay(accessToken, uri?)` | Wake Spotify (launch if suspended), start playback of `uri` (empty = resume last/random), then connect. |
 | `disconnect()` | Tear down connection. |
 | `isConnected()` | Synchronous snapshot. |
 | `getConnectionState()` | `"disconnected"` \| `"connecting"` \| `"connected"`. |
@@ -106,6 +107,8 @@ Connects to the **running** Spotify app. All `Player`, `User`, `Content`, and `I
 - **Android:** `accessToken` is accepted for API parity; the SDK uses the session cached in the Spotify app from your prior `Auth.authenticate()` call.
 
 Calling `connect()` while already connected is a no-op.
+
+**`authorizeAndPlay(accessToken, uri?)`** — use this to (re)connect when Spotify may not be running. Unlike `connect()`, which only attaches to an already-running Spotify, this performs an app-switch to Spotify (iOS `authorizeAndPlayURI`; Android wakes the App Remote service then issues a play command), reviving it. It **always starts or resumes playback** and briefly foregrounds Spotify — it cannot wake Spotify silently. On-demand playback of a specific `uri` requires Premium. Pass an empty `uri` (default) to resume the user's last/contextual track.
 
 ### `Player`
 

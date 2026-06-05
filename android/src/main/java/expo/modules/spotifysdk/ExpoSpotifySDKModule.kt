@@ -202,6 +202,17 @@ class ExpoSpotifySDKModule : Module() {
       )
     }
 
+    AsyncFunction("appRemoteAuthorizeAndPlay") Coroutine { accessToken: String, uri: String ->
+      val manifest = readManifestConfig()
+      appRemoteCoordinator.authorizeAndPlay(
+        context = context,
+        clientId = manifest.clientId,
+        redirectUri = manifest.redirectUri,
+        accessToken = accessToken,
+        uri = uri,
+      )
+    }
+
     AsyncFunction("appRemoteDisconnect") Coroutine { ->
       appRemoteCoordinator.disconnect()
     }

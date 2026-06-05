@@ -352,7 +352,20 @@ export function useAutoConnectAppRemote(options?: { once?: boolean }) {
 }
 ```
 
-For iOS, if `connect()` fails with `CONNECTION_FAILED`, foreground the Spotify app and retry manually — see [Troubleshooting](#troubleshooting).
+For iOS, if `connect()` fails with `CONNECTION_FAILED`, the Spotify app has likely been suspended in the background — `connect()` can only attach to an already-running Spotify. Instead of asking the user to foreground Spotify and retry manually, call `AppRemote.authorizeAndPlay(accessToken, uri?)`, which wakes Spotify (launching it if needed), starts playback, and then connects:
+
+```ts
+try {
+  await AppRemote.connect(session.accessToken);
+} catch (e) {
+  if (e instanceof AppRemoteError && e.code === "CONNECTION_FAILED") {
+    // Spotify was suspended — wake it, start playing, and connect.
+    await AppRemote.authorizeAndPlay(session.accessToken);
+  }
+}
+```
+
+Note that `authorizeAndPlay()` always starts (or resumes) playback and briefly switches to the Spotify app — see [Troubleshooting](#troubleshooting).
 
 ## Spotify Premium and App Remote
 
@@ -413,7 +426,7 @@ On iOS this can also be a stuck state when Spotify never redirects back. Call `A
 **App Remote: `CONNECTION_FAILED` / `Connection refused` (iOS code 61)**
 The Spotify app is installed but its App Remote transport is not accepting connections. Common causes:
 
-1. **Spotify is not in the foreground** — switch to Spotify, then retry `AppRemote.connect()`.
+1. **Spotify is suspended / not in the foreground** — `connect()` only attaches to a running Spotify. Call `AppRemote.authorizeAndPlay(accessToken, uri?)` to wake it (it launches Spotify, starts playback, and connects), or have the user switch to Spotify and retry `AppRemote.connect()`.
 2. **Connect ran before auth finished** — call `AppRemote.connect()` only after `Auth.authenticate()` resolves.
 3. **Stale access token** — refresh or re-authenticate, then reconnect.
 4. **Retry loop on startup** — avoid calling `connect()` on every render while `connectionState === "disconnected"`; gate on a one-shot flag or user action.

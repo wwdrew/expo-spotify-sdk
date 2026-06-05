@@ -132,6 +132,38 @@ class SpotifyAppRemoteCoordinator {
   }
 
   /**
+   * Wakes the Spotify app and starts playback, then ensures an active App
+   * Remote connection — the cross-platform counterpart of iOS
+   * `authorizeAndPlayURI`.
+   *
+   * On Android there is no dedicated "authorize and play" entry point:
+   * [SpotifyAppRemote.connect] already launches/wakes the Spotify service when
+   * it is installed, so this simply connects (if not already connected) and
+   * then issues a play (or resume, for an empty [uri]) command. The resulting
+   * playback keeps Spotify alive, mirroring the iOS behaviour.
+   *
+   * @param uri Spotify URI to play, or empty to resume the last/contextual track.
+   */
+  suspend fun authorizeAndPlay(
+    context: Context,
+    clientId: String,
+    redirectUri: String,
+    accessToken: String,
+    uri: String,
+  ) {
+    if (appRemote?.isConnected != true) {
+      connect(context, clientId, redirectUri, accessToken)
+    }
+    if (uri.isEmpty()) {
+      requireConnected("AppRemote.authorizeAndPlay").playerApi.resume()
+        .awaitVoid("AppRemote.authorizeAndPlay")
+    } else {
+      requireConnected("AppRemote.authorizeAndPlay").playerApi.play(uri)
+        .awaitVoid("AppRemote.authorizeAndPlay")
+    }
+  }
+
+  /**
    * Disconnects from the Spotify app. Safe to call when already disconnected.
    */
   fun disconnect() {
