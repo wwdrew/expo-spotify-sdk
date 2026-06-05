@@ -90,6 +90,7 @@ Top-level v0-style functions were removed in **`2.x`**. If you still use them, s
 npx expo install @wwdrew/expo-spotify-sdk
 
 # Expo SDK 55 only: npx expo install @wwdrew/expo-spotify-sdk@1
+# (or @sdk55 — npm dist-tag for the v1 maintenance lane)
 
 # 2. Add the config plugin to app.config.ts / app.json  (see Configuration below)
 # 3. Regenerate native projects

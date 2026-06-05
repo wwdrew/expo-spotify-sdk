@@ -49,7 +49,7 @@ Both lanes ship the full Auth + App Remote API ([ADR-0006](./docs/adr/0006-names
 ### `1.x` on `v1` (Expo SDK 55)
 
 - npm **`1.x`**, branch **`v1`**, iOS 15.1+, `expo-modules-core@^3.x`
-- **`1.0.0`** is published; install with `npm install @wwdrew/expo-spotify-sdk@1` (or pin `1.x.y`)
+- **`1.0.0`** is published; install with `npm install @wwdrew/expo-spotify-sdk@1` (or `@sdk55`; releases from `v1` use that dist-tag so `latest` stays on `2.x`)
 - Config plugin: string/tuple form in `app.json` / `app.config.ts` only
 
 ### `2.x` on `main` (Expo SDK 56+)

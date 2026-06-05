@@ -144,7 +144,7 @@ When changing App Remote error mapping on iOS or Android, update both native map
 
 ## Release process
 
-- **`2.x` from `main`** — [Release Please](https://github.com/googleapis/release-please) opens a release PR; merging it publishes to npm (see [docs/RELEASE.md](docs/RELEASE.md)).
-- **`1.x` from `v1`** — maintenance releases from the `v1` branch (see [docs/RELEASE.md](docs/RELEASE.md)).
+- **`2.x` from `main`** — [Release Please](https://github.com/googleapis/release-please) opens a release PR; merging it publishes to npm as **`latest`** (see [docs/RELEASE.md](docs/RELEASE.md)).
+- **`1.x` from `v1`** — same Release Please flow on the `v1` branch; merging publishes with npm dist-tag **`sdk55`** (see [docs/RELEASE.md](docs/RELEASE.md)).
 
 Use Conventional Commits on the branch you are releasing from.
