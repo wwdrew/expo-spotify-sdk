@@ -37,6 +37,13 @@ Pod::Spec.new do |s|
   s.source_files = "**/*.{h,m,swift}"
 
   ios_sdk = spotify_native['ios']
+  if ios_sdk.nil? ||
+      ios_sdk['spmRepositoryUrl'].to_s.empty? ||
+      ios_sdk['spmVersion'].to_s.empty? ||
+      ios_sdk['spmProduct'].to_s.empty?
+    raise "ios/spotify-native-sdk-versions.json is missing required iOS fields: spmRepositoryUrl, spmVersion, spmProduct"
+  end
+
   spm_dependency(s,
     url: ios_sdk['spmRepositoryUrl'],
     requirement: { kind: 'exactVersion', version: ios_sdk['spmVersion'] },

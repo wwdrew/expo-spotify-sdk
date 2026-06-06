@@ -16,6 +16,13 @@ def appRemoteVersion = androidSdk.appRemoteVersion as String
 def appRemoteReleaseTag = androidSdk.appRemoteReleaseTag as String
 def appRemoteSha256 = androidSdk.appRemoteSha256 as String
 
+if (!appRemoteVersion || !appRemoteReleaseTag || !appRemoteSha256) {
+  throw new GradleException(
+    "ios/spotify-native-sdk-versions.json android section is missing required fields: " +
+      "appRemoteVersion, appRemoteReleaseTag, appRemoteSha256"
+  )
+}
+
 def libsDir = file("${projectDir}/libs")
 def aarFile = file("${libsDir}/spotify-app-remote-release-${appRemoteVersion}.aar")
 def versionMarker = file("${libsDir}/.version")
@@ -61,7 +68,13 @@ tasks.register("downloadSpotifyAppRemoteAar") {
 
     def tmp = File.createTempFile("spotify-app-remote", ".aar")
     try {
-      ant.get(src: downloadUrl, dest: tmp)
+      ant.get(
+        src: downloadUrl,
+        dest: tmp,
+        verbose: true,
+        connecttimeout: 30000,
+        readtimeout: 60000
+      )
       def actual = sha256File(tmp)
       if (actual != appRemoteSha256) {
         throw new GradleException(

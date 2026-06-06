@@ -16,13 +16,13 @@ See [ADR-0008](../adr/0008-ios-spotify-sdk-via-spm.md) (supersedes [ADR-0001](..
 
 ## What is bundled / resolved
 
-| Platform | Artifact | How it arrives | Pinned version |
-| --- | --- | --- | --- |
-| iOS | `SpotifyiOS` (SPM) | `spm_dependency` → [spotify/ios-sdk](https://github.com/spotify/ios-sdk) at `pod install` | `5.0.1` |
-| Android (App Remote) | `spotify-app-remote-release-0.8.0.aar` | Gradle download at build → [spotify/android-sdk releases](https://github.com/spotify/android-sdk/releases) | `0.8.0` |
-| Android (Auth) | Maven `com.spotify.android:auth:4.0.1` | Maven Central | resolved at Gradle build time |
+| Platform | Artifact | How it arrives |
+| --- | --- | --- |
+| iOS | `SpotifyiOS` (SPM) | `spm_dependency` → [spotify/ios-sdk](https://github.com/spotify/ios-sdk) at `pod install` |
+| Android (App Remote) | `spotify-app-remote-release-<version>.aar` | Gradle download at build → [spotify/android-sdk releases](https://github.com/spotify/android-sdk/releases) |
+| Android (Auth) | `com.spotify.android:auth` | Maven Central (version in `android/build.gradle`) |
 
-Version pins: `ios/spotify-native-sdk-versions.json` (`ios` and `android` sections).
+Version pins: [`ios/spotify-native-sdk-versions.json`](../ios/spotify-native-sdk-versions.json) (`ios` and `android` sections).
 
 **Zero** Spotify native binaries in the npm tarball.
 

@@ -103,7 +103,7 @@ For bare React Native (no Expo CLI), see [Installation in bare React Native](#in
 
 | Platform | Distribution |
 | --- | --- |
-| **iOS** | `SpotifyiOS` resolved from Spotify's GitHub via SPM at `pod install` ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). Requires RN 0.75+ (Expo SDK 52+). |
+| **iOS** | `SpotifyiOS` resolved from Spotify's GitHub via SPM at `pod install` ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). Uses React Native's `spm_dependency` (RN 0.75+). Supported Expo SDK lanes: [Platform support](#platform-support). |
 | **Android** | App Remote AAR downloaded from Spotify's GitHub at Gradle build. Auth SDK from Maven Central. |
 
 | You are… | Action |
