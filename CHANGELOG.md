@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.2.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.1.0...expo-spotify-sdk-v2.2.0) (2026-06-06)
+
+
+### Features
+
+* **app-remote:** add AppRemote.authorizeAndPlay to wake a suspended Spotify ([#54](https://github.com/wwdrew/expo-spotify-sdk/issues/54)) ([bb4e23f](https://github.com/wwdrew/expo-spotify-sdk/commit/bb4e23f4ac390203357a5285c73121c4cd6b9126))
+
+
+### Bug Fixes
+
+* **release:** bundle Spotify native SDKs in npm ([#55](https://github.com/wwdrew/expo-spotify-sdk/issues/55)) ([3efec15](https://github.com/wwdrew/expo-spotify-sdk/commit/3efec1521524063b1eb78367c1f721c8ce0168c4))
+
+
+### Code Refactoring
+
+* **native:** resolve Spotify SDKs at build time instead of bundling in npm ([#58](https://github.com/wwdrew/expo-spotify-sdk/issues/58)) ([c284f99](https://github.com/wwdrew/expo-spotify-sdk/commit/c284f99c83412dae90e6582ae0ee0156bf963502))
+
 ## [2.1.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.0.0...expo-spotify-sdk-v2.1.0) (2026-06-03)
 
 
