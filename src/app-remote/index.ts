@@ -85,37 +85,12 @@ export const AppRemote = {
   },
 
   /**
-   * Wakes the Spotify app — launching it if it has been suspended in the
-   * background — starts playback, and then establishes the App Remote
-   * connection. This is the recommended way to (re)connect when Spotify may
-   * not currently be running.
+   * Wakes Spotify (launching if suspended), starts or resumes playback, and
+   * connects. Use when {@link connect} may fail because Spotify is not running.
+   * Always foregrounds Spotify and starts audio — see package api-reference.
    *
-   * Why this exists: {@link connect} only attaches to an *already-running*
-   * Spotify process. If Spotify has been suspended (e.g. iOS reclaims a
-   * backgrounded app that isn't playing audio, or the connection dropped
-   * ~30s after the user paused), `connect()` rejects with `CONNECTION_FAILED`
-   * and there is no way to revive Spotify from `connect()` alone.
-   * `authorizeAndPlay()` performs an app-switch to Spotify
-   * (iOS `authorizeAndPlayURI`; Android wakes the App Remote service and
-   * issues a play command), which both revives Spotify and keeps it alive by
-   * starting audio.
-   *
-   * Trade-offs:
-   * - It **always starts (or resumes) playback** — it cannot wake Spotify
-   *   silently.
-   * - It briefly **switches to the Spotify app** and back; the OS does not
-   *   allow waking another app without a foreground app-switch.
-   * - Requires Spotify Premium for on-demand playback of a specific `uri`.
-   *
-   * @param accessToken Access token from `Auth.authenticate()`. On Android this
-   *   is an iOS-parity parameter (see {@link connect}); on iOS the token
-   *   returned by the authorization redirect is used to complete the connection.
-   * @param uri Spotify URI to play. Pass an empty string (the default) to
-   *   resume the user's last track or play a contextual/random track.
-   *
-   * Resolves once Spotify is connected and the play command has been issued;
-   * rejects with an {@link AppRemoteError} if Spotify is not installed or the
-   * authorization is denied.
+   * @param accessToken Access token from `Auth.authenticate()`.
+   * @param uri Spotify URI to play, or empty (default) to resume last/contextual track.
    */
   authorizeAndPlay(accessToken: string, uri: string = ""): Promise<void> {
     return ExpoSpotifySDKModule.appRemoteAuthorizeAndPlay(
