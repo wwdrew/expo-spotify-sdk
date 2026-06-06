@@ -51,6 +51,7 @@ On **`main`**, you can also exercise the **typed config plugin** in `app.config.
 | R3 | `AppRemote.disconnect()` returns to `disconnected` | ☐ | ☐ |
 | R4 | Connect with Spotify backgrounded — graceful failure, no infinite retry loop | ☐ | ☐ |
 | R5 | `connectionError` surfaced on failure / drop | ☐ | ☐ |
+| R6 | `authorizeAndPlay()` recovers when Spotify suspended (iOS) | ☐ | ☐ |
 
 ## Player (Premium account)
 

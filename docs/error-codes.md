@@ -22,7 +22,7 @@ App Remote native → JS mapping details: [app-remote-error-mapping.md](./app-re
 
 | Code | When | What to do |
 | --- | --- | --- |
-| `CONNECTION_FAILED` | `connect()` failed (app missing, refused, handshake error) | Open Spotify foreground; re-auth if token stale; retry once |
+| `CONNECTION_FAILED` | `connect()` failed (app missing, refused, handshake error) | Try `AppRemote.authorizeAndPlay(token)` if Spotify may be suspended; otherwise foreground Spotify and retry `connect()`; re-auth if token stale |
 | `CONNECTION_LOST` | Connection dropped mid-session | `AppRemote.connect()` again with fresh token |
 | `NOT_CONNECTED` | `AppRemote.*` called before connect completed | `await AppRemote.connect()` first |
 | `UNKNOWN` | Unexpected IPC failure | Read `e.message`; retry connect |

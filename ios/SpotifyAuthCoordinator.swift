@@ -1,6 +1,7 @@
 import ExpoModulesCore
 import Foundation
 import SpotifyiOS
+import UIKit
 
 /// Public, structured errors thrown by the coordinator. Each case carries the
 /// JS-facing error code in `code`, mirroring the Android `CodedException`
@@ -105,15 +106,9 @@ actor SpotifyAuthCoordinator {
   /// Synchronous URL-handler dispatcher used by the AppDelegate / SceneDelegate
   /// subscribers to forward redirects to the SPTSessionManager.
   nonisolated func handleOpenURL(_ url: URL, options: [UIApplication.OpenURLOptionsKey: Any]) -> Bool {
-    let openSession: () -> Bool = { [self] in
-      MainActor.assumeIsolated {
-        sessionManager.application(UIApplication.shared, open: url, options: options)
-      }
+    SpotifyMainThread.run {
+      sessionManager.application(UIApplication.shared, open: url, options: options)
     }
-    if Thread.isMainThread {
-      return openSession()
-    }
-    return DispatchQueue.main.sync(execute: openSession)
   }
 
   func authenticate(
