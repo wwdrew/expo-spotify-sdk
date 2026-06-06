@@ -19,7 +19,6 @@ Follow [QA_CHECKLIST.md](./QA_CHECKLIST.md) on the **SDK 56** toolchain (`main` 
 
 - [ ] `yarn typecheck` and `yarn lint` pass on `main`
 - [ ] `yarn build` → `build/` and `yarn build:plugin` → `plugin/build/`
-- [ ] `yarn fetch-native-sdks && bash scripts/verify-npm-pack.sh` passes (native binaries present in tarball)
 - [ ] README and CHANGELOG on `main` reflect the SDK 56 / `2.x` lane
 
 ### Publish

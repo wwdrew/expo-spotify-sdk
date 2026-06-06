@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply from: 'spotify-native-sdk.gradle'
 
 group = 'expo.modules.spotifysdk'
 version = '0.5.0'
@@ -49,9 +50,9 @@ repositories {
 dependencies {
   implementation "com.spotify.android:auth:4.0.1"
 
-  // Spotify App Remote SDK — NOT on Maven Central; vendored in android/libs/ and
-  // bundled in the npm package (fetched via scripts/fetch-spotify-sdks.sh before publish).
-  implementation files('libs/spotify-app-remote-release-0.8.0.aar')
+  // Spotify App Remote SDK — NOT on Maven Central; downloaded at build time
+  // (see android/spotify-native-sdk.gradle and ios/spotify-native-sdk-versions.json).
+  implementation files(spotifyAppRemoteAarFile)
   // App Remote is consumed as a local AAR, so transitive deps like Gson must
   // be declared explicitly to avoid NoClassDefFoundError at runtime.
   implementation "com.google.code.gson:gson:2.11.0"

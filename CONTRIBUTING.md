@@ -46,20 +46,11 @@ yarn test
 
 ### Spotify native SDK binaries
 
-Binaries are **not** committed to git. They are **bundled in the npm tarball** at publish time.
-
-```sh
-yarn fetch-native-sdks   # once after clone, before native builds
-```
-
-| Script | When |
-| --- | --- |
-| `yarn fetch-native-sdks` | Local dev from git; downloads xcframework + AAR from Spotify GitHub (SHA-256 pinned) |
-| `scripts/verify-npm-pack.sh` | CI + `prepublishOnly` — fails if npm tarball is missing either binary |
+Spotify native binaries are **not** committed to git or bundled in npm. They are resolved at native build time — iOS via SPM at `pod install`, Android via Gradle download at build ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)).
 
 Full details: [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md).
 
-**Bumping Spotify SDK versions:** update pinned constants in `scripts/fetch-spotify-sdks.sh` and the AAR path in `android/build.gradle`, then run `yarn fetch-native-sdks && yarn prepublishOnly`.
+**Bumping Spotify SDK versions:** update `ios/spotify-native-sdk-versions.json`.
 
 ### What you need
 
@@ -86,16 +77,19 @@ We keep `expo-module-scripts` for shared config (`tsconfig`, ESLint presets) but
 
 ### iOS native (`ios/`)
 
-Requires `yarn fetch-native-sdks` first when working from a git clone.
+Requires network for `pod install` (SPM resolves `SpotifyiOS` from GitHub).
 
 ```sh
-cd example
-npx expo run:ios
+cd example/ios && pod install && cd ..
+# Prefer xcodebuild over `expo run:ios` in CI — avoids starting Metro
+xcodebuild -workspace expospotifysdkexample.xcworkspace \
+  -scheme expospotifysdkexample -configuration Debug \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build
 ```
 
 ### Android native (`android/`)
 
-Requires `yarn fetch-native-sdks` first when working from a git clone.
+Gradle downloads the App Remote AAR on first build (network required).
 
 ```sh
 cd example

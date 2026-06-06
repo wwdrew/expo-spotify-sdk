@@ -1,6 +1,6 @@
 # ADR-0001: Fetch-at-Publish, Vendor-in-NPM for Spotify Native SDKs
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0008](./0008-ios-spotify-sdk-via-spm.md) (both platforms)
 - **Date:** 2026-05-07 (revised 2026-06-05)
 - **Deciders:** @wwdrew
 
@@ -83,7 +83,7 @@ Operational guide: [docs/guides/native-sdk-distribution.md](../guides/native-sdk
 | `scripts/fetch-spotify-sdks.sh` | Download + SHA-256 verify + cache markers |
 | `scripts/verify-npm-pack.sh` | Assert binaries present in `npm pack` output |
 | `package.json` | `fetch-native-sdks` script; `prepublishOnly` hook; explicit `files` entries |
-| `.gitignore` | Ignore `ios/SpotifySDK/SpotifyiOS.xcframework/`, `android/libs/*.aar`, etc. |
+| `.gitignore` | Ignore `android/libs/*.aar`, etc. |
 | `ios/ExpoSpotifySDK.podspec` | `s.vendored_frameworks` only (no `prepare_command`) |
 | `android/build.gradle` | `implementation files('libs/spotify-app-remote-release-0.8.0.aar')` |
 | `.github/workflows/ci.yml` | Fetch + verify on TypeScript build job |
