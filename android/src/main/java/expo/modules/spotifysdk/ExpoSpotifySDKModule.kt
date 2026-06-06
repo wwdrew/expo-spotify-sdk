@@ -8,7 +8,7 @@ import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
-private const val SDK_VERSION = "2.1.0" // x-release-please-version
+private const val SDK_VERSION = "2.2.0" // x-release-please-version
 private const val EVENT_SESSION_CHANGE = "onSessionChange"
 private const val EVENT_CONNECTION_STATE_CHANGE = "onConnectionStateChange"
 private const val EVENT_CONNECTION_ERROR = "onConnectionError"
