@@ -2,82 +2,63 @@
 
 How Spotify's iOS and Android SDK binaries reach consumers of `@wwdrew/expo-spotify-sdk`.
 
-See [ADR-0001](../adr/0001-build-time-download-of-spotify-native-sdks.md) for the decision record.
+See [ADR-0008](../adr/0008-ios-spotify-sdk-via-spm.md) (supersedes [ADR-0001](../adr/0001-build-time-download-of-spotify-native-sdks.md)).
 
 ## Summary
 
 | Audience | What happens |
 | --- | --- |
-| **npm consumers** | `npm install` gets a self-contained package. The tarball includes `SpotifyiOS.xcframework` and `spotify-app-remote-release-0.8.0.aar`. No extra download step at `pod install` or Gradle build time. |
-| **git contributors** | Binaries are **gitignored**. Run `yarn fetch-native-sdks` once after clone before native builds or `npx expo run:*`. |
-| **release CI** | `prepublishOnly` runs `yarn fetch-native-sdks`, then `scripts/verify-npm-pack.sh` asserts both binaries are in the tarball before `npm publish`. |
+| **npm consumers** | `npm install` — no Spotify binaries in the tarball. Native SDKs resolved at build time. |
+| **npm consumers (iOS)** | `pod install` resolves `SpotifyiOS` from Spotify's GitHub via SPM. Network required on first iOS native build. |
+| **npm consumers (Android)** | Gradle `preBuild` downloads App Remote AAR from Spotify's GitHub. Network required on first Android native build. |
+| **git contributors** | Same as npm consumers — no manual fetch scripts. |
+| **release CI** | `prepublishOnly` runs `yarn build` and `yarn build:plugin`. |
 
-## What is bundled
+## What is bundled / resolved
 
-| Platform | Artifact | Source | Pinned version |
-| --- | --- | --- | --- |
-| iOS | `ios/SpotifySDK/SpotifyiOS.xcframework` | [spotify/ios-sdk](https://github.com/spotify/ios-sdk) tag tarball | `5.0.1` |
-| Android (App Remote) | `android/libs/spotify-app-remote-release-0.8.0.aar` | [spotify/android-sdk releases](https://github.com/spotify/android-sdk/releases) | `0.8.0` (`v0.8.0-appremote_v2.1.0-auth`) |
-| Android (Auth) | Maven `com.spotify.android:auth:4.0.1` | Maven Central | resolved at Gradle build time (not vendored) |
+| Platform | Artifact | How it arrives |
+| --- | --- | --- |
+| iOS | `SpotifyiOS` (SPM) | `spm_dependency` → [spotify/ios-sdk](https://github.com/spotify/ios-sdk) at `pod install` |
+| Android (App Remote) | `spotify-app-remote-release-<version>.aar` | Gradle download at build → [spotify/android-sdk releases](https://github.com/spotify/android-sdk/releases) |
+| Android (Auth) | `com.spotify.android:auth` | Maven Central (version in `android/build.gradle`) |
 
-~1.5 MB added to the npm tarball (mostly the xcframework).
+Version pins: [`ios/spotify-native-sdk-versions.json`](../ios/spotify-native-sdk-versions.json) (`ios` and `android` sections).
 
-## Fetch script
-
-`scripts/fetch-spotify-sdks.sh` (also `yarn fetch-native-sdks`):
-
-1. Downloads pinned artifacts from Spotify's GitHub.
-2. Verifies SHA-256 checksums (mismatch = hard fail).
-3. Writes into `ios/SpotifySDK/` and `android/libs/`.
-4. Skips re-download when `.version` marker files match and artifacts are present.
-
-Pinned constants live in the script. `android/build.gradle` references the AAR filename; keep both in sync when bumping versions.
+**Zero** Spotify native binaries in the npm tarball.
 
 ## npm packaging
 
-`package.json` `files` explicitly lists:
+`package.json` `files` includes:
 
-- `android/libs/spotify-app-remote-release-0.8.0.aar`
-- `ios/SpotifySDK/SpotifyiOS.xcframework`
-- `ios/SpotifySDK/Licenses`
+- `ios/spotify-native-sdk-versions.json`
+- `android/spotify-native-sdk.gradle`
 
-`scripts/verify-npm-pack.sh` runs in CI and `prepublishOnly`. It fails if either binary is missing from `npm pack --dry-run` output, or if `android/build/` artifacts leak into the tarball.
+No Spotify native binaries are listed in `files`.
 
 ## Local development workflow
 
 ```sh
-# After cloning the repo
 yarn install
-yarn fetch-native-sdks   # required before native builds from git
 
 cd example
-npx expo run:ios
+
+# Android — Gradle downloads AAR on first build (network required)
 npx expo run:android
+
+# iOS — SPM fetch at pod install (network required)
+cd ios && pod install && cd ..
+# xcodebuild …  (see ADR-0008 validation) — avoids starting Metro via expo run:ios
 ```
 
-Plugin-only work (`yarn test`, `yarn lint`, `yarn typecheck`) does not need the fetch step.
+Plugin-only work (`yarn test`, `yarn lint`, `yarn typecheck`) does not need native builds.
 
 ## Bumping Spotify SDK versions
 
-1. Download the new iOS tarball / Android AAR from Spotify's GitHub.
-2. Compute SHA-256: `shasum -a 256 <file>`
-3. Update constants in `scripts/fetch-spotify-sdks.sh`.
-4. Update `android/build.gradle` if the AAR filename changes.
-5. Update version pins in `README.md` / `ATTRIBUTION.md` if the major Spotify SDK version changes.
-6. Run `yarn fetch-native-sdks && yarn prepublishOnly` locally.
-7. Ship a new `@wwdrew/expo-spotify-sdk` release.
+1. Update `ios/spotify-native-sdk-versions.json`:
+   - **iOS:** `spmVersion` (and repo URL/product if needed).
+   - **Android:** `appRemoteVersion`, `appRemoteReleaseTag`, `appRemoteSha256`.
+2. Ship a new `@wwdrew/expo-spotify-sdk` release.
 
-## Why not git submodules or consumer-side download?
+## Cherry-pick to `v1`
 
-We considered:
-
-- **Git submodules** — extra clone friction; still need a copy step before npm pack.
-- **Build-time download** (`pod install` / Gradle) — simpler git/npm, but consumers need network on first native build and release CI broke when Android AAR was gitignored.
-
-**Fetch-at-publish** keeps git lean, makes release CI reliable, and gives npm consumers a self-contained install with one script to maintain.
-
-## Future: build-time download?
-
-Consumer-side fetch (`pod install` / Gradle) remains an option if someone can make it reliable end-to-end. Prior attempts in this repo and elsewhere tend to fail on practical details — e.g. CocoaPods `prepare_command` not having `PODS_TARGET_SRCROOT` set during `pod install`, separate per-platform mechanisms, and release CI still needing a story when binaries are gitignored.
-
-**Current priority:** a working library for npm consumers. Revisit build-time download only if there is a proven, tested path (including clean CI and clean `npm install` → native build) — not as a speculative refactor.
+See [ADR-0008 § Cherry-pick to v1](../adr/0008-ios-spotify-sdk-via-spm.md#cherry-pick-to-v1-sdk-55-lane).

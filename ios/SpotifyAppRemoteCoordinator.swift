@@ -154,16 +154,13 @@ actor SpotifyAppRemoteCoordinator {
         // installed) — no redirect will arrive, so fail the continuation now.
         // On success we await the redirect, handled by
         // `handleAuthorizeRedirect(_:)`, which completes the connection.
-        remote.authorizeAndPlayURI(uri) { success in
-          if !success {
-            Task {
-              await self.didFailToConnect(error: NSError(
-                domain: "ExpoSpotifySDK",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "authorizeAndPlay: could not open the Spotify app (is it installed?)"]
-              ))
-            }
-          }
+        let success = await remote.authorizeAndPlayURI(uri)
+        if !success {
+          await self.didFailToConnect(error: NSError(
+            domain: "ExpoSpotifySDK",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "authorizeAndPlay: could not open the Spotify app (is it installed?)"]
+          ))
         }
       }
     }

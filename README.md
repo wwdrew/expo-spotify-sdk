@@ -101,14 +101,17 @@ For bare React Native (no Expo CLI), see [Installation in bare React Native](#in
 
 ## Native SDK binaries
 
-Spotify's iOS `SpotifyiOS.xcframework` and Android App Remote `.aar` are **bundled inside the npm package** (~1.5 MB). After `npm install`, `pod install` and Gradle builds work without downloading anything extra.
+| Platform | Distribution |
+| --- | --- |
+| **iOS** | `SpotifyiOS` resolved from Spotify's GitHub via SPM at `pod install` ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). Uses React Native's `spm_dependency` (RN 0.75+). Supported Expo SDK lanes: [Platform support](#platform-support). |
+| **Android** | App Remote AAR downloaded from Spotify's GitHub at Gradle build. Auth SDK from Maven Central. |
 
 | You are… | Action |
 | --- | --- |
-| **Using the published npm package** | Nothing — binaries are already in `node_modules/@wwdrew/expo-spotify-sdk`. |
-| **Developing this repo from git** | Run `yarn fetch-native-sdks` once after clone (binaries are gitignored). |
+| **Using the published npm package** | Network on first native build per platform (`pod install` / Gradle). |
+| **Developing this repo from git** | Same — no manual fetch scripts. |
 
-Release CI fetches the binaries from Spotify's GitHub before every `npm publish`. See [Native SDK distribution](./docs/guides/native-sdk-distribution.md) and [ADR-0001](./docs/adr/0001-build-time-download-of-spotify-native-sdks.md).
+See [Native SDK distribution](./docs/guides/native-sdk-distribution.md).
 
 ## Installation in bare React Native
 

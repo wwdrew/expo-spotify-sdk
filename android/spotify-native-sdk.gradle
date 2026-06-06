@@ -1,0 +1,118 @@
+// Downloads Spotify App Remote AAR at Gradle build time (pinned in ios/spotify-native-sdk-versions.json).
+def spotifyNativeVersionsFile = file("${projectDir}/../ios/spotify-native-sdk-versions.json")
+if (!spotifyNativeVersionsFile.exists()) {
+  throw new GradleException(
+    "Missing ${spotifyNativeVersionsFile}. Native SDK versions must be pinned in ios/spotify-native-sdk-versions.json."
+  )
+}
+
+def spotifyNative = new groovy.json.JsonSlurper().parse(spotifyNativeVersionsFile)
+def androidSdk = spotifyNative.android
+if (androidSdk == null) {
+  throw new GradleException("ios/spotify-native-sdk-versions.json is missing an \"android\" section.")
+}
+
+def appRemoteVersion = androidSdk.appRemoteVersion as String
+def appRemoteReleaseTag = androidSdk.appRemoteReleaseTag as String
+def appRemoteSha256 = androidSdk.appRemoteSha256 as String
+
+if (!appRemoteVersion || !appRemoteReleaseTag || !appRemoteSha256) {
+  throw new GradleException(
+    "ios/spotify-native-sdk-versions.json android section is missing required fields: " +
+      "appRemoteVersion, appRemoteReleaseTag, appRemoteSha256"
+  )
+}
+
+def libsDir = file("${projectDir}/libs")
+def aarFile = file("${libsDir}/spotify-app-remote-release-${appRemoteVersion}.aar")
+def versionMarker = file("${libsDir}/.version")
+def downloadUrl =
+  "https://github.com/spotify/android-sdk/releases/download/${appRemoteReleaseTag}/spotify-app-remote-release-${appRemoteVersion}.aar"
+
+def sha256File = { File f ->
+  def digest = java.security.MessageDigest.getInstance("SHA-256")
+  f.withInputStream { stream ->
+    def buffer = new byte[8192]
+    int read
+    while ((read = stream.read(buffer)) > 0) {
+      digest.update(buffer, 0, read)
+    }
+  }
+  digest.digest().collect { String.format("%02x", it) }.join("")
+}
+
+def appRemoteAarUpToDate = {
+  if (!aarFile.exists()) {
+    return false
+  }
+  if (!versionMarker.exists() || versionMarker.text.trim() != appRemoteVersion) {
+    return false
+  }
+  sha256File(aarFile) == appRemoteSha256
+}
+
+tasks.register("downloadSpotifyAppRemoteAar") {
+  group = "spotify"
+  description = "Download Spotify App Remote AAR from GitHub releases"
+
+  outputs.file(aarFile)
+  outputs.file(versionMarker)
+
+  onlyIf {
+    !appRemoteAarUpToDate()
+  }
+
+  doLast {
+    libsDir.mkdirs()
+    logger.lifecycle("ExpoSpotifySDK: downloading Spotify App Remote ${appRemoteVersion}")
+
+    def tmp = File.createTempFile("spotify-app-remote", ".aar")
+    try {
+      ant.get(
+        src: downloadUrl,
+        dest: tmp,
+        verbose: true,
+        connecttimeout: 30000,
+        readtimeout: 60000
+      )
+      def actual = sha256File(tmp)
+      if (actual != appRemoteSha256) {
+        throw new GradleException(
+          "Spotify App Remote AAR checksum mismatch\n" +
+            "  expected ${appRemoteSha256}\n" +
+            "  actual   ${actual}"
+        )
+      }
+
+      libsDir.listFiles()?.each { f ->
+        if (f.name.endsWith(".aar") && f.name != aarFile.name) {
+          f.delete()
+        }
+      }
+
+      if (aarFile.exists()) {
+        aarFile.delete()
+      }
+
+      if (!tmp.renameTo(aarFile)) {
+        tmp.withInputStream { input ->
+          aarFile.withOutputStream { output ->
+            output << input
+          }
+        }
+      }
+
+      versionMarker.text = appRemoteVersion
+    } finally {
+      tmp.delete()
+    }
+
+    logger.lifecycle("ExpoSpotifySDK: Spotify App Remote AAR ready at ${aarFile}")
+  }
+}
+
+ext.spotifyAppRemoteAarFile = aarFile
+
+tasks.named("preBuild").configure {
+  dependsOn("downloadSpotifyAppRemoteAar")
+}

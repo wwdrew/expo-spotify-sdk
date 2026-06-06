@@ -54,6 +54,3 @@ jobs:
       - name: Build plugin
         run: yarn build:plugin
 
-      - name: Fetch native SDK binaries and verify npm pack
-        run: bash scripts/fetch-spotify-sdks.sh && bash scripts/verify-npm-pack.sh
-

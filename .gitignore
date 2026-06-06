@@ -31,6 +31,7 @@ project.xcworkspace
 .classpath
 .cxx
 .gradle
+.gradle-home/
 .idea
 .project
 .settings
@@ -39,13 +40,10 @@ android.iml
 android/app/libs
 android/keystores/debug.keystore
 
-# Spotify native SDK binaries (gitignored; fetched via scripts/fetch-spotify-sdks.sh, bundled in npm)
+# Spotify native SDK binaries (gitignored; downloaded at Gradle build time)
 android/libs/*.aar
 android/libs/.version
 android/build/
-ios/SpotifySDK/SpotifyiOS.xcframework/
-ios/SpotifySDK/.version
-ios/SpotifySDK/Licenses/
 
 # Cocoapods
 #
@@ -63,3 +61,6 @@ yarn-error.log
 
 # Expo
 .expo/*
+
+# npm pack dry-run artifacts (repo root)
+/wwdrew-expo-spotify-sdk-*.tgz
