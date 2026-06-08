@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.2.1](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.2.0...expo-spotify-sdk-v2.2.1) (2026-06-08)
+
+
+### Bug Fixes
+
+* **android:** drop explicit Ant download timeouts for Spotify AAR fetch ([#61](https://github.com/wwdrew/expo-spotify-sdk/issues/61)) ([cfa5d72](https://github.com/wwdrew/expo-spotify-sdk/commit/cfa5d725a8284968fbf1ffe7b2445746e6071a79))
+
+
+### Code Refactoring
+
+* **ios:** extract App Remote connection lifecycle ([#59](https://github.com/wwdrew/expo-spotify-sdk/issues/59)) ([a51ef04](https://github.com/wwdrew/expo-spotify-sdk/commit/a51ef04aeb96bf33d85e7b01a6d6f7d2d9eaef90))
+
 ## [2.2.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.1.0...expo-spotify-sdk-v2.2.0) (2026-06-06)
 
 
