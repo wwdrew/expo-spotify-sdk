@@ -71,9 +71,7 @@ tasks.register("downloadSpotifyAppRemoteAar") {
       ant.get(
         src: downloadUrl,
         dest: tmp,
-        verbose: true,
-        connecttimeout: 30000,
-        readtimeout: 60000
+        verbose: true
       )
       def actual = sha256File(tmp)
       if (actual != appRemoteSha256) {
