@@ -54,3 +54,6 @@ jobs:
       - name: Build plugin
         run: yarn build:plugin
 
+      - name: Verify npm pack layout
+        run: bash scripts/verify-npm-pack.sh
+

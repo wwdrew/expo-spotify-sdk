@@ -64,3 +64,7 @@ yarn-error.log
 
 # npm pack dry-run artifacts (repo root)
 /wwdrew-expo-spotify-sdk-*.tgz
+
+# CocoaPods binary pod prepare_command output (local pod install only)
+spotify-ios/SpotifyiOS.xcframework/
+spotify-ios/Licenses/
