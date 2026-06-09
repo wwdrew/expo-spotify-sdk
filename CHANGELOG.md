@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.2](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.2.1...expo-spotify-sdk-v2.2.2) (2026-06-09)
+
+
+### Bug Fixes
+
+* **ios:** fetch SpotifyiOS via CocoaPods binary pod at pod install ([#64](https://github.com/wwdrew/expo-spotify-sdk/issues/64)) ([d2ec75e](https://github.com/wwdrew/expo-spotify-sdk/commit/d2ec75e0d446757438eefb5db1e195a4b6e84ba1))
+
 ## [2.2.1](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.2.0...expo-spotify-sdk-v2.2.1) (2026-06-08)
 
 
