@@ -44,7 +44,7 @@ Branch names follow the same `type/` prefix as conventional commits: `feat/*`, `
 
 ## Native SDK binaries
 
-Spotify native binaries are **not** re-distributed in npm. iOS is resolved from Spotify's GitHub via SPM at `pod install`; Android App Remote AAR is downloaded at Gradle build ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). See [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md).
+Spotify native binaries are **not** in npm. iOS xcframework is fetched at app `pod install` ([ADR-0009](./docs/adr/0009-ios-vendored-xcframework-pod-install-fetch.md)); Android App Remote at Gradle build ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). See [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md).
 
 ## Release lanes
 

@@ -1,18 +1,6 @@
 require 'json'
 
-absolute_react_native_path = ''
-if !ENV['REACT_NATIVE_PATH'].nil?
-  absolute_react_native_path = File.expand_path(ENV['REACT_NATIVE_PATH'], Pod::Config.instance.project_root)
-else
-  absolute_react_native_path = File.dirname(`node --print "require.resolve('react-native/package.json')"`)
-end
-
-unless defined?(spm_dependency)
-  require File.join(absolute_react_native_path, "scripts/react_native_pods")
-end
-
 package = JSON.parse(File.read(File.join(__dir__, '..', 'package.json')))
-spotify_native = JSON.parse(File.read(File.join(__dir__, 'spotify-native-sdk-versions.json')))
 
 Pod::Spec.new do |s|
   s.name           = 'ExpoSpotifySDK'
@@ -35,18 +23,7 @@ Pod::Spec.new do |s|
   }
 
   s.source_files = "**/*.{h,m,swift}"
-
-  ios_sdk = spotify_native['ios']
-  if ios_sdk.nil? ||
-      ios_sdk['spmRepositoryUrl'].to_s.empty? ||
-      ios_sdk['spmVersion'].to_s.empty? ||
-      ios_sdk['spmProduct'].to_s.empty?
-    raise "ios/spotify-native-sdk-versions.json is missing required iOS fields: spmRepositoryUrl, spmVersion, spmProduct"
-  end
-
-  spm_dependency(s,
-    url: ios_sdk['spmRepositoryUrl'],
-    requirement: { kind: 'exactVersion', version: ios_sdk['spmVersion'] },
-    products: [ios_sdk['spmProduct']]
-  )
+  s.exclude_files = "SpotifySDK/SpotifyiOS.xcframework/**/*.h"
+  s.vendored_frameworks = "SpotifySDK/SpotifyiOS.xcframework"
+  s.preserve_paths = "fetch-spotify-ios-sdk.sh", "spotify-native-sdk-versions.json"
 end

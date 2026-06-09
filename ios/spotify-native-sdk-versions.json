@@ -1,8 +1,8 @@
 {
   "ios": {
-    "spmRepositoryUrl": "https://github.com/spotify/ios-sdk.git",
-    "spmVersion": "5.0.1",
-    "spmProduct": "SpotifyiOS"
+    "version": "5.0.1",
+    "tarballSha256": "acafc07d35ce3f0bce93cac0031cd1cca1ba7ba6647a3e07e123f2e954ec298b",
+    "binarySha256": "988704167a3839136c7a4fd83742fca1422dfad48de41354ed07aa8e47611e32"
   },
   "android": {
     "appRemoteVersion": "0.8.0",

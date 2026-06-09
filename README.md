@@ -103,13 +103,14 @@ For bare React Native (no Expo CLI), see [Installation in bare React Native](#in
 
 | Platform | Distribution |
 | --- | --- |
-| **iOS** | `SpotifyiOS` resolved from Spotify's GitHub via SPM at `pod install` ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). Uses React Native's `spm_dependency` (RN 0.75+). Supported Expo SDK lanes: [Platform support](#platform-support). |
-| **Android** | App Remote AAR downloaded from Spotify's GitHub at Gradle build. Auth SDK from Maven Central. |
+| **iOS** | `SpotifyiOS.xcframework` fetched at app `pod install` via config-plugin Podfile hook ([ADR-0009](./docs/adr/0009-ios-vendored-xcframework-pod-install-fetch.md)). Vendored — works with `ios.useFrameworks: "static"`. Not bundled in npm. |
+| **Android** | App Remote AAR downloaded from Spotify's GitHub at Gradle build ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). Auth SDK from Maven Central. |
 
 | You are… | Action |
 | --- | --- |
-| **Using the published npm package** | Network on first native build per platform (`pod install` / Gradle). |
-| **Developing this repo from git** | Same — no manual fetch scripts. |
+| **Using the published npm package (Expo)** | Add the config plugin and run `expo prebuild` — network on first iOS `pod install` / Android Gradle build. |
+| **Bare React Native** | Run `ios/fetch-spotify-ios-sdk.sh` before `pod install`, or add the Podfile `pre_install` hook (see ADR-0009). |
+| **Developing this repo from git** | `yarn fetch-native-sdks` before iOS work if not using a fresh prebuild. |
 
 See [Native SDK distribution](./docs/guides/native-sdk-distribution.md).
 
@@ -133,11 +134,14 @@ Add the pod to your `Podfile`:
 pod 'ExpoSpotifySDK', :path => '../node_modules/@wwdrew/expo-spotify-sdk'
 ```
 
-Then install pods:
+Fetch the Spotify iOS xcframework before the first `pod install` (the Expo config plugin does this automatically via a `pre_install` hook):
 
 ```sh
+bash node_modules/@wwdrew/expo-spotify-sdk/ios/fetch-spotify-ios-sdk.sh
 cd ios && pod install
 ```
+
+Or add a `pre_install` hook to your Podfile — see [ADR-0009](./docs/adr/0009-ios-vendored-xcframework-pod-install-fetch.md).
 
 If you have not already bootstrapped `expo-modules-core` in your AppDelegate, follow the [Expo Modules integration guide](https://docs.expo.dev/bare/installing-expo-modules/) first — in particular, your `AppDelegate` must inherit from `ExpoAppDelegate` (or call `ExpoModulesAppDelegateSubscriber`) so that the Spotify redirect URL is handled correctly.
 

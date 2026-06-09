@@ -1,6 +1,6 @@
 # ADR-0008: Native Spotify SDKs resolved at build time
 
-- **Status:** Accepted
+- **Status:** Accepted (Android only; iOS superseded by [ADR-0009](./0009-ios-vendored-xcframework-pod-install-fetch.md))
 - **Date:** 2026-06-06
 - **Deciders:** @wwdrew
 - **Supersedes:** [ADR-0001](./0001-build-time-download-of-spotify-native-sdks.md) (both platforms)

@@ -40,7 +40,10 @@ android.iml
 android/app/libs
 android/keystores/debug.keystore
 
-# Spotify native SDK binaries (gitignored; downloaded at Gradle build time)
+# Spotify native SDK binaries (gitignored; iOS at pod install, Android at Gradle build)
+ios/SpotifySDK/SpotifyiOS.xcframework
+ios/SpotifySDK/Licenses
+ios/SpotifySDK/.version
 android/libs/*.aar
 android/libs/.version
 android/build/
