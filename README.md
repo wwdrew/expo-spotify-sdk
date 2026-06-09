@@ -103,7 +103,7 @@ For bare React Native (no Expo CLI), see [Installation in bare React Native](#in
 
 | Platform | Distribution |
 | --- | --- |
-| **iOS** | `SpotifyiOS` resolved from Spotify's GitHub via SPM at `pod install` ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). Uses React Native's `spm_dependency` (RN 0.75+). Supported Expo SDK lanes: [Platform support](#platform-support). |
+| **iOS** | `SpotifyiOS` downloaded via CocoaPods HTTP binary pod at `pod install` ([ADR-0009](./docs/adr/0009-ios-spotify-sdk-via-cocoapods-binary-pod.md)). Config plugin injects the Podfile `pod` line on `expo prebuild`. Supported Expo SDK lanes: [Platform support](#platform-support). |
 | **Android** | App Remote AAR downloaded from Spotify's GitHub at Gradle build. Auth SDK from Maven Central. |
 
 | You are… | Action |
@@ -127,10 +127,11 @@ yarn add @wwdrew/expo-spotify-sdk expo-modules-core
 
 ### 2. iOS
 
-Add the pod to your `Podfile`:
+Add pods to your `Podfile`:
 
 ```ruby
 pod 'ExpoSpotifySDK', :path => '../node_modules/@wwdrew/expo-spotify-sdk'
+pod 'SpotifyiOS', :podspec => File.join(__dir__, '../node_modules/@wwdrew/expo-spotify-sdk/spotify-ios/SpotifyiOS.podspec')
 ```
 
 Then install pods:

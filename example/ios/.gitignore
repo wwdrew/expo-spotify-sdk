@@ -28,6 +28,3 @@ project.xcworkspace
 
 # CocoaPods
 /Pods/
-
-# Swift Package Manager (SpotifyiOS via ExpoSpotifySDK pod; regenerated at pod install)
-*.xcworkspace/xcshareddata/swiftpm/
