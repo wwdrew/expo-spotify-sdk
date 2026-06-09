@@ -25,6 +25,9 @@ prepare_react_native_project!
 
 target 'expospotifysdkexample' do
   use_expo_modules!
+# @generated begin expo-spotify-sdk-spotify-ios-pod - expo prebuild (DO NOT MODIFY) sync-af4a1e8fbb8224754de20fa24160561ed6411cc0
+  pod 'SpotifyiOS', :podspec => File.join(__dir__, '../node_modules/@wwdrew/expo-spotify-sdk/spotify-ios/SpotifyiOS.podspec')
+# @generated end expo-spotify-sdk-spotify-ios-pod
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
