@@ -25,7 +25,7 @@ cd example && yarn install && cd ..
 npx expo prebuild
 ```
 
-When QAing a **published npm version** (not a git checkout), install from npm — native SDKs resolve at build time (SPM / Gradle).
+When QAing a **published npm version** (not a git checkout), install from npm — iOS xcframework is in the tarball; Android App Remote downloads at Gradle build.
 
 On **`main`**, you can also exercise the **typed config plugin** in `app.config.ts` (`import { withSpotifySdk } from "@wwdrew/expo-spotify-sdk/plugin"`). That path is not on `v1`.
 

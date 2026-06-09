@@ -46,7 +46,9 @@ yarn test
 
 ### Spotify native SDK binaries
 
-Spotify native binaries are **not** committed to git or bundled in npm. They are resolved at native build time — iOS via SPM at `pod install`, Android via Gradle download at build ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)).
+Spotify native binaries are **not** committed to git. iOS `SpotifyiOS.xcframework` is fetched before `npm publish` and bundled in npm ([ADR-0001](./docs/adr/0001-build-time-download-of-spotify-native-sdks.md)). Android App Remote is downloaded at Gradle build ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)).
+
+After clone, run `yarn fetch-native-sdks` before iOS / `pod install` work.
 
 Full details: [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md).
 
@@ -77,7 +79,7 @@ We keep `expo-module-scripts` for shared config (`tsconfig`, ESLint presets) but
 
 ### iOS native (`ios/`)
 
-Requires network for `pod install` (SPM resolves `SpotifyiOS` from GitHub).
+Run `yarn fetch-native-sdks` first (iOS xcframework is gitignored).
 
 ```sh
 cd example/ios && pod install && cd ..

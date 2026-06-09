@@ -1,7 +1,7 @@
 # ADR-0001: Fetch-at-Publish, Vendor-in-NPM for Spotify Native SDKs
 
-- **Status:** Superseded by [ADR-0008](./0008-ios-spotify-sdk-via-spm.md) (both platforms)
-- **Date:** 2026-05-07 (revised 2026-06-05)
+- **Status:** Accepted (iOS only; Android superseded by [ADR-0008](./0008-ios-spotify-sdk-via-spm.md))
+- **Date:** 2026-05-07 (revised 2026-06-08 — iOS restored after SPM proved incompatible with static frameworks)
 - **Deciders:** @wwdrew
 
 ## Context

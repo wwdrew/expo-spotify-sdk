@@ -1,9 +1,9 @@
 # ADR-0008: Native Spotify SDKs resolved at build time
 
-- **Status:** Accepted
-- **Date:** 2026-06-06
+- **Status:** Accepted (Android only; iOS reverted to [ADR-0001](./0001-build-time-download-of-spotify-native-sdks.md) vendored xcframework — SPM + `static_framework` incompatible with `ios.useFrameworks: "static"`)
+- **Date:** 2026-06-06 (amended 2026-06-08)
 - **Deciders:** @wwdrew
-- **Supersedes:** [ADR-0001](./0001-build-time-download-of-spotify-native-sdks.md) (both platforms)
+- **Supersedes:** [ADR-0001](./0001-build-time-download-of-spotify-native-sdks.md) Android App Remote vendoring only
 
 ## Context
 

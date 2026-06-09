@@ -9,7 +9,7 @@ This project wraps (does not fork) Spotify's official mobile SDKs:
 
 Use of those SDKs is subject to [Spotify's Developer Terms](https://developer.spotify.com/terms) and the licenses bundled with each SDK distribution.
 
-Neither platform's native binaries are bundled in npm — they are fetched from Spotify's official channels at native build time ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). See [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md).
+The iOS xcframework is re-distributed in npm (fetched from Spotify's GitHub before publish, [ADR-0001](./docs/adr/0001-build-time-download-of-spotify-native-sdks.md)). Android App Remote is fetched at Gradle build ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). See [docs/guides/native-sdk-distribution.md](./docs/guides/native-sdk-distribution.md).
 
 ## What this library does not include
 

@@ -103,13 +103,13 @@ For bare React Native (no Expo CLI), see [Installation in bare React Native](#in
 
 | Platform | Distribution |
 | --- | --- |
-| **iOS** | `SpotifyiOS` resolved from Spotify's GitHub via SPM at `pod install` ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). Uses React Native's `spm_dependency` (RN 0.75+). Supported Expo SDK lanes: [Platform support](#platform-support). |
-| **Android** | App Remote AAR downloaded from Spotify's GitHub at Gradle build. Auth SDK from Maven Central. |
+| **iOS** | `SpotifyiOS.xcframework` bundled in npm ([ADR-0001](./docs/adr/0001-build-time-download-of-spotify-native-sdks.md)). Vendored via CocoaPods — works with `ios.useFrameworks: "static"`. |
+| **Android** | App Remote AAR downloaded from Spotify's GitHub at Gradle build ([ADR-0008](./docs/adr/0008-ios-spotify-sdk-via-spm.md)). Auth SDK from Maven Central. |
 
 | You are… | Action |
 | --- | --- |
-| **Using the published npm package** | Network on first native build per platform (`pod install` / Gradle). |
-| **Developing this repo from git** | Same — no manual fetch scripts. |
+| **Using the published npm package** | `npm install` — iOS xcframework is in the tarball. Network on first Android native build (Gradle download). |
+| **Developing this repo from git** | Run `yarn fetch-native-sdks` before `pod install` / iOS builds. |
 
 See [Native SDK distribution](./docs/guides/native-sdk-distribution.md).
 
