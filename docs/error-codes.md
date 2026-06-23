@@ -2,6 +2,8 @@
 
 Every rejection is an instance of a namespace-specific subclass (`AuthError`, `AppRemoteError`, …) extending the abstract `SpotifyError` base. Catch with `instanceof` for typed `code` narrowing.
 
+Auth native → JS mapping details: [auth-error-mapping.md](./auth-error-mapping.md).
+
 App Remote native → JS mapping details: [app-remote-error-mapping.md](./app-remote-error-mapping.md).
 
 ### `AuthErrorCode`
