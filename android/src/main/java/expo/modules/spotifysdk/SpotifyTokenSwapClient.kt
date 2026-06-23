@@ -4,6 +4,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.FormBody
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -43,11 +44,13 @@ class SpotifyTokenSwapClient(
     tokenSwapURL: String,
     requestedScopes: List<String>,
   ): SpotifySessionPayload {
+    val url = tokenSwapURL.toHttpUrlOrNull()
+      ?: throw InvalidConfigException("Invalid token swap URL: $tokenSwapURL")
     val body = FormBody.Builder()
       .add("code", code)
       .build()
     val request = Request.Builder()
-      .url(tokenSwapURL)
+      .url(url)
       .header("User-Agent", userAgent)
       .post(body)
       .build()
@@ -60,11 +63,13 @@ class SpotifyTokenSwapClient(
     tokenRefreshURL: String,
     previousScopes: List<String>,
   ): SpotifySessionPayload {
+    val url = tokenRefreshURL.toHttpUrlOrNull()
+      ?: throw InvalidConfigException("Invalid token refresh URL: $tokenRefreshURL")
     val body = FormBody.Builder()
       .add("refresh_token", refreshToken)
       .build()
     val request = Request.Builder()
-      .url(tokenRefreshURL)
+      .url(url)
       .header("User-Agent", userAgent)
       .post(body)
       .build()

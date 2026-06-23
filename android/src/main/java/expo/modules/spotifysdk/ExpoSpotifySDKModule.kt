@@ -165,6 +165,13 @@ class ExpoSpotifySDKModule : Module() {
       } catch (e: expo.modules.kotlin.exception.CodedException) {
         emitSessionError(e.code ?: "UNKNOWN", e.localizedMessage ?: e.code ?: "Unknown error")
         throw e
+      } catch (e: Exception) {
+        val wrapped = UnknownSpotifyException(
+          "Unexpected authentication error: ${e.message ?: e::class.java.simpleName}",
+          e,
+        )
+        emitSessionError(wrapped.code ?: "UNKNOWN", wrapped.localizedMessage ?: "Unknown error")
+        throw wrapped
       }
     }
 
@@ -187,6 +194,13 @@ class ExpoSpotifySDKModule : Module() {
       } catch (e: expo.modules.kotlin.exception.CodedException) {
         emitSessionError(e.code ?: "UNKNOWN", e.localizedMessage ?: e.code ?: "Unknown error")
         throw e
+      } catch (e: Exception) {
+        val wrapped = UnknownSpotifyException(
+          "Unexpected token refresh error: ${e.message ?: e::class.java.simpleName}",
+          e,
+        )
+        emitSessionError(wrapped.code ?: "UNKNOWN", wrapped.localizedMessage ?: "Unknown error")
+        throw wrapped
       }
     }
 

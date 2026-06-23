@@ -1,4 +1,5 @@
 import ExpoModulesCore
+import AuthenticationServices
 import Foundation
 import SpotifyiOS
 import UIKit
@@ -11,6 +12,10 @@ enum SpotifyError: Error {
   case authInProgress
   case userCancelled
   case spotifyNotInstalled
+  case networkError(message: String, cause: Error)
+  case tokenSwapFailed(status: Int?, message: String, cause: Error)
+  case tokenSwapParseError(message: String, cause: Error)
+  case authError(message: String, cause: Error)
   case underlying(message: String, cause: Error)
 
   var code: String {
@@ -19,6 +24,10 @@ enum SpotifyError: Error {
     case .authInProgress:       return "AUTH_IN_PROGRESS"
     case .userCancelled:        return "USER_CANCELLED"
     case .spotifyNotInstalled:  return "SPOTIFY_NOT_INSTALLED"
+    case .networkError:         return "NETWORK_ERROR"
+    case .tokenSwapFailed:      return "TOKEN_SWAP_FAILED"
+    case .tokenSwapParseError:  return "TOKEN_SWAP_PARSE_ERROR"
+    case .authError:            return "AUTH_ERROR"
     case .underlying:           return "UNKNOWN"
     }
   }
@@ -29,6 +38,10 @@ enum SpotifyError: Error {
     case .authInProgress:                  return "Another authentication request is already in progress"
     case .userCancelled:                   return "Authentication was cancelled by the user"
     case .spotifyNotInstalled:             return "The Spotify app is not installed on this device"
+    case .networkError(let message, _):    return message
+    case .tokenSwapFailed(_, let message, _): return message
+    case .tokenSwapParseError(let message, _): return message
+    case .authError(let message, _):       return message
     case .underlying(let message, _):      return message
     }
   }
@@ -38,6 +51,10 @@ enum SpotifyError: Error {
   /// full chain rather than collapsing into "undefined reason".
   var underlyingCause: Error? {
     switch self {
+    case .networkError(_, let cause): return cause
+    case .tokenSwapFailed(_, _, let cause): return cause
+    case .tokenSwapParseError(_, let cause): return cause
+    case .authError(_, let cause): return cause
     case .underlying(_, let cause): return cause
     default:                        return nil
     }
@@ -123,6 +140,10 @@ actor SpotifyAuthCoordinator {
     // mutating it here takes effect for the upcoming initiateSession call.
     sptConfiguration.tokenSwapURL = tokenSwapURL
     sptConfiguration.tokenRefreshURL = tokenRefreshURL
+    bridge.updateAuthContext(
+      tokenSwapURL: tokenSwapURL,
+      tokenRefreshURL: tokenRefreshURL
+    )
     // alwaysShowAuthorizationDialog is a property on SPTSessionManager, not an
     // SPTAuthorizationOptions flag (the options enum has no such case).
     sessionManager.alwaysShowAuthorizationDialog = showDialog
@@ -146,6 +167,7 @@ actor SpotifyAuthCoordinator {
   func deliver(_ result: Result<SPTSession, Error>) {
     let cont = pending
     pending = nil
+    bridge.clearAuthContext()
     cont?.resume(with: result)
   }
 
@@ -168,7 +190,21 @@ actor SpotifyAuthCoordinator {
 /// can't satisfy directly. The bridge is a tiny NSObject that hops the call
 /// onto the actor's executor.
 final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
+  private struct AuthContext {
+    let tokenSwapURL: URL?
+    let tokenRefreshURL: URL?
+  }
+
   weak var coordinator: SpotifyAuthCoordinator?
+  private var authContext: AuthContext?
+
+  func updateAuthContext(tokenSwapURL: URL?, tokenRefreshURL: URL?) {
+    authContext = AuthContext(tokenSwapURL: tokenSwapURL, tokenRefreshURL: tokenRefreshURL)
+  }
+
+  func clearAuthContext() {
+    authContext = nil
+  }
 
   func sessionManager(manager _: SPTSessionManager, didInitiate session: SPTSession) {
     NSLog(
@@ -199,14 +235,194 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
   /// Translate a few well-known SDK error shapes into our taxonomy.
   private func mapSDKError(_ error: Error) -> Error {
     let nsError = error as NSError
-    let description = nsError.localizedDescription.lowercased()
-    if description.contains("cancel") {
+    if isUserCancelled(error: nsError) {
+      NSLog(
+        "[ExpoSpotifySDK] mapSDKError classified=USER_CANCELLED domain=%@ code=%d detail=%@",
+        nsError.domain,
+        nsError.code,
+        describeError(nsError)
+      )
       return SpotifyError.userCancelled
     }
+
+    if let classified = classifyNonCancellationAuthError(nsError) {
+      return classified
+    }
+
     // Keep the original NSError as `cause` so the structured underlying-chain
     // is preserved (Sentry, debug breadcrumbs); the rendered string goes to
     // `message` so JS callers get a single human-readable line.
-    return SpotifyError.underlying(message: describeError(nsError), cause: nsError)
+    let detail = describeError(nsError)
+    NSLog(
+      "[ExpoSpotifySDK] mapSDKError classified=UNKNOWN domain=%@ code=%d detail=%@",
+      nsError.domain,
+      nsError.code,
+      detail
+    )
+    return SpotifyError.underlying(message: detail, cause: nsError)
+  }
+
+  private func classifyNonCancellationAuthError(_ error: NSError) -> SpotifyError? {
+    let detail = describeError(error)
+    let lower = detail.lowercased()
+    let tokenSwapConfigured = authContext?.tokenSwapURL != nil
+
+    if isNetworkFailure(error) {
+      return SpotifyError.networkError(message: "Network error during Spotify authentication: \(detail)", cause: error)
+    }
+
+    // OAuth-style rejection from Spotify auth endpoints — evaluated before the
+    // tokenSwapConfigured gate so these are never misclassified as token-swap errors.
+    if lower.contains("access_denied") || lower.contains("invalid_scope") || lower.contains("invalid_client") ||
+      lower.contains("authorization") || lower.contains("oauth") || lower.contains("spotify account")
+    {
+      return SpotifyError.authError(
+        message: "Spotify authorization failed: \(detail)",
+        cause: error
+      )
+    }
+
+    if let status = extractHTTPStatusCode(from: detail), status == 401 || status == 403 {
+      return SpotifyError.authError(
+        message: "Spotify authorization failed (HTTP \(status)): \(detail)",
+        cause: error
+      )
+    }
+
+    if tokenSwapConfigured || lower.contains("token swap") || lower.contains("token endpoint") || lower.contains("token exchange") {
+      if let status = extractHTTPStatusCode(from: detail) {
+        return SpotifyError.tokenSwapFailed(
+          status: status,
+          message: "Token swap server returned HTTP \(status): \(detail)",
+          cause: error
+        )
+      }
+      if lower.contains("parse") || lower.contains("json") || lower.contains("decode") || lower.contains("malformed") {
+        return SpotifyError.tokenSwapParseError(
+          message: "Token swap response was invalid: \(detail)",
+          cause: error
+        )
+      }
+      return SpotifyError.tokenSwapFailed(
+        status: nil,
+        message: "Token swap failed: \(detail)",
+        cause: error
+      )
+    }
+
+    return nil
+  }
+
+  /// Detect user cancellation from the full NSError chain rather than relying
+  /// on a single wrapper domain/code pair.
+  private func isUserCancelled(error: NSError) -> Bool {
+    var visited = Set<ObjectIdentifier>()
+    var stack: [NSError] = [error]
+
+    while let current = stack.popLast() {
+      let id = ObjectIdentifier(current)
+      guard visited.insert(id).inserted else { continue }
+
+      if isKnownCancellationCode(current) || messageLooksCancelled(current) {
+        return true
+      }
+
+      if let underlying = current.userInfo[NSUnderlyingErrorKey] as? NSError {
+        stack.append(underlying)
+      }
+    }
+
+    return false
+  }
+
+  private func isKnownCancellationCode(_ error: NSError) -> Bool {
+    if error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled {
+      return true
+    }
+
+    if #available(iOS 12.0, *),
+       error.domain == ASWebAuthenticationSessionErrorDomain,
+       error.code == ASWebAuthenticationSessionError.canceledLogin.rawValue
+    {
+      return true
+    }
+
+    if error.domain == "SFAuthenticationErrorDomain" && error.code == 1 {
+      return true
+    }
+
+    return false
+  }
+
+  private func isNetworkFailure(_ error: NSError) -> Bool {
+    var visited = Set<ObjectIdentifier>()
+    var stack: [NSError] = [error]
+
+    while let current = stack.popLast() {
+      let id = ObjectIdentifier(current)
+      guard visited.insert(id).inserted else { continue }
+
+      if current.domain == NSURLErrorDomain,
+         current.code != NSURLErrorCancelled
+      {
+        return true
+      }
+
+      if let underlying = current.userInfo[NSUnderlyingErrorKey] as? NSError {
+        stack.append(underlying)
+      }
+    }
+
+    return false
+  }
+
+  private func messageLooksCancelled(_ error: NSError) -> Bool {
+    // Only apply fuzzy text matching in auth/browser domains to avoid mapping
+    // unrelated transport or backend failures into USER_CANCELLED.
+    guard isLikelyAuthCancellationDomain(error.domain) else {
+      return false
+    }
+
+    let cancelKeywords = ["cancel", "canceled", "cancelled"]
+    let negativeKeywords = [
+      "timed out",
+      "timeout",
+      "network",
+      "offline",
+      "unreachable",
+      "server",
+      "unauthorized",
+      "forbidden",
+      "invalid"
+    ]
+    let messageParts = [
+      error.localizedDescription,
+      error.localizedFailureReason ?? "",
+      error.userInfo[NSLocalizedDescriptionKey] as? String ?? "",
+      error.userInfo[NSLocalizedFailureReasonErrorKey] as? String ?? ""
+    ]
+    let combined = messageParts
+      .joined(separator: " ")
+      .lowercased()
+
+    if negativeKeywords.contains(where: { combined.contains($0) }) {
+      return false
+    }
+
+    return cancelKeywords.contains(where: { combined.contains($0) })
+  }
+
+  private func isLikelyAuthCancellationDomain(_ domain: String) -> Bool {
+    if domain == ASWebAuthenticationSessionErrorDomain || domain == "SFAuthenticationErrorDomain" {
+      return true
+    }
+
+    // SPT wrappers commonly bubble auth-web errors under their own namespace.
+    if domain.lowercased().contains("spotify") && domain.lowercased().contains("auth") {
+      return true
+    }
+
+    return false
   }
 
   /// Build a diagnostic string from an NSError that includes the domain,
@@ -231,5 +447,30 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
       parts.append("→ underlying: \(describeError(underlying))")
     }
     return parts.joined(separator: " ")
+  }
+
+  private func extractHTTPStatusCode(from message: String) -> Int? {
+    let patterns = [
+      #"http\s+([1-5][0-9]{2})"#,
+      #"status(?:\s+code)?[:=\s]+([1-5][0-9]{2})"#
+    ]
+
+    for pattern in patterns {
+      guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+        continue
+      }
+      let range = NSRange(message.startIndex..<message.endIndex, in: message)
+      guard let match = regex.firstMatch(in: message, options: [], range: range),
+            match.numberOfRanges > 1,
+            let codeRange = Range(match.range(at: 1), in: message)
+      else {
+        continue
+      }
+      if let code = Int(message[codeRange]) {
+        return code
+      }
+    }
+
+    return nil
   }
 }

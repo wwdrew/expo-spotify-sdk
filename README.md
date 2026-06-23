@@ -406,6 +406,7 @@ Need the deprecated shims temporarily? Pin **`1.x`**: `npm install @wwdrew/expo-
 | --- | --- |
 | [API reference](./docs/api-reference.md) | All namespaces, methods, hooks |
 | [Error codes](./docs/error-codes.md) | Per-namespace codes with when/what-to-do |
+| [Auth error mapping](./docs/auth-error-mapping.md) | iOS/Android auth → JS mapping matrix and parity checklist |
 | [App Remote error mapping](./docs/app-remote-error-mapping.md) | iOS/Android native → JS mapping matrix |
 | [Platform differences](./docs/guides/platform-differences.md) | iOS vs Android parity |
 | [Native SDK distribution](./docs/guides/native-sdk-distribution.md) | How iOS/Android binaries are fetched, packaged, and bumped |

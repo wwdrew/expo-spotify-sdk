@@ -143,6 +143,8 @@ When adding new plugin modifiers, add a corresponding test that checks:
 1. The modifier applies the expected change.
 2. Running the modifier a second time is idempotent.
 
+When changing auth error mapping on iOS or Android, update both native implementations and the scenario matrix in [`docs/auth-error-mapping.md`](docs/auth-error-mapping.md). Run through the manual checklist in that doc on both platforms.
+
 When changing App Remote error mapping on iOS or Android, update both native mappers and [`src/internal/app-remote-error-mapping.fixture.json`](src/internal/app-remote-error-mapping.fixture.json). Run `yarn test` — the fixture test guards drift between platforms and the TypeScript error unions.
 
 ## Pull request checklist
