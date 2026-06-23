@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.3](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.2.2...expo-spotify-sdk-v2.2.3) (2026-06-23)
+
+
+### Bug Fixes
+
+* improve auth error mapping ([#67](https://github.com/wwdrew/expo-spotify-sdk/issues/67)) ([9322972](https://github.com/wwdrew/expo-spotify-sdk/commit/9322972cd999b7de78853d7efd27754beb801096))
+
 ## [2.2.2](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.2.1...expo-spotify-sdk-v2.2.2) (2026-06-09)
 
 

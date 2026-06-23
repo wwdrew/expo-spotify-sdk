@@ -1,7 +1,7 @@
 import ExpoModulesCore
 import SpotifyiOS
 
-private let SDK_VERSION = "2.2.2" // x-release-please-version
+private let SDK_VERSION = "2.2.3" // x-release-please-version
 private let EVENT_SESSION_CHANGE = "onSessionChange"
 private let EVENT_CONNECTION_STATE_CHANGE = "onConnectionStateChange"
 private let EVENT_CONNECTION_ERROR = "onConnectionError"
