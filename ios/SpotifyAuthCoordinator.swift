@@ -271,6 +271,24 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
       return SpotifyError.networkError(message: "Network error during Spotify authentication: \(detail)", cause: error)
     }
 
+    // OAuth-style rejection from Spotify auth endpoints — evaluated before the
+    // tokenSwapConfigured gate so these are never misclassified as token-swap errors.
+    if lower.contains("access_denied") || lower.contains("invalid_scope") || lower.contains("invalid_client") ||
+      lower.contains("authorization") || lower.contains("oauth") || lower.contains("spotify account")
+    {
+      return SpotifyError.authError(
+        message: "Spotify authorization failed: \(detail)",
+        cause: error
+      )
+    }
+
+    if let status = extractHTTPStatusCode(from: detail), status == 401 || status == 403 {
+      return SpotifyError.authError(
+        message: "Spotify authorization failed (HTTP \(status)): \(detail)",
+        cause: error
+      )
+    }
+
     if tokenSwapConfigured || lower.contains("token swap") || lower.contains("token endpoint") || lower.contains("token exchange") {
       if let status = extractHTTPStatusCode(from: detail) {
         return SpotifyError.tokenSwapFailed(
@@ -288,23 +306,6 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
       return SpotifyError.tokenSwapFailed(
         status: nil,
         message: "Token swap failed: \(detail)",
-        cause: error
-      )
-    }
-
-    // OAuth-style rejection from Spotify auth endpoints.
-    if lower.contains("access_denied") || lower.contains("invalid_scope") || lower.contains("invalid_client") ||
-      lower.contains("authorization") || lower.contains("oauth") || lower.contains("spotify account")
-    {
-      return SpotifyError.authError(
-        message: "Spotify authorization failed: \(detail)",
-        cause: error
-      )
-    }
-
-    if let status = extractHTTPStatusCode(from: detail), status == 401 || status == 403 {
-      return SpotifyError.authError(
-        message: "Spotify authorization failed (HTTP \(status)): \(detail)",
         cause: error
       )
     }
