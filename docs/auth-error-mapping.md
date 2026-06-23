@@ -13,7 +13,7 @@ Canonical matrix for mapping native Spotify authentication failures to the publi
 
 ## Mapping strategy
 
-Both platforms must emit the same `AuthErrorCode` for the scenarios below. Priority order:
+Both platforms target the same `AuthErrorCode` for the scenarios below. **Strong-parity** scenarios guarantee an exact match; **best-effort** scenarios aim for the same code but iOS may fall back to `UNKNOWN` in edge cases (see [Parity guarantees](#parity-guarantees)). Priority order:
 
 1. **Typed native signals** — Android `AuthorizationResponse.Type.*`; iOS cancellation domain/code pairs (`NSURLErrorCancelled`, `ASWebAuthenticationSession` canceled login, …).
 2. **Owned HTTP client path** — Android `SpotifyTokenSwapClient` and iOS `SpotifyTokenRefreshClient` classify swap/refresh failures directly (`NETWORK_ERROR`, `TOKEN_SWAP_FAILED`, `TOKEN_SWAP_PARSE_ERROR`).
@@ -30,7 +30,7 @@ Both platforms must emit the same `AuthErrorCode` for the scenarios below. Prior
 
 ## Scenario matrix
 
-Use this table when changing auth code. **Expected code** is what JS must receive (`error.code` / `onSessionChange` `didFail.error.code`).
+Use this table when changing auth code. **Expected code** is the target `error.code` JS should receive (`onSessionChange` `didFail.error.code`). For strong-parity rows both platforms guarantee this code; for best-effort rows (`authenticateAsync` with `tokenSwapURL`) iOS may emit `UNKNOWN` in edge cases — see the iOS signal column and [Parity guarantees](#parity-guarantees).
 
 ### `authenticateAsync`
 
