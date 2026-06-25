@@ -78,6 +78,17 @@ public class ExpoSpotifySDKModule: Module {
           "error": ["code": error.code, "message": error.message],
         ])
         throw SpotifyAuthException(error)
+      } catch {
+        // The Spotify iOS SDK can surface a user-cancelled web auth as a raw
+        // NSError that never passes through the SpotifyError classifier in the
+        // session-manager delegate. Without this branch it escapes to JS as a
+        // generic UNKNOWN failure and triggers a spurious "sign-in failed" alert.
+        let mapped = mapRawAuthError(error)
+        self.sendEvent(EVENT_SESSION_CHANGE, [
+          "type": "didFail",
+          "error": ["code": mapped.code, "message": mapped.message],
+        ])
+        throw SpotifyAuthException(mapped)
       }
     }
 
