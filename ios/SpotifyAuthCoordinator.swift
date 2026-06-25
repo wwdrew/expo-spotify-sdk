@@ -335,33 +335,6 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
     return false
   }
 
-  private func isKnownCancellationCode(_ error: NSError) -> Bool {
-    if error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled {
-      return true
-    }
-
-    if #available(iOS 12.0, *),
-       error.domain == ASWebAuthenticationSessionErrorDomain,
-       error.code == ASWebAuthenticationSessionError.canceledLogin.rawValue
-    {
-      return true
-    }
-
-    if error.domain == "SFAuthenticationErrorDomain" && error.code == 1 {
-      return true
-    }
-
-    // The Spotify iOS auth/login SDK reports user cancellation under its own
-    // login domain with code 1. This domain contains "spotify" but not "auth",
-    // so it is not caught by the fuzzy message matching either and must be
-    // recognised explicitly.
-    if error.domain == "com.spotify.sdk.login" && error.code == 1 {
-      return true
-    }
-
-    return false
-  }
-
   private func isNetworkFailure(_ error: NSError) -> Bool {
     var visited = Set<ObjectIdentifier>()
     var stack: [NSError] = [error]
@@ -481,4 +454,62 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
 
     return nil
   }
+}
+
+// MARK: — Reusable auth-error cancellation mapping
+
+/// Recognise a single error's well-known cancellation domain/code. Shared by the
+/// delegate's `isUserCancelled` chain walk and the module-level `mapRawAuthError`
+/// so the cancellation rules live in exactly one place.
+func isKnownCancellationCode(_ error: NSError) -> Bool {
+  if error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled {
+    return true
+  }
+
+  if #available(iOS 12.0, *),
+     error.domain == ASWebAuthenticationSessionErrorDomain,
+     error.code == ASWebAuthenticationSessionError.canceledLogin.rawValue
+  {
+    return true
+  }
+
+  if error.domain == "SFAuthenticationErrorDomain" && error.code == 1 {
+    return true
+  }
+
+  // The Spotify iOS auth/login SDK reports user cancellation under its own login
+  // domain with code 1. This domain contains "spotify" but not "auth", so it is
+  // not caught by the fuzzy message matching either and must be recognised
+  // explicitly.
+  if error.domain == "com.spotify.sdk.login" && error.code == 1 {
+    return true
+  }
+
+  return false
+}
+
+/// Maps a raw error thrown during authentication into the structured taxonomy.
+/// The Spotify iOS SDK does not always route cancellations through the
+/// session-manager delegate (which would classify them), so a user cancellation
+/// can reach the module's top-level `catch` as a raw `NSError`. Walk the
+/// underlying-error chain for a known cancellation domain/code and map it to
+/// `.userCancelled`; anything else is preserved as `.underlying` (UNKNOWN).
+func mapRawAuthError(_ error: Error) -> SpotifyError {
+  let rootError = error as NSError
+  var visited = Set<ObjectIdentifier>()
+  var stack: [NSError] = [rootError]
+
+  while let current = stack.popLast() {
+    guard visited.insert(ObjectIdentifier(current)).inserted else { continue }
+
+    if isKnownCancellationCode(current) {
+      return .userCancelled
+    }
+
+    if let underlying = current.userInfo[NSUnderlyingErrorKey] as? NSError {
+      stack.append(underlying)
+    }
+  }
+
+  return .underlying(message: rootError.localizedDescription, cause: rootError)
 }
