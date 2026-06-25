@@ -351,6 +351,14 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
       return true
     }
 
+    // The Spotify iOS auth/login SDK reports user cancellation under its own
+    // login domain with code 1. This domain contains "spotify" but not "auth",
+    // so it is not caught by the fuzzy message matching either and must be
+    // recognised explicitly.
+    if error.domain == "com.spotify.sdk.login" && error.code == 1 {
+      return true
+    }
+
     return false
   }
 
