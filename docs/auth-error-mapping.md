@@ -6,10 +6,10 @@ Canonical matrix for mapping native Spotify authentication failures to the publi
 
 | Platform | Auth flow | Token swap / refresh |
 | --- | --- | --- |
-| iOS | [`ios/SpotifyAuthCoordinator.swift`](../ios/SpotifyAuthCoordinator.swift) (`SpotifySessionDelegateBridge.mapSDKError`) | [`ios/SpotifyTokenRefreshClient.swift`](../ios/SpotifyTokenRefreshClient.swift) |
+| iOS | [`ios/SpotifyAuthErrorMapping.swift`](../ios/SpotifyAuthErrorMapping.swift) (`SpotifyAuthErrorMapping.classify`) | [`ios/SpotifyTokenRefreshClient.swift`](../ios/SpotifyTokenRefreshClient.swift) |
 | Android | [`android/.../ExpoSpotifySDKModule.kt`](../android/src/main/java/expo/modules/spotifysdk/ExpoSpotifySDKModule.kt) (`authenticateAsync`) | [`android/.../SpotifyTokenSwapClient.kt`](../android/src/main/java/expo/modules/spotifysdk/SpotifyTokenSwapClient.kt) |
 
-**Shared error taxonomy:** [`android/.../SpotifyErrors.kt`](../android/src/main/java/expo/modules/spotifysdk/SpotifyErrors.kt) (Android `CodedException` classes) and `SpotifyError` in `SpotifyAuthCoordinator.swift` (iOS).
+**Shared error taxonomy:** [`android/.../SpotifyErrors.kt`](../android/src/main/java/expo/modules/spotifysdk/SpotifyErrors.kt) (Android `CodedException` classes) and `SpotifyError` in [`ios/SpotifyError.swift`](../ios/SpotifyError.swift) (iOS).
 
 ## Mapping strategy
 
@@ -27,6 +27,33 @@ Both platforms target the same `AuthErrorCode` for the scenarios below. **Strong
 | `refreshSessionAsync` (swap client) | **Strong** — both platforms own the HTTP request and JSON parsing. |
 | `authenticateAsync` without `tokenSwapURL` | **Strong** — direct SDK response / cancellation mapping. |
 | `authenticateAsync` with `tokenSwapURL` | **Best-effort** — Android performs the swap in-module; iOS delegates swap to Spotify iOS SDK and classifies wrapped `NSError` signals. Same codes in common cases; edge-case classification may differ. |
+
+## Known iOS limitation: `code` dropped on async rejection (Expo &lt; SDK 57)
+
+On iOS with the new architecture, `expo-modules-core` stringified async-function
+promise rejections, discarding the structured `code` carried by the thrown
+`Exception` (the `reason`/message survived). A native `USER_CANCELLED` therefore
+reached JS with the correct **message** but **no `code`**, so `Auth.authenticate()`
+surfaced it as `UNKNOWN` (e.g. `[Auth] UNKNOWN: Authentication was cancelled by the user`).
+
+This is **not** a classification bug — the native classifier emits the right code
+(visible in the `[ExpoSpotifySDK] classifyAuthError classified=…` log). The loss
+happens in the runtime's promise-rejection bridge. Note the asymmetry: the
+`onSessionChange` `didFail` event carries `code` as event data and is **unaffected**,
+so the event reports the correct code while the rejected promise does not.
+
+**Fix:** [expo/expo#47259](https://github.com/expo/expo/pull/47259) is **merged**
+and ships in **Expo SDK 57**. It routes thrown `Exception`s through the
+code-preserving conversion in `JavaScriptPromise.reject`. On SDK 57+ no change to
+this SDK is needed — the code we already emit reaches JS intact, and
+`Auth.authenticate()` rejects with the accurate `AuthError.code`.
+
+**Interim options on Expo SDK 56 and earlier:**
+
+- `patch-package` `expo-modules-core` with the change from #47259 (apply the same
+  edit to your installed SDK's `JavaScriptPromise` reject path), or
+- read the code from the `onSessionChange` `didFail` event (unaffected by this bug)
+  instead of relying solely on the `Auth.authenticate()` rejection.
 
 ## Scenario matrix
 
@@ -76,13 +103,13 @@ Run on **both** iOS and Android with the example app and a controllable token-sw
 - [ ] **Refresh 401** — expired/invalid refresh token on refresh endpoint → `TOKEN_SWAP_FAILED` (or `AUTH_ERROR` if server returns OAuth error body; document actual behaviour).
 - [ ] **Concurrent auth** — fire two `authenticateAsync` calls → second rejects `AUTH_IN_PROGRESS`.
 
-**iOS logs:** filter for `[ExpoSpotifySDK] mapSDKError classified=` to see native classification during `authenticateAsync`.
+**iOS logs:** filter for `[ExpoSpotifySDK] classifyAuthError classified=` to see native classification during `authenticateAsync` (emitted for both the delegate path and the module-level catch-all).
 
 **JS event:** every failure should emit `onSessionChange` with `type: "didFail"` and matching `error.code` before the promise rejects.
 
 ## When changing auth error mapping
 
-1. Update **both** iOS (`SpotifyAuthCoordinator.swift` / `SpotifyTokenRefreshClient.swift`) and Android (`ExpoSpotifySDKModule.kt` / `SpotifyTokenSwapClient.kt` / `SpotifyErrors.kt`).
+1. Update **both** iOS (`SpotifyAuthErrorMapping.swift` / `SpotifyError.swift` / `SpotifyTokenRefreshClient.swift`) and Android (`ExpoSpotifySDKModule.kt` / `SpotifyTokenSwapClient.kt` / `SpotifyErrors.kt`). Mirror any code-set or priority change in [`src/internal/auth-error-mapping.fixture.json`](../src/internal/auth-error-mapping.fixture.json).
 2. Update this matrix if scenario → code mapping changes.
 3. Document new codes in [`docs/error-codes.md`](./error-codes.md).
 4. Run through the manual checklist above on both platforms before merging.

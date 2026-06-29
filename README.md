@@ -428,6 +428,13 @@ Ensure your app's URL scheme is registered in Xcode under **Info → URL Types**
 
 On iOS this can also be a stuck state when Spotify never redirects back. Call `Auth.cancelPending()` before retrying.
 
+**iOS: errors report `UNKNOWN` with the correct message (Expo SDK ≤ 56)**
+On iOS before Expo SDK 57, `expo-modules-core` dropped the structured error `code` when an async function rejected — the message survived but the code did not — so a real code like `USER_CANCELLED` reached JS as `UNKNOWN: Authentication was cancelled by the user`. This is a runtime/bridge limitation, **not** a misclassification: the native module emits the correct code, and the `Auth.addListener("sessionChange", …)` `didFail` event reports it correctly regardless of runtime.
+
+Fixed in **Expo SDK 57** ([expo/expo#47259](https://github.com/expo/expo/pull/47259)). On SDK 57+ `Auth.authenticate()` rejects with the accurate `AuthError.code` and no action is needed.
+
+_Optional — for accurate `code`s on Expo SDK 56 and earlier:_ apply the change from that PR to your installed `expo-modules-core` with [`patch-package`](https://github.com/ds300/patch-package). It routes thrown `Exception`s through the code-preserving conversion in `JavaScriptPromise.reject` instead of stringifying them. If you'd rather not patch, read the code from the `sessionChange` `didFail` event, which already carries the correct `code`.
+
 **App Remote: `CONNECTION_FAILED` / `Connection refused` (iOS code 61)**
 The Spotify app is installed but its App Remote transport is not accepting connections. Common causes:
 

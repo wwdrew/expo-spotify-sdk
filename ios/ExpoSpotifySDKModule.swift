@@ -72,22 +72,17 @@ public class ExpoSpotifySDKModule: Module {
         let map = self.sessionToMap(session)
         self.sendEvent(EVENT_SESSION_CHANGE, ["type": "didInitiate", "session": map])
         return map
-      } catch let error as SpotifyError {
-        self.sendEvent(EVENT_SESSION_CHANGE, [
-          "type": "didFail",
-          "error": ["code": error.code, "message": error.message],
-        ])
-        throw SpotifyAuthException(error)
       } catch {
-        // The Spotify iOS SDK can surface a user-cancelled web auth as a raw
-        // NSError that never passes through the SpotifyError classifier in the
-        // session-manager delegate. Without this branch it escapes to JS as a
-        // generic UNKNOWN failure and triggers a spurious "sign-in failed" alert.
-        let mapped = mapRawAuthError(error)
-        self.sendEvent(EVENT_SESSION_CHANGE, [
-          "type": "didFail",
-          "error": ["code": mapped.code, "message": mapped.message],
-        ])
+        // Already-typed `SpotifyError`s pass through; anything else is a raw
+        // failure the SDK surfaced without routing through the delegate (e.g. a
+        // user-cancelled web auth). `classify` is the same entry point the
+        // delegate uses, so both paths map identical errors to identical codes.
+        let mapped = error as? SpotifyError
+          ?? SpotifyAuthErrorMapping.classify(
+            error,
+            context: .init(tokenSwapConfigured: config.tokenSwapURL.flatMap(URL.init) != nil)
+          )
+        self.emitDidFail(mapped)
         throw SpotifyAuthException(mapped)
       }
     }
@@ -120,16 +115,10 @@ public class ExpoSpotifySDKModule: Module {
         self.sendEvent(EVENT_SESSION_CHANGE, ["type": "didRenew", "session": map])
         return map
       } catch let error as SpotifyError {
-        self.sendEvent(EVENT_SESSION_CHANGE, [
-          "type": "didFail",
-          "error": ["code": error.code, "message": error.message],
-        ])
+        self.emitDidFail(error)
         throw SpotifyAuthException(error)
       } catch let error as SpotifyRefreshError {
-        self.sendEvent(EVENT_SESSION_CHANGE, [
-          "type": "didFail",
-          "error": ["code": error.code, "message": error.message],
-        ])
+        self.emitDidFail(code: error.code, message: error.message)
         throw SpotifyRefreshException(error)
       }
     }
@@ -335,6 +324,17 @@ public class ExpoSpotifySDKModule: Module {
   }
 
   // MARK: — Helpers
+
+  private func emitDidFail(_ error: SpotifyError) {
+    emitDidFail(code: error.code, message: error.message)
+  }
+
+  private func emitDidFail(code: String, message: String) {
+    sendEvent(EVENT_SESSION_CHANGE, [
+      "type": "didFail",
+      "error": ["code": code, "message": message],
+    ])
+  }
 
   private func sessionToMap(_ session: SPTSession) -> [String: Any?] {
     return [

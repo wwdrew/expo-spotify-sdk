@@ -1,7 +1,6 @@
 import type { SpotifyError } from "../error";
 
 const CAUSE_SEPARATOR = "→ Caused by: ";
-const LEGACY_CODE_PREFIX_RE = /^([A-Z_][A-Z0-9_]*):\s*(.*)$/s;
 
 function unwrapReason(message: string): string {
   const idx = message.lastIndexOf(CAUSE_SEPARATOR);
@@ -14,8 +13,6 @@ export interface NativeErrorRethrowOptions<
 > {
   ErrorClass: new (code: C, message: string) => E;
   validCodes: ReadonlySet<C>;
-  /** Parse legacy `"CODE: message"` prefixes embedded in native error reasons. */
-  legacyCodePrefix?: boolean;
   unknownCode: C;
 }
 
@@ -23,21 +20,19 @@ export function createNativeErrorRethrow<
   C extends string,
   E extends SpotifyError & { code: C },
 >(options: NativeErrorRethrowOptions<C, E>): (err: unknown) => never {
-  const { ErrorClass, validCodes, legacyCodePrefix, unknownCode } = options;
+  const { ErrorClass, validCodes, unknownCode } = options;
 
   return function rethrowNativeError(err: unknown): never {
     if (err instanceof ErrorClass) throw err;
     if (err instanceof Error) {
       const reason = unwrapReason(err.message);
+      // `err.code` is the structured code from the native `Exception`. On iOS
+      // before Expo SDK 57 the async-rejection bridge dropped it (the message
+      // survived), surfacing as `unknownCode` with the correct message; fixed
+      // in Expo SDK 57 (expo/expo#47259), which preserves the code.
       const maybeCode = (err as Error & { code?: string }).code;
       if (maybeCode && validCodes.has(maybeCode as C)) {
         throw new ErrorClass(maybeCode as C, reason);
-      }
-      if (legacyCodePrefix) {
-        const match = reason.match(LEGACY_CODE_PREFIX_RE);
-        if (match && validCodes.has(match[1] as C)) {
-          throw new ErrorClass(match[1] as C, match[2]!);
-        }
       }
       throw new ErrorClass(unknownCode, reason);
     }
