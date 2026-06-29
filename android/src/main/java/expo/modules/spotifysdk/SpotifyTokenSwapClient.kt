@@ -97,7 +97,9 @@ class SpotifyTokenSwapClient(
         // refresh token has expired or been revoked — surface a dedicated code
         // so callers can route to sign-in. On the swap path the same body means
         // a bad authorization code, so this remap is scoped to refresh only.
-        if (invalidGrantIsExpiredToken && raw?.contains("invalid_grant", ignoreCase = true) == true) {
+        // Match the structured OAuth `error` field (RFC 6749) on a 400 rather
+        // than a raw-body substring, so unrelated payloads can't misfire.
+        if (invalidGrantIsExpiredToken && res.code == 400 && isInvalidGrant(raw)) {
           throw RefreshTokenExpiredException()
         }
         throw TokenSwapFailedException(res.code, raw)
@@ -110,6 +112,22 @@ class SpotifyTokenSwapClient(
       } catch (e: JSONException) {
         throw TokenSwapParseException("Response was not valid JSON: ${raw.take(256)}", e)
       }
+    }
+  }
+
+  /**
+   * True when an OAuth error response body declares `"error": "invalid_grant"`
+   * (RFC 6749 §5.2). Parses the JSON and checks the structured field rather than
+   * scanning the raw text, so the token value or other fields can't trigger a
+   * false positive. A non-JSON or differently-shaped body is treated as not an
+   * `invalid_grant`.
+   */
+  private fun isInvalidGrant(raw: String?): Boolean {
+    if (raw.isNullOrBlank()) return false
+    return try {
+      JSONObject(raw).optString("error").equals("invalid_grant", ignoreCase = true)
+    } catch (_: JSONException) {
+      false
     }
   }
 
