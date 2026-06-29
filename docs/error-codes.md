@@ -18,7 +18,7 @@ App Remote native → JS mapping details: [app-remote-error-mapping.md](./app-re
 | `TOKEN_SWAP_PARSE_ERROR` | Swap response was not valid token JSON | Fix server response shape |
 | `SPOTIFY_NOT_INSTALLED` | Spotify app not found (rare — web fallback may still run) | Prompt install or use web auth |
 | `AUTH_ERROR` | Spotify rejected the authorization | Check Dashboard redirect URI, scopes, test users |
-| `UNKNOWN` | Unexpected native failure | Read `e.message` / `e.cause`; file an issue with logs |
+| `UNKNOWN` | Unexpected native failure | Read `e.message` / `e.cause`; file an issue with logs. On iOS before Expo SDK 57 a real code (e.g. `USER_CANCELLED`) can surface as `UNKNOWN` with the correct message — see the [known iOS limitation](./auth-error-mapping.md#known-ios-limitation-code-dropped-on-async-rejection-expo--sdk-57) |
 
 ### `AppRemoteErrorCode`
 

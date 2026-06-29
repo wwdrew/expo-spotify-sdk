@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "description": "Canonical authentication native-error -> public JS AuthErrorCode mapping. The iOS classifier (SpotifyAuthErrorMapping.classify) and Android authenticateAsync must stay aligned with this matrix. Rules are listed in classifier priority order: lower `priority` is evaluated first, so typed/structural signals win over best-effort text heuristics.",
+  "namespace": "Auth",
+  "codes": [
+    "USER_CANCELLED",
+    "AUTH_IN_PROGRESS",
+    "INVALID_CONFIG",
+    "NETWORK_ERROR",
+    "TOKEN_SWAP_FAILED",
+    "TOKEN_SWAP_PARSE_ERROR",
+    "SPOTIFY_NOT_INSTALLED",
+    "AUTH_ERROR",
+    "UNKNOWN"
+  ],
+  "rules": [
+    {
+      "priority": 1,
+      "code": "USER_CANCELLED",
+      "tier": "typed",
+      "when": "User dismissed the auth UI. Typed cancellation domain/code anywhere in the NSError chain, or (best-effort) cancel text within a known auth/browser domain.",
+      "ios": {
+        "typed": [
+          "NSURLErrorDomain/NSURLErrorCancelled",
+          "ASWebAuthenticationSessionErrorDomain/canceledLogin",
+          "SFAuthenticationErrorDomain/1",
+          "com.spotify.sdk.login/1"
+        ],
+        "messageContains": ["cancel", "canceled", "cancelled"]
+      },
+      "android": {
+        "typed": ["AuthorizationResponse.Type.CANCELLED", "AuthorizationResponse.Type.EMPTY"],
+        "messageContains": []
+      }
+    },
+    {
+      "priority": 2,
+      "code": "NETWORK_ERROR",
+      "tier": "typed",
+      "when": "Transport failure anywhere in the chain (NSURLErrorDomain, non-cancellation code).",
+      "ios": {
+        "typed": ["NSURLErrorDomain/*"],
+        "messageContains": []
+      },
+      "android": {
+        "typed": ["IOException"],
+        "messageContains": []
+      }
+    },
+    {
+      "priority": 3,
+      "code": "AUTH_ERROR",
+      "tier": "text",
+      "when": "OAuth-style rejection text, or parsed HTTP 401/403. Evaluated before the token-swap gate so OAuth rejections are not misclassified as token-swap failures.",
+      "ios": {
+        "typed": [],
+        "messageContains": [
+          "access_denied",
+          "invalid_scope",
+          "invalid_client",
+          "authorization",
+          "oauth",
+          "spotify account",
+          "http 401",
+          "http 403"
+        ]
+      },
+      "android": {
+        "typed": ["AuthorizationResponse.Type.ERROR"],
+        "messageContains": []
+      }
+    },
+    {
+      "priority": 4,
+      "code": "TOKEN_SWAP_PARSE_ERROR",
+      "tier": "text",
+      "when": "Token-swap context (swap URL configured or token-endpoint text) AND parse/decode failure text.",
+      "ios": {
+        "typed": [],
+        "messageContains": ["parse", "json", "decode", "malformed"]
+      },
+      "android": {
+        "typed": ["TokenSwapParseException"],
+        "messageContains": []
+      }
+    },
+    {
+      "priority": 5,
+      "code": "TOKEN_SWAP_FAILED",
+      "tier": "text",
+      "when": "Token-swap context with an HTTP status, or any other token-swap-class failure.",
+      "ios": {
+        "typed": [],
+        "messageContains": ["token swap", "token endpoint", "token exchange", "http"]
+      },
+      "android": {
+        "typed": ["TokenSwapFailedException"],
+        "messageContains": []
+      }
+    },
+    {
+      "priority": 6,
+      "code": "UNKNOWN",
+      "tier": "fallback",
+      "when": "Nothing else matched. The original NSError is preserved as `cause`.",
+      "ios": { "typed": [], "messageContains": [] },
+      "android": { "typed": [], "messageContains": [] }
+    }
+  ]
+}

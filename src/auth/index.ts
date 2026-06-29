@@ -103,7 +103,6 @@ let warnedAboutAndroidTokenFlow = false;
 const rethrowAsAuthError = createNativeErrorRethrow({
   ErrorClass: AuthError,
   unknownCode: "UNKNOWN",
-  legacyCodePrefix: true,
   validCodes: new Set<AuthErrorCode>([
     "USER_CANCELLED",
     "AUTH_IN_PROGRESS",
