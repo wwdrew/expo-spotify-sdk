@@ -99,6 +99,8 @@ refresh_token=<previous refresh token>
 
 Return a non-2xx HTTP status with a JSON body for structured error propagation. The library will reject with `TOKEN_SWAP_FAILED` and include the status code and (truncated) response body in `e.message`.
 
+**Expired or revoked refresh tokens.** From July 20, 2026 Spotify expires refresh tokens six months after they are issued. A refresh attempt with an expired or revoked token returns HTTP `400` with `{"error":"invalid_grant"}`. Forward Spotify's status and body **verbatim** so the app receives `TOKEN_SWAP_FAILED` with `invalid_grant` in `e.message` and can route the user back through sign-in — see [Refreshing the session and handling token expiry](../../README.md#refreshing-the-session-and-handling-token-expiry). Do not transform these into a 200 response, or the app cannot tell a dead token from a successful refresh.
+
 ## Reference implementation
 
 The example app uses [Expo Router API routes](https://docs.expo.dev/router/reference/api-routes/) for the swap and refresh endpoints — no separate server process needed.
