@@ -26,15 +26,25 @@ enum SpotifyAuthErrorMapping {
   static func classify(_ error: Error, context: Context = Context()) -> SpotifyError {
     let chain = nsErrorChain(error)
     let root = chain[0]
+    // `detail` keeps raw `userInfo` for the in-process classification heuristics
+    // only; `redactedDetail` (keys-only `userInfo`) is the sole variant that
+    // leaves this process via NSLog or JS-visible error messages.
     let detail = describeError(root)
-    let result = classify(chain: chain, root: root, detail: detail, context: context)
+    let redactedDetail = describeError(root, redactUserInfo: true)
+    let result = classify(
+      chain: chain,
+      root: root,
+      detail: detail,
+      redactedDetail: redactedDetail,
+      context: context
+    )
 
     NSLog(
       "[ExpoSpotifySDK] classifyAuthError classified=%@ domain=%@ code=%d detail=%@",
       result.code,
       root.domain,
       root.code,
-      detail
+      redactedDetail
     )
     return result
   }
@@ -43,6 +53,7 @@ enum SpotifyAuthErrorMapping {
     chain: [NSError],
     root: NSError,
     detail: String,
+    redactedDetail: String,
     context: Context
   ) -> SpotifyError {
     // 1. User cancellation — a typed domain/code anywhere in the chain, or
@@ -54,7 +65,7 @@ enum SpotifyAuthErrorMapping {
     // 2. Transport failure anywhere in the chain (cancellation already handled).
     if chain.contains(where: { $0.domain == NSURLErrorDomain && $0.code != NSURLErrorCancelled }) {
       return .networkError(
-        message: "Network error during Spotify authentication: \(detail)",
+        message: "Network error during Spotify authentication: \(redactedDetail)",
         cause: root
       )
     }
@@ -66,12 +77,12 @@ enum SpotifyAuthErrorMapping {
     if lower.contains("access_denied") || lower.contains("invalid_scope") ||
        lower.contains("invalid_client") || lower.contains("authorization") ||
        lower.contains("oauth") || lower.contains("spotify account") {
-      return .authError(message: "Spotify authorization failed: \(detail)", cause: root)
+      return .authError(message: "Spotify authorization failed: \(redactedDetail)", cause: root)
     }
 
     if let status = extractHTTPStatusCode(from: detail), status == 401 || status == 403 {
       return .authError(
-        message: "Spotify authorization failed (HTTP \(status)): \(detail)",
+        message: "Spotify authorization failed (HTTP \(status)): \(redactedDetail)",
         cause: root
       )
     }
@@ -83,20 +94,23 @@ enum SpotifyAuthErrorMapping {
       if let status = extractHTTPStatusCode(from: detail) {
         return .tokenSwapFailed(
           status: status,
-          message: "Token swap server returned HTTP \(status): \(detail)",
+          message: "Token swap server returned HTTP \(status): \(redactedDetail)",
           cause: root
         )
       }
       if lower.contains("parse") || lower.contains("json") ||
          lower.contains("decode") || lower.contains("malformed") {
-        return .tokenSwapParseError(message: "Token swap response was invalid: \(detail)", cause: root)
+        return .tokenSwapParseError(
+          message: "Token swap response was invalid: \(redactedDetail)",
+          cause: root
+        )
       }
-      return .tokenSwapFailed(status: nil, message: "Token swap failed: \(detail)", cause: root)
+      return .tokenSwapFailed(status: nil, message: "Token swap failed: \(redactedDetail)", cause: root)
     }
 
     // 5. Fallback. Keep the original NSError as `cause` so the structured
     //    underlying-chain is preserved (Sentry, debug breadcrumbs).
-    return .underlying(message: detail, cause: root)
+    return .underlying(message: redactedDetail, cause: root)
   }
 
   // MARK: — Chain traversal
@@ -190,7 +204,13 @@ enum SpotifyAuthErrorMapping {
   /// because `SPTError` (and many `URLSession` errors it wraps) often have an
   /// empty `localizedDescription`, surfacing as "undefined reason" in JS
   /// without this expansion.
-  private static func describeError(_ error: NSError) -> String {
+  ///
+  /// When `redactUserInfo` is `true`, arbitrary `userInfo` *values* are dropped
+  /// in favour of a sorted key list. `userInfo` can carry secrets (tokens,
+  /// auth codes, raw request/response bodies), so any string that is logged or
+  /// returned to JS must use the redacted form; the unredacted form is for the
+  /// in-process classification heuristics only.
+  private static func describeError(_ error: NSError, redactUserInfo: Bool = false) -> String {
     var parts: [String] = ["\(error.domain) code \(error.code)"]
     let desc = error.localizedDescription
     if !desc.isEmpty {
@@ -200,10 +220,15 @@ enum SpotifyAuthErrorMapping {
     ui.removeValue(forKey: NSUnderlyingErrorKey)
     ui.removeValue(forKey: NSLocalizedDescriptionKey)
     if !ui.isEmpty {
-      parts.append("userInfo=\(ui)")
+      if redactUserInfo {
+        let keys = ui.keys.sorted().joined(separator: ", ")
+        parts.append("userInfoKeys=[\(keys)]")
+      } else {
+        parts.append("userInfo=\(ui)")
+      }
     }
     if let underlying = error.userInfo[NSUnderlyingErrorKey] as? NSError {
-      parts.append("→ underlying: \(describeError(underlying))")
+      parts.append("→ underlying: \(describeError(underlying, redactUserInfo: redactUserInfo))")
     }
     return parts.joined(separator: " ")
   }
