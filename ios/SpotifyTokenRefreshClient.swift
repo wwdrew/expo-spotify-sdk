@@ -5,14 +5,16 @@ enum SpotifyRefreshError: Error {
   case invalidURL(String)
   case network(Error)
   case http(status: Int, body: String?)
+  case refreshTokenExpired
   case parse(String)
 
   var code: String {
     switch self {
-    case .invalidURL:  return "INVALID_CONFIG"
-    case .network:     return "NETWORK_ERROR"
-    case .http:        return "TOKEN_SWAP_FAILED"
-    case .parse:       return "TOKEN_SWAP_PARSE_ERROR"
+    case .invalidURL:          return "INVALID_CONFIG"
+    case .network:             return "NETWORK_ERROR"
+    case .http:                return "TOKEN_SWAP_FAILED"
+    case .refreshTokenExpired: return "REFRESH_TOKEN_EXPIRED"
+    case .parse:               return "TOKEN_SWAP_PARSE_ERROR"
     }
   }
 
@@ -25,6 +27,8 @@ enum SpotifyRefreshError: Error {
     case .http(let status, let body):
       let trimmed = body.map { String($0.prefix(512)) } ?? ""
       return "Token refresh server returned HTTP \(status)\(trimmed.isEmpty ? "" : ": \(trimmed)")"
+    case .refreshTokenExpired:
+      return "The refresh token is no longer valid (expired or revoked). The user must sign in again."
     case .parse(let m):
       return m
     }
@@ -106,6 +110,13 @@ struct SpotifyTokenRefreshClient {
     }
     guard (200..<300).contains(http.statusCode) else {
       let body = String(data: data, encoding: .utf8)
+      // Spotify returns `invalid_grant` (HTTP 400) when the refresh token has
+      // expired or been revoked — the user must re-authenticate. Surface this
+      // as a dedicated code rather than a generic token-swap failure so callers
+      // can branch to sign-in without inspecting the message string.
+      if let body, body.range(of: "invalid_grant", options: .caseInsensitive) != nil {
+        throw SpotifyRefreshError.refreshTokenExpired
+      }
       throw SpotifyRefreshError.http(status: http.statusCode, body: body)
     }
 

@@ -86,7 +86,8 @@ Use this table when changing auth code. **Expected code** is the target `error.c
 | Blank `refreshToken` or `tokenRefreshURL` | `INVALID_CONFIG` | `InvalidConfigException` | `SpotifyError.invalidConfiguration` |
 | Invalid refresh URL string | `INVALID_CONFIG` | `InvalidConfigException` | `SpotifyRefreshError.invalidURL` → `INVALID_CONFIG` |
 | Refresh server unreachable | `NETWORK_ERROR` | `NetworkException` | `SpotifyRefreshError.network` → `NETWORK_ERROR` |
-| Refresh server HTTP 4xx/5xx | `TOKEN_SWAP_FAILED` | `TokenSwapFailedException` | `SpotifyRefreshError.http` → `TOKEN_SWAP_FAILED` |
+| Refresh token expired or revoked (`invalid_grant`) | `REFRESH_TOKEN_EXPIRED` | `RefreshTokenExpiredException` (body contains `invalid_grant`) | `SpotifyRefreshError.refreshTokenExpired` → `REFRESH_TOKEN_EXPIRED` |
+| Refresh server HTTP 4xx/5xx (other than `invalid_grant`) | `TOKEN_SWAP_FAILED` | `TokenSwapFailedException` | `SpotifyRefreshError.http` → `TOKEN_SWAP_FAILED` |
 | Refresh empty / non-JSON / bad shape | `TOKEN_SWAP_PARSE_ERROR` | `TokenSwapParseException` | `SpotifyRefreshError.parse` → `TOKEN_SWAP_PARSE_ERROR` |
 | Unclassified failure | `UNKNOWN` | `UnknownSpotifyException` | Uncaught → `UNKNOWN` via module bridge |
 
@@ -100,7 +101,7 @@ Run on **both** iOS and Android with the example app and a controllable token-sw
 - [ ] **Swap invalid JSON** — server returns `200` with `{ "oops": true }` → `TOKEN_SWAP_PARSE_ERROR`.
 - [ ] **Swap offline** — stop server or use unreachable host → `NETWORK_ERROR`.
 - [ ] **Bad swap URL** — `not-a-url` → `INVALID_CONFIG`.
-- [ ] **Refresh 401** — expired/invalid refresh token on refresh endpoint → `TOKEN_SWAP_FAILED` (or `AUTH_ERROR` if server returns OAuth error body; document actual behaviour).
+- [ ] **Refresh expired** — expired/revoked refresh token (server forwards Spotify's `invalid_grant`) → `REFRESH_TOKEN_EXPIRED`. Other refresh 4xx/5xx → `TOKEN_SWAP_FAILED`.
 - [ ] **Concurrent auth** — fire two `authenticateAsync` calls → second rejects `AUTH_IN_PROGRESS`.
 
 **iOS logs:** filter for `[ExpoSpotifySDK] classifyAuthError classified=` to see native classification during `authenticateAsync` (emitted for both the delegate path and the module-level catch-all).

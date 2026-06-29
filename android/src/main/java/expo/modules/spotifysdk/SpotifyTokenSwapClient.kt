@@ -73,7 +73,7 @@ class SpotifyTokenSwapClient(
       .header("User-Agent", userAgent)
       .post(body)
       .build()
-    val json = executeJson(request)
+    val json = executeJson(request, invalidGrantIsExpiredToken = true)
     return parseSessionPayload(
       json,
       fallbackScopes = previousScopes,
@@ -81,7 +81,10 @@ class SpotifyTokenSwapClient(
     )
   }
 
-  private suspend fun executeJson(request: Request): JSONObject {
+  private suspend fun executeJson(
+    request: Request,
+    invalidGrantIsExpiredToken: Boolean = false,
+  ): JSONObject {
     val response = try {
       client.executeAsync(request)
     } catch (e: IOException) {
@@ -90,6 +93,13 @@ class SpotifyTokenSwapClient(
     response.use { res ->
       val raw = res.body?.string()
       if (!res.isSuccessful) {
+        // On refresh, Spotify returns `invalid_grant` (HTTP 400) when the
+        // refresh token has expired or been revoked — surface a dedicated code
+        // so callers can route to sign-in. On the swap path the same body means
+        // a bad authorization code, so this remap is scoped to refresh only.
+        if (invalidGrantIsExpiredToken && raw?.contains("invalid_grant", ignoreCase = true) == true) {
+          throw RefreshTokenExpiredException()
+        }
         throw TokenSwapFailedException(res.code, raw)
       }
       if (raw.isNullOrBlank()) {

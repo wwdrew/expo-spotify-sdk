@@ -72,6 +72,9 @@ try {
       case "USER_CANCELLED":
       case "AUTH_IN_PROGRESS":
         return;
+      case "REFRESH_TOKEN_EXPIRED":
+        // Auth.refresh() only: token expired/revoked — re-run Auth.authenticate().
+        return reauthenticate();
       case "INVALID_CONFIG":
       case "NETWORK_ERROR":
       case "TOKEN_SWAP_FAILED":
