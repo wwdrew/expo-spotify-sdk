@@ -14,6 +14,13 @@
     "AUTH_ERROR",
     "UNKNOWN"
   ],
+  "passthroughCodesDescription": "Public codes thrown directly by a dedicated code path rather than produced by the ambiguous-error classifier `rules` below, so they intentionally have no classifier rule. REFRESH_TOKEN_EXPIRED is raised by SpotifyTokenRefreshClient (iOS) / SpotifyTokenSwapClient (Android) on an `invalid_grant` refresh response; the others are raised at their throw sites (AuthInProgress/InvalidConfig/SpotifyNotInstalled checks).",
+  "passthroughCodes": [
+    "AUTH_IN_PROGRESS",
+    "INVALID_CONFIG",
+    "REFRESH_TOKEN_EXPIRED",
+    "SPOTIFY_NOT_INSTALLED"
+  ],
   "rules": [
     {
       "priority": 1,
