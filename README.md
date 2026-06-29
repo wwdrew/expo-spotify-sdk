@@ -314,7 +314,7 @@ Use `Auth.refresh()` to exchange a stored `refreshToken` for a fresh access toke
 
 > **Spotify policy (from July 20, 2026):** refresh tokens expire **six months** after they are issued. Once expired, Spotify returns an `invalid_grant` error and the token can no longer be used — the user must sign in again. (Only user tokens are affected; Client Credentials flows are not.)
 
-Handle a failed refresh by **discarding the stored token and re-running `Auth.authenticate()`** — do **not** retry the refresh. When your swap server forwards Spotify's response verbatim (see [Token swap server](./docs/guides/token-swap-server.md)), an expired or revoked refresh token surfaces as `AuthError` with code `TOKEN_SWAP_FAILED` and `invalid_grant` in `e.message`:
+Handle a failed refresh by **discarding the stored token and re-running `Auth.authenticate()`** — do **not** retry the refresh. When your swap server forwards Spotify's response verbatim (see [Token swap server](./docs/guides/token-swap-server.md)), an expired or revoked refresh token surfaces as `AuthError` with the dedicated code `REFRESH_TOKEN_EXPIRED`:
 
 ```ts
 async function restoreSession(refreshToken: string) {
@@ -324,13 +324,13 @@ async function restoreSession(refreshToken: string) {
       tokenRefreshURL: "https://your-server.example.com/refresh",
     });
   } catch (e) {
-    if (e instanceof AuthError && e.code === "NETWORK_ERROR") {
-      throw e; // transient — safe to retry later
+    if (e instanceof AuthError && e.code === "REFRESH_TOKEN_EXPIRED") {
+      // Token expired or revoked: discard it and send the user through
+      // sign-in again. Never retry the refresh.
+      await clearStoredSession();
+      return login(); // your Auth.authenticate() wrapper
     }
-    // Token expired or revoked (e.g. TOKEN_SWAP_FAILED with `invalid_grant`):
-    // discard it and send the user through sign-in again. Never retry refresh.
-    await clearStoredSession();
-    return login(); // your Auth.authenticate() wrapper
+    throw e; // NETWORK_ERROR / TOKEN_SWAP_FAILED etc. — transient; handle/retry as appropriate
   }
 }
 ```

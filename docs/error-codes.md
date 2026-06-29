@@ -14,8 +14,9 @@ App Remote native → JS mapping details: [app-remote-error-mapping.md](./app-re
 | `AUTH_IN_PROGRESS` | Concurrent `Auth.authenticate()` or iOS stuck pending auth | `await Auth.cancelPending()` then retry |
 | `INVALID_CONFIG` | Missing `clientID`, empty `scopes`, or bad plugin setup | Fix config plugin / `app.config`; run `expo prebuild` |
 | `NETWORK_ERROR` | Device cannot reach `tokenSwapURL` / `tokenRefreshURL` | Check dev server URL, HTTPS, device network |
-| `TOKEN_SWAP_FAILED` | Swap server returned non-2xx | Fix server; read status + body in `e.message`. On `Auth.refresh()`, an `invalid_grant` body means the refresh token expired or was revoked (Spotify expires them 6 months after issue, from 2026-07-20) — discard the token and re-authenticate, don't retry |
+| `TOKEN_SWAP_FAILED` | Swap/refresh server returned non-2xx (other than an expired refresh token) | Fix server; read status + body in `e.message` |
 | `TOKEN_SWAP_PARSE_ERROR` | Swap response was not valid token JSON | Fix server response shape |
+| `REFRESH_TOKEN_EXPIRED` | `Auth.refresh()` failed because the refresh token expired or was revoked (Spotify `invalid_grant`; tokens expire 6 months after issue, from 2026-07-20) | Discard the stored token and send the user through `Auth.authenticate()` again — do not retry the refresh |
 | `SPOTIFY_NOT_INSTALLED` | Spotify app not found (rare — web fallback may still run) | Prompt install or use web auth |
 | `AUTH_ERROR` | Spotify rejected the authorization | Check Dashboard redirect URI, scopes, test users |
 | `UNKNOWN` | Unexpected native failure | Read `e.message` / `e.cause`; file an issue with logs. On iOS before Expo SDK 57 a real code (e.g. `USER_CANCELLED`) can surface as `UNKNOWN` with the correct message — see the [known iOS limitation](./auth-error-mapping.md#known-ios-limitation-code-dropped-on-async-rejection-expo--sdk-57) |

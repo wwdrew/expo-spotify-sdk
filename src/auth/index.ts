@@ -110,6 +110,7 @@ const rethrowAsAuthError = createNativeErrorRethrow({
     "NETWORK_ERROR",
     "TOKEN_SWAP_FAILED",
     "TOKEN_SWAP_PARSE_ERROR",
+    "REFRESH_TOKEN_EXPIRED",
     "SPOTIFY_NOT_INSTALLED",
     "AUTH_ERROR",
     "UNKNOWN",

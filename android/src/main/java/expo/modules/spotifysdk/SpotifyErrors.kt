@@ -24,6 +24,13 @@ class TokenSwapFailedException(status: Int, body: String?) :
 class TokenSwapParseException(message: String, cause: Throwable? = null) :
   CodedException("TOKEN_SWAP_PARSE_ERROR", message, cause)
 
+class RefreshTokenExpiredException :
+  CodedException(
+    "REFRESH_TOKEN_EXPIRED",
+    "The refresh token is no longer valid (expired or revoked). The user must sign in again.",
+    null,
+  )
+
 class SpotifyNotInstalledException(message: String = "The Spotify app is not installed on this device") :
   CodedException("SPOTIFY_NOT_INSTALLED", message, null)
 
