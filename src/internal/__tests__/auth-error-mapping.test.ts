@@ -32,6 +32,23 @@ describe("auth-error-mapping fixture", () => {
     }
   });
 
+  it("every documented code is covered by a rule or marked pass-through", () => {
+    const ruleCodes = new Set(fixture.rules.map((rule) => rule.code));
+    const passthrough = new Set(fixture.passthroughCodes);
+    for (const code of fixture.codes) {
+      expect(ruleCodes.has(code) || passthrough.has(code)).toBe(true);
+    }
+  });
+
+  it("pass-through codes are documented codes not produced by any rule", () => {
+    const allowed = new Set(fixture.codes);
+    const ruleCodes = new Set(fixture.rules.map((rule) => rule.code));
+    for (const code of fixture.passthroughCodes) {
+      expect(allowed.has(code)).toBe(true);
+      expect(ruleCodes.has(code)).toBe(false);
+    }
+  });
+
   it("has an UNKNOWN fallback rule", () => {
     expect(fixture.rules.some((rule) => rule.code === "UNKNOWN")).toBe(true);
   });
