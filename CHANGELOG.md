@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.3.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.2.3...expo-spotify-sdk-v2.3.0) (2026-06-29)
+
+
+### Features
+
+* **auth:** add REFRESH_TOKEN_EXPIRED code for expired/revoked refresh tokens ([bd73914](https://github.com/wwdrew/expo-spotify-sdk/commit/bd73914bf299e50e30267367ee6ea0b9ac4394c7))
+
+
+### Bug Fixes
+
+* **android:** match structured invalid_grant field on refresh 400 ([b4dfae0](https://github.com/wwdrew/expo-spotify-sdk/commit/b4dfae02b5a6eac453663a5cf9f9d0940d830b7a))
+* **ios:** classify com.spotify.sdk.login code 1 as user cancellation ([8670b62](https://github.com/wwdrew/expo-spotify-sdk/commit/8670b62d9aed13e5b62bd18006f2c9ee7c31c104))
+* **ios:** map cancellation NSErrors that bypass the session delegate ([0fac47b](https://github.com/wwdrew/expo-spotify-sdk/commit/0fac47ba3b4ed0a0737f8f885b9ed281af391c05))
+* **ios:** redact NSError userInfo values from logs and JS errors ([3568076](https://github.com/wwdrew/expo-spotify-sdk/commit/35680767bbde279d7720958aace572c128e908f4))
+
+
+### Documentation
+
+* document Spotify refresh-token six-month expiry and invalid_grant handling ([c6133cf](https://github.com/wwdrew/expo-spotify-sdk/commit/c6133cf0fec16650a58aca1cb5485ebbc406b45a))
+
+
+### Code Refactoring
+
+* **ios:** unify auth error classification into one canonical mapper ([16ca8a1](https://github.com/wwdrew/expo-spotify-sdk/commit/16ca8a183243cad7d7e760f5194a1a5403d8bd3a))
+
 ## [2.2.3](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.2.2...expo-spotify-sdk-v2.2.3) (2026-06-23)
 
 
