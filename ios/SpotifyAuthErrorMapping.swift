@@ -177,9 +177,7 @@ enum SpotifyAuthErrorMapping {
     ]
     let combined = [
       error.safeLocalizedDescription,
-      error.safeLocalizedFailureReason ?? "",
-      error.userInfo[NSLocalizedDescriptionKey] as? String ?? "",
-      error.userInfo[NSLocalizedFailureReasonErrorKey] as? String ?? ""
+      error.safeLocalizedFailureReason ?? ""
     ].joined(separator: " ").lowercased()
 
     if negativeKeywords.contains(where: { combined.contains($0) }) {
