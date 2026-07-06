@@ -5,19 +5,19 @@ extension NSError {
   /// to `String`. When that value is a non-`String` object (Spotify's SDK can deliver an
   /// empty `__NSDictionary0`), the bridge sends `-length` to a dictionary and aborts.
   var safeLocalizedDescription: String {
-    if let value = userInfo[NSLocalizedDescriptionKey], !(value is String) {
-      return ""
+    guard let value = userInfo[NSLocalizedDescriptionKey] else {
+      return localizedDescription
     }
-    return localizedDescription
+    return (value as? String) ?? ""
   }
 
   /// Same force-bridge hazard as `localizedDescription`, but for
   /// `NSLocalizedFailureReasonErrorKey`.
   var safeLocalizedFailureReason: String? {
-    if let value = userInfo[NSLocalizedFailureReasonErrorKey], !(value is String) {
-      return nil
+    guard let value = userInfo[NSLocalizedFailureReasonErrorKey] else {
+      return localizedFailureReason
     }
-    return localizedFailureReason
+    return value as? String
   }
 }
 
