@@ -23,7 +23,7 @@ enum SpotifyRefreshError: Error {
     case .invalidURL(let s):
       return "Invalid token refresh URL: \(s)"
     case .network(let err):
-      return err.localizedDescription
+      return (err as NSError).safeLocalizedDescription
     case .http(let status, let body):
       let trimmed = body.map { String($0.prefix(512)) } ?? ""
       return "Token refresh server returned HTTP \(status)\(trimmed.isEmpty ? "" : ": \(trimmed)")"
@@ -127,7 +127,9 @@ struct SpotifyTokenRefreshClient {
       }
       json = parsed
     } catch {
-      throw SpotifyRefreshError.parse("Refresh response was not valid JSON: \(error.localizedDescription)")
+      throw SpotifyRefreshError.parse(
+        "Refresh response was not valid JSON: \((error as NSError).safeLocalizedDescription)"
+      )
     }
 
     guard let accessToken = (json["access_token"] as? String), !accessToken.isEmpty else {

@@ -31,70 +31,70 @@ enum SpotifyAppRemoteErrorMapping {
 
   static func mapPlayerError(_ error: NSError, callsite: String) -> NativePlayerError {
     guard isSPTError(error) else {
-      return .unknown(error.localizedDescription)
+      return .unknown(error.safeLocalizedDescription)
     }
     if isConnectionTerminated(error) {
       return .connectionLost(connectionLostMessage(callsite: callsite))
     }
     if isInvalidArguments(error) {
-      let desc = error.localizedDescription.lowercased()
+      let desc = error.safeLocalizedDescription.lowercased()
       if desc.contains("uri") {
-        return .invalidURI("\(callsite): \(error.localizedDescription)")
+        return .invalidURI("\(callsite): \(error.safeLocalizedDescription)")
       }
-      return .invalidParameter(error.localizedDescription)
+      return .invalidParameter(error.safeLocalizedDescription)
     }
     if isRequestFailed(error) {
-      let desc = error.localizedDescription.lowercased()
+      let desc = error.safeLocalizedDescription.lowercased()
       if desc.contains("premium") {
         return .premiumRequired("\(callsite): Spotify Premium is required for on-demand playback")
       }
-      if containsRestriction(error.localizedDescription) {
-        return .operationNotAllowed("\(callsite): \(error.localizedDescription)")
+      if containsRestriction(error.safeLocalizedDescription) {
+        return .operationNotAllowed("\(callsite): \(error.safeLocalizedDescription)")
       }
-      return .unknown(error.localizedDescription)
+      return .unknown(error.safeLocalizedDescription)
     }
-    return .unknown(error.localizedDescription)
+    return .unknown(error.safeLocalizedDescription)
   }
 
   static func mapUserError(_ error: NSError, callsite: String) -> NativeUserError {
     guard isSPTError(error) else {
-      return .unknown(error.localizedDescription)
+      return .unknown(error.safeLocalizedDescription)
     }
     if isConnectionTerminated(error) {
       return .connectionLost(connectionLostMessage(callsite: callsite))
     }
     if isInvalidArguments(error) {
-      return .invalidURI("\(callsite): \(error.localizedDescription)")
+      return .invalidURI("\(callsite): \(error.safeLocalizedDescription)")
     }
     if isRequestFailed(error) {
-      if containsRestriction(error.localizedDescription) {
-        return .operationNotAllowed("\(callsite): \(error.localizedDescription)")
+      if containsRestriction(error.safeLocalizedDescription) {
+        return .operationNotAllowed("\(callsite): \(error.safeLocalizedDescription)")
       }
-      return .unknown(error.localizedDescription)
+      return .unknown(error.safeLocalizedDescription)
     }
-    return .unknown(error.localizedDescription)
+    return .unknown(error.safeLocalizedDescription)
   }
 
   static func mapContentError(_ error: NSError, callsite: String) -> NativeContentError {
     guard isSPTError(error) else {
-      return .unknown(error.localizedDescription)
+      return .unknown(error.safeLocalizedDescription)
     }
     if isConnectionTerminated(error) {
       return .connectionLost(connectionLostMessage(callsite: callsite))
     }
     if isRequestFailed(error) {
-      let desc = error.localizedDescription.lowercased()
+      let desc = error.safeLocalizedDescription.lowercased()
       if desc.contains("not supported") || desc.contains("unsupported") {
         return .contentAPIUnavailable("\(callsite): content API is unavailable on this Spotify app version")
       }
-      return .unknown(error.localizedDescription)
+      return .unknown(error.safeLocalizedDescription)
     }
-    return .unknown(error.localizedDescription)
+    return .unknown(error.safeLocalizedDescription)
   }
 
   static func mapImagesError(_ error: NSError, callsite: String) -> NativeImagesError {
     guard isSPTError(error) else {
-      return .unknown(error.localizedDescription)
+      return .unknown(error.safeLocalizedDescription)
     }
     if isConnectionTerminated(error) {
       return .notConnected(connectionLostMessage(callsite: callsite))
@@ -105,6 +105,6 @@ enum SpotifyAppRemoteErrorMapping {
     if isRequestFailed(error) {
       return .imageLoadFailed("\(callsite): Spotify rejected image request")
     }
-    return .unknown(error.localizedDescription)
+    return .unknown(error.safeLocalizedDescription)
   }
 }
