@@ -138,7 +138,7 @@ final class SpotifySessionDelegateBridge: NSObject, SPTSessionManagerDelegate {
   }
 
   func sessionManager(manager _: SPTSessionManager, didFailWith error: Error) {
-    NSLog("[ExpoSpotifySDK] didFailWithError %@", String(describing: error))
+    NSLog("[ExpoSpotifySDK] didFailWithError %@", error.safeLogSummary)
     let mapped = SpotifyAuthErrorMapping.classify(
       error,
       context: .init(tokenSwapConfigured: authContext?.tokenSwapURL != nil)

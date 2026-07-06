@@ -20,3 +20,21 @@ extension NSError {
     return localizedFailureReason
   }
 }
+
+extension Error {
+  /// Summary for logging that avoids `String(describing:)` / `localizedDescription`
+  /// force-bridges on poisoned `userInfo` values.
+  var safeLogSummary: String {
+    let nsError = self as NSError
+    let description = nsError.safeLocalizedDescription
+    if description.isEmpty {
+      return "\(nsError.domain) code \(nsError.code)"
+    }
+    return "\(nsError.domain) code \(nsError.code): \(description)"
+  }
+}
+
+func safeLogSummary(for error: (any Error)?) -> String {
+  guard let error else { return "nil" }
+  return error.safeLogSummary
+}
