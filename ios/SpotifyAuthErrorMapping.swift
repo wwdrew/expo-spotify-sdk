@@ -176,10 +176,8 @@ enum SpotifyAuthErrorMapping {
       "server", "unauthorized", "forbidden", "invalid"
     ]
     let combined = [
-      error.localizedDescription,
-      error.localizedFailureReason ?? "",
-      error.userInfo[NSLocalizedDescriptionKey] as? String ?? "",
-      error.userInfo[NSLocalizedFailureReasonErrorKey] as? String ?? ""
+      error.safeLocalizedDescription,
+      error.safeLocalizedFailureReason ?? ""
     ].joined(separator: " ").lowercased()
 
     if negativeKeywords.contains(where: { combined.contains($0) }) {
@@ -212,7 +210,7 @@ enum SpotifyAuthErrorMapping {
   /// in-process classification heuristics only.
   private static func describeError(_ error: NSError, redactUserInfo: Bool = false) -> String {
     var parts: [String] = ["\(error.domain) code \(error.code)"]
-    let desc = error.localizedDescription
+    let desc = error.safeLocalizedDescription
     if !desc.isEmpty {
       parts.append("\"\(desc)\"")
     }

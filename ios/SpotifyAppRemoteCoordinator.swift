@@ -421,7 +421,7 @@ actor SpotifyAppRemoteCoordinator {
 
   func describeNSError(_ error: NSError) -> String {
     var parts: [String] = ["\(error.domain) code \(error.code)"]
-    let desc = error.localizedDescription
+    let desc = error.safeLocalizedDescription
     if !desc.isEmpty { parts.append("\"\(desc)\"") }
     if let underlying = error.userInfo[NSUnderlyingErrorKey] as? NSError {
       parts.append("→ \(describeNSError(underlying))")

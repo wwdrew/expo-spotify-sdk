@@ -210,12 +210,12 @@ final class SpotifyAppRemoteDelegateBridge: NSObject, SPTAppRemoteDelegate {
   }
 
   func appRemote(_ appRemote: SPTAppRemote, didFailConnectionAttemptWithError error: (any Error)?) {
-    NSLog("[ExpoSpotifySDK] AppRemote: connection failed — %@", String(describing: error))
+    NSLog("[ExpoSpotifySDK] AppRemote: connection failed — %@", safeLogSummary(for: error))
     Task { await coordinator?.didFailToConnect(error: error) }
   }
 
   func appRemote(_ appRemote: SPTAppRemote, didDisconnectWithError error: (any Error)?) {
-    NSLog("[ExpoSpotifySDK] AppRemote: disconnected — %@", String(describing: error))
+    NSLog("[ExpoSpotifySDK] AppRemote: disconnected — %@", safeLogSummary(for: error))
     Task { await coordinator?.didDisconnect(error: error) }
   }
 }

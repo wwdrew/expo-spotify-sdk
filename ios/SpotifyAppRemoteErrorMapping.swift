@@ -30,71 +30,75 @@ enum SpotifyAppRemoteErrorMapping {
   }
 
   static func mapPlayerError(_ error: NSError, callsite: String) -> NativePlayerError {
+    let desc = error.safeLocalizedDescription
     guard isSPTError(error) else {
-      return .unknown(error.localizedDescription)
+      return .unknown(desc)
     }
     if isConnectionTerminated(error) {
       return .connectionLost(connectionLostMessage(callsite: callsite))
     }
     if isInvalidArguments(error) {
-      let desc = error.localizedDescription.lowercased()
-      if desc.contains("uri") {
-        return .invalidURI("\(callsite): \(error.localizedDescription)")
+      let lower = desc.lowercased()
+      if lower.contains("uri") {
+        return .invalidURI("\(callsite): \(desc)")
       }
-      return .invalidParameter(error.localizedDescription)
+      return .invalidParameter(desc)
     }
     if isRequestFailed(error) {
-      let desc = error.localizedDescription.lowercased()
-      if desc.contains("premium") {
+      let lower = desc.lowercased()
+      if lower.contains("premium") {
         return .premiumRequired("\(callsite): Spotify Premium is required for on-demand playback")
       }
-      if containsRestriction(error.localizedDescription) {
-        return .operationNotAllowed("\(callsite): \(error.localizedDescription)")
+      if containsRestriction(desc) {
+        return .operationNotAllowed("\(callsite): \(desc)")
       }
-      return .unknown(error.localizedDescription)
+      return .unknown(desc)
     }
-    return .unknown(error.localizedDescription)
+    return .unknown(desc)
   }
 
   static func mapUserError(_ error: NSError, callsite: String) -> NativeUserError {
+    let desc = error.safeLocalizedDescription
     guard isSPTError(error) else {
-      return .unknown(error.localizedDescription)
+      return .unknown(desc)
     }
     if isConnectionTerminated(error) {
       return .connectionLost(connectionLostMessage(callsite: callsite))
     }
     if isInvalidArguments(error) {
-      return .invalidURI("\(callsite): \(error.localizedDescription)")
+      return .invalidURI("\(callsite): \(desc)")
     }
     if isRequestFailed(error) {
-      if containsRestriction(error.localizedDescription) {
-        return .operationNotAllowed("\(callsite): \(error.localizedDescription)")
+      if containsRestriction(desc) {
+        return .operationNotAllowed("\(callsite): \(desc)")
       }
-      return .unknown(error.localizedDescription)
+      return .unknown(desc)
     }
-    return .unknown(error.localizedDescription)
+    return .unknown(desc)
   }
 
   static func mapContentError(_ error: NSError, callsite: String) -> NativeContentError {
+    let desc = error.safeLocalizedDescription
     guard isSPTError(error) else {
-      return .unknown(error.localizedDescription)
+      return .unknown(desc)
     }
     if isConnectionTerminated(error) {
       return .connectionLost(connectionLostMessage(callsite: callsite))
     }
     if isRequestFailed(error) {
-      let desc = error.localizedDescription.lowercased()
-      if desc.contains("not supported") || desc.contains("unsupported") {
+      let lower = desc.lowercased()
+      if lower.contains("not supported") || lower.contains("unsupported") {
         return .contentAPIUnavailable("\(callsite): content API is unavailable on this Spotify app version")
       }
-      return .unknown(error.localizedDescription)
+      return .unknown(desc)
     }
-    return .unknown(error.localizedDescription)
+    return .unknown(desc)
   }
 
   static func mapImagesError(_ error: NSError, callsite: String) -> NativeImagesError {
+    let desc = error.safeLocalizedDescription
     guard isSPTError(error) else {
-      return .unknown(error.localizedDescription)
+      return .unknown(desc)
     }
     if isConnectionTerminated(error) {
       return .notConnected(connectionLostMessage(callsite: callsite))
@@ -105,6 +109,6 @@ enum SpotifyAppRemoteErrorMapping {
     if isRequestFailed(error) {
       return .imageLoadFailed("\(callsite): Spotify rejected image request")
     }
-    return .unknown(error.localizedDescription)
+    return .unknown(desc)
   }
 }
