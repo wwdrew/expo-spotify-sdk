@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.3.0...expo-spotify-sdk-v2.3.1) (2026-07-07)
+
+
+### Bug Fixes
+
+* **ios:** avoid SIGABRT when NSError description key is non-string ([#72](https://github.com/wwdrew/expo-spotify-sdk/issues/72)) ([6e7654c](https://github.com/wwdrew/expo-spotify-sdk/commit/6e7654c440ce5d722c6e89488315a49d2dbefbb1))
+
 ## [2.3.0](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.2.3...expo-spotify-sdk-v2.3.0) (2026-06-29)
 
 
