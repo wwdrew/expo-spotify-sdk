@@ -245,6 +245,7 @@ Typical integration: authenticate, connect App Remote, then read/control playbac
 
 ```ts
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import {
   Auth,
   AppRemote,
@@ -258,7 +259,11 @@ import {
 
 async function login() {
   if (!Auth.isAvailable()) {
-    throw new Error("Install the Spotify app or a web browser to continue");
+    throw new Error(
+      Platform.OS === "android"
+        ? "Install the Spotify app or a web browser to continue"
+        : "Install the Spotify app to continue",
+    );
   }
 
   // On iOS, clear a leaked in-flight auth before retrying.

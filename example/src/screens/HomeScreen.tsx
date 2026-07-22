@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
+  Platform,
   ScrollView,
   Text,
   View,
@@ -419,7 +420,9 @@ export function HomeScreen() {
           <Text style={s.badgeText}>
             {Auth.isAvailable()
               ? "Spotify sign-in available"
-              : "Spotify sign-in unavailable (install Spotify or a browser)"}
+              : Platform.OS === "android"
+                ? "Spotify sign-in unavailable (install Spotify or a browser)"
+                : "Spotify sign-in unavailable (install Spotify)"}
           </Text>
         </View>
         <Text style={s.connectionText}>{connectionLabel}</Text>
