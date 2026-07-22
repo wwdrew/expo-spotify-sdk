@@ -17,7 +17,7 @@ App Remote native → JS mapping details: [app-remote-error-mapping.md](./app-re
 | `TOKEN_SWAP_FAILED` | Swap/refresh server returned non-2xx (other than an expired refresh token) | Fix server; read status + body in `e.message` |
 | `TOKEN_SWAP_PARSE_ERROR` | Swap response was not valid token JSON | Fix server response shape |
 | `REFRESH_TOKEN_EXPIRED` | `Auth.refresh()` failed because the refresh token expired or was revoked (Spotify `invalid_grant`; tokens expire 6 months after issue, from 2026-07-20) | Discard the stored token and send the user through `Auth.authenticate()` again — do not retry the refresh |
-| `SPOTIFY_NOT_INSTALLED` | Spotify app not found (rare — web fallback may still run) | Prompt install or use web auth |
+| `SPOTIFY_NOT_INSTALLED` | Spotify app not found **and** (Android) no browser for web fallback; also thrown by the Android preflight guard before LoginActivity | Prompt install, enable a browser, or explain the device cannot complete sign-in |
 | `AUTH_ERROR` | Spotify rejected the authorization | Check Dashboard redirect URI, scopes, test users |
 | `UNKNOWN` | Unexpected native failure | Read `e.message` / `e.cause`; file an issue with logs. On iOS before Expo SDK 57 a real code (e.g. `USER_CANCELLED`) can surface as `UNKNOWN` with the correct message — see the [known iOS limitation](./auth-error-mapping.md#known-ios-limitation-code-dropped-on-async-rejection-expo--sdk-57) |
 

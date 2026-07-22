@@ -161,7 +161,12 @@ function normaliseSession(raw: unknown): SpotifySession {
  */
 export const Auth = {
   /**
-   * Returns `true` if the Spotify app is installed on the device.
+   * Returns whether Spotify sign-in can proceed on this device.
+   *
+   * - **Android:** `true` when the Spotify app is installed **or** a browser can
+   *   open Spotify's web auth flow (needed when the app is not installed).
+   * - **iOS:** `true` when the Spotify app is installed (web auth uses the
+   *   system authentication session and does not require a separate check).
    */
   isAvailable(): boolean {
     return ExpoSpotifySDKModule.isAvailable();

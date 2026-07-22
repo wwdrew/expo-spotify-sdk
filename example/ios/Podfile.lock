@@ -78,7 +78,7 @@ PODS:
     - RNScreens
   - ExpoSplashScreen (56.0.10):
     - ExpoModulesCore
-  - ExpoSpotifySDK (2.2.2):
+  - ExpoSpotifySDK (2.3.1):
     - ExpoModulesCore
     - SpotifyiOS
   - ExpoSymbols (56.0.6):
@@ -2381,7 +2381,7 @@ SPEC CHECKSUMS:
   ExpoModulesWorklets: 25d712f4e0a4eb37397d46c0ff5b450eca897fd1
   ExpoRouter: 5539806fcab8d38c639c9c255a6d73caa839436a
   ExpoSplashScreen: 3fe3a57d56d7242a9109d9714a6f9fa1e256538b
-  ExpoSpotifySDK: 5990aa533b33014601bdc62dce0120a7745cb963
+  ExpoSpotifySDK: 46dcfe7dfbf3e6b4ca306a744167a5127eced4ff
   ExpoSymbols: 377747de25bcb1ab68ec68f23d81fb81d43eae83
   ExpoSystemUI: 8f4fb641c6a6ebe2a01dda0fbd3fdd952ab5823a
   ExpoUI: cb2928f5537135cff59e7b84b4adbeb72355f9fd

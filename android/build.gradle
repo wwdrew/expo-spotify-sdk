@@ -37,9 +37,21 @@ android {
     versionCode 1
     versionName "0.5.0"
     consumerProguardFiles "consumer-rules.pro"
+    manifestPlaceholders = [
+      spotifyClientId: "unit-test-client-id",
+      spotifyRedirectUri: "unit-test://authenticate",
+      redirectHostName: "authenticate",
+      redirectPathPattern: ".*",
+      redirectSchemeName: "unit-test",
+    ]
   }
   lintOptions {
     abortOnError false
+  }
+  testOptions {
+    unitTests {
+      includeAndroidResources = true
+    }
   }
 }
 
@@ -60,4 +72,10 @@ dependencies {
   implementation "com.squareup.okhttp3:okhttp:4.12.0"
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1"
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+
+  testImplementation "junit:junit:4.13.2"
+  testImplementation "androidx.test:core:1.6.1"
+  testImplementation "org.robolectric:robolectric:4.14.1"
+  testImplementation "org.mockito:mockito-core:5.14.2"
+  testImplementation "org.mockito.kotlin:mockito-kotlin:5.4.0"
 }

@@ -245,6 +245,7 @@ Typical integration: authenticate, connect App Remote, then read/control playbac
 
 ```ts
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import {
   Auth,
   AppRemote,
@@ -258,7 +259,11 @@ import {
 
 async function login() {
   if (!Auth.isAvailable()) {
-    throw new Error("Install the Spotify app to continue");
+    throw new Error(
+      Platform.OS === "android"
+        ? "Install the Spotify app or a web browser to continue"
+        : "Install the Spotify app to continue",
+    );
   }
 
   // On iOS, clear a leaked in-flight auth before retrying.
@@ -447,7 +452,10 @@ Need the deprecated shims temporarily? Pin **`1.x`**: `npm install @wwdrew/expo-
 Run `expo prebuild` after adding the plugin to your config. The plugin injects the required `AndroidManifest.xml` entries.
 
 **`Auth.isAvailable()` returns `false` on Android 11+ release builds**
-Android 11+ requires a `<queries>` element to inspect other apps' package names. The module ships this in its `AndroidManifest.xml`; make sure you are not merging a custom manifest that removes it.
+Android 11+ requires a `<queries>` element to inspect other apps' package names. The module ships this in its `AndroidManifest.xml` (Spotify package + `https`/`http` VIEW intents for browser fallback); make sure you are not merging a custom manifest that removes it.
+
+**Android: app crashes with `ActivityNotFoundException` opening `https://accounts.spotify.com`**
+The Spotify auth SDK throws an uncaught exception when its browser fallback cannot resolve a handler. From module **2.3.2+**, `Auth.authenticate()` runs a preflight check and rejects with `SPOTIFY_NOT_INSTALLED` instead. Upgrade the module and ensure the merged manifest includes the module's `<queries>` entries (run `expo prebuild --clean` if needed).
 
 **iOS: authentication never returns**
 Ensure your app's URL scheme is registered in Xcode under **Info → URL Types** and that it matches the `scheme` in the plugin config. The `expo prebuild` step does this automatically; if you have a bare workflow, check `CFBundleURLSchemes` in `Info.plist`.
