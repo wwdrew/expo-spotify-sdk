@@ -59,7 +59,7 @@ Both lanes ship the full Auth + App Remote API ([ADR-0006](./docs/adr/0006-names
 ### `2.x` on `main` (Expo SDK 56+)
 
 - npm **`2.x`**, branch **`main`**, iOS 16.4+, `expo-modules-core@^56`
-- Active development; **`2.0.0`** pending Release Please merge
+- Active development; releases automated via Release Please on **`main`**
 - **Typed config plugin** on `main` only: `import { withSpotifySdk } from "@wwdrew/expo-spotify-sdk/plugin"` in `app.config.ts`. Legacy string/tuple plugin syntax remains supported.
 
 **Explicitly not in v1 (or any version):**

@@ -34,6 +34,32 @@ jobs:
       - name: Verify example Android package layout
         run: bash scripts/verify-example-android-package.sh
 
+  android-unit-test:
+    name: Android unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: yarn
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          cd example && yarn install --frozen-lockfile
+
+      - name: Run module Android unit tests
+        working-directory: example/android
+        run: ./gradlew :wwdrew-expo-spotify-sdk:testDebugUnitTest --no-daemon
+
   build-ts:
     name: TypeScript build
     runs-on: ubuntu-latest

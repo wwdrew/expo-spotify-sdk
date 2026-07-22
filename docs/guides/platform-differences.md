@@ -6,6 +6,7 @@ Cross-platform parity notes for Auth and App Remote.
 | --- | --- | --- |
 | `AppRemote.connect(accessToken)` | Token passed to `SPTAppRemote` | Token accepted for API parity; SDK uses session cached in Spotify app from prior auth |
 | `Auth.cancelPending()` | Clears stuck `SPTSessionManager` state | No-op |
+| `Auth.isAvailable()` | `true` when the Spotify app is installed | `true` when the Spotify app is installed **or** a browser can open `https://accounts.spotify.com` |
 | Refresh token without swap | Possible (iOS TOKEN flow) | Not available — use `tokenSwapURL` |
 | `session.scopes` without swap | Granted scopes returned | Requested scopes only (not granted list) |
 | Premium / player metadata | Full App Remote when Premium | Free accounts often lack track titles / on-demand play |
