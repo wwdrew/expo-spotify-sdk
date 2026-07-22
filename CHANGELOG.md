@@ -10,6 +10,13 @@
 
 * clarify `Auth.isAvailable()` Android semantics (Spotify app **or** browser) and document the browser-fallback crash guard
 
+## [2.3.2](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.3.1...expo-spotify-sdk-v2.3.2) (2026-07-22)
+
+
+### Bug Fixes
+
+* **android:** guard Spotify browser auth when no handler exists ([#74](https://github.com/wwdrew/expo-spotify-sdk/issues/74)) ([f4f4b4f](https://github.com/wwdrew/expo-spotify-sdk/commit/f4f4b4f8c44972f2bccd7b7491d54e65fb13b7af))
+
 ## [2.3.1](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.3.0...expo-spotify-sdk-v2.3.1) (2026-07-07)
 
 
