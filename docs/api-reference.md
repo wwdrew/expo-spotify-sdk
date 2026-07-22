@@ -6,7 +6,10 @@ Full method and type documentation for the public `@wwdrew/expo-spotify-sdk` sur
 
 #### `Auth.isAvailable(): boolean`
 
-Returns `true` if the Spotify app is installed. Does not throw (not available on unsupported platforms).
+Returns whether Spotify sign-in can proceed on this device. Does not throw.
+
+- **Android:** `true` when the Spotify app is installed **or** a browser can open Spotify's web auth URL (`https://accounts.spotify.com`).
+- **iOS:** `true` when the Spotify app is installed.
 
 #### `Auth.authenticate(config): Promise<SpotifySession>`
 

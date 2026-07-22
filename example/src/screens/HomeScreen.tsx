@@ -417,7 +417,9 @@ export function HomeScreen() {
         <View style={s.badgeRow}>
           <View style={[s.dot, { backgroundColor: Auth.isAvailable() ? C.green : C.muted }]} />
           <Text style={s.badgeText}>
-            {Auth.isAvailable() ? "Spotify app detected" : "Spotify app not installed"}
+            {Auth.isAvailable()
+              ? "Spotify sign-in available"
+              : "Spotify sign-in unavailable (install Spotify or a browser)"}
           </Text>
         </View>
         <Text style={s.connectionText}>{connectionLabel}</Text>

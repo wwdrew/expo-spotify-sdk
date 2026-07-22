@@ -35,7 +35,8 @@ On **`main`**, you can also exercise the **typed config plugin** in `app.config.
 
 | # | Test | iOS | Android |
 | --- | --- | --- | --- |
-| A1 | `Auth.isAvailable()` is `true` with Spotify installed | ☐ | ☐ |
+| A1 | `Auth.isAvailable()` is `true` with Spotify installed (iOS) or Spotify installed / browser available (Android) | ☐ | ☐ |
+| A1b | Android: `Auth.authenticate()` rejects `SPOTIFY_NOT_INSTALLED` (not crash) when Spotify and browsers are unavailable | ☐ | ☐ |
 | A2 | `Auth.authenticate()` succeeds (code + swap URLs) | ☐ | ☐ |
 | A3 | `Auth.authenticate()` without swap (TOKEN flow) — note refresh token behavior | ☐ | ☐ |
 | A4 | `Auth.refresh()` renews session when refresh token present | ☐ | ☐ |

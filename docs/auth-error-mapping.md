@@ -7,7 +7,7 @@ Canonical matrix for mapping native Spotify authentication failures to the publi
 | Platform | Auth flow | Token swap / refresh |
 | --- | --- | --- |
 | iOS | [`ios/SpotifyAuthErrorMapping.swift`](../ios/SpotifyAuthErrorMapping.swift) (`SpotifyAuthErrorMapping.classify`) | [`ios/SpotifyTokenRefreshClient.swift`](../ios/SpotifyTokenRefreshClient.swift) |
-| Android | [`android/.../ExpoSpotifySDKModule.kt`](../android/src/main/java/expo/modules/spotifysdk/ExpoSpotifySDKModule.kt) (`authenticateAsync`) | [`android/.../SpotifyTokenSwapClient.kt`](../android/src/main/java/expo/modules/spotifysdk/SpotifyTokenSwapClient.kt) |
+| Android | [`android/.../ExpoSpotifySDKModule.kt`](../android/src/main/java/expo/modules/spotifysdk/ExpoSpotifySDKModule.kt) (`authenticateAsync`), [`android/.../SpotifyAuthAvailability.kt`](../android/src/main/java/expo/modules/spotifysdk/SpotifyAuthAvailability.kt) (preflight) | [`android/.../SpotifyTokenSwapClient.kt`](../android/src/main/java/expo/modules/spotifysdk/SpotifyTokenSwapClient.kt) |
 
 **Shared error taxonomy:** [`android/.../SpotifyErrors.kt`](../android/src/main/java/expo/modules/spotifysdk/SpotifyErrors.kt) (Android `CodedException` classes) and `SpotifyError` in [`ios/SpotifyError.swift`](../ios/SpotifyError.swift) (iOS).
 
@@ -68,6 +68,7 @@ Use this table when changing auth code. **Expected code** is the target `error.c
 | Second concurrent `authenticateAsync` | `AUTH_IN_PROGRESS` | `AuthInProgressException` | `SpotifyError.authInProgress` |
 | Empty `scopes` | `INVALID_CONFIG` | `InvalidConfigException` | `SpotifyError.invalidConfiguration` |
 | Missing plugin / manifest config | `INVALID_CONFIG` | `InvalidConfigException` (manifest) | `SpotifyError.invalidConfiguration` (Info.plist) |
+| Android: Spotify app missing and no browser for web auth | `SPOTIFY_NOT_INSTALLED` | `SpotifyNotInstalledException` (preflight in `SpotifyAuthAvailability.ensureAuthAvailable`) | N/A (native app required on iOS) |
 | CODE response but no `tokenSwapURL` | `INVALID_CONFIG` | `InvalidConfigException` | N/A (iOS always uses SDK swap when URL set) |
 | Spotify returns `Type.ERROR` | `AUTH_ERROR` | `SpotifyAuthErrorException(response.error)` | OAuth / auth rejection heuristics on wrapped error |
 | TOKEN response missing access token | `TOKEN_SWAP_PARSE_ERROR` | `TokenSwapParseException` | SDK parse failure → heuristic or `UNKNOWN` |
@@ -102,7 +103,7 @@ Run on **both** iOS and Android with the example app and a controllable token-sw
 - [ ] **Swap offline** — stop server or use unreachable host → `NETWORK_ERROR`.
 - [ ] **Bad swap URL** — `not-a-url` → `INVALID_CONFIG`.
 - [ ] **Refresh expired** — expired/revoked refresh token (server forwards Spotify's `invalid_grant`) → `REFRESH_TOKEN_EXPIRED`. Other refresh 4xx/5xx → `TOKEN_SWAP_FAILED`.
-- [ ] **Concurrent auth** — fire two `authenticateAsync` calls → second rejects `AUTH_IN_PROGRESS`.
+- [ ] **Android no browser** — device/emulator without a browser and without Spotify installed → `SPOTIFY_NOT_INSTALLED` (not a native crash).
 
 **iOS logs:** filter for `[ExpoSpotifySDK] classifyAuthError classified=` to see native classification during `authenticateAsync` (emitted for both the delegate path and the module-level catch-all).
 

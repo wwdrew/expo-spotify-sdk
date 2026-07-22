@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Bug Fixes
+
+* **android:** add browser `<queries>` and preflight auth availability check to prevent fatal `ActivityNotFoundException` when Spotify's browser fallback cannot open `https://accounts.spotify.com`
+
+### Documentation
+
+* clarify `Auth.isAvailable()` Android semantics (Spotify app **or** browser) and document the browser-fallback crash guard
+
 ## [2.3.1](https://github.com/wwdrew/expo-spotify-sdk/compare/expo-spotify-sdk-v2.3.0...expo-spotify-sdk-v2.3.1) (2026-07-07)
 
 

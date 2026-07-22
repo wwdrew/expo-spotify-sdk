@@ -47,15 +47,6 @@ class ExpoSpotifySDKModule : Module() {
     return SpotifyManifestConfig(clientId = clientId, redirectUri = redirectUri)
   }
 
-  private fun isSpotifyInstalled(): Boolean {
-    return try {
-      context.packageManager.getPackageInfo("com.spotify.music", 0)
-      true
-    } catch (_: PackageManager.NameNotFoundException) {
-      false
-    }
-  }
-
   private fun emitSession(type: String, payload: SpotifySessionPayload) {
     sendEvent(
       EVENT_SESSION_CHANGE,
@@ -100,7 +91,7 @@ class ExpoSpotifySDKModule : Module() {
     // ── Auth ────────────────────────────────────────────────────────────────
 
     Function("isAvailable") {
-      isSpotifyInstalled()
+      SpotifyAuthAvailability.isAuthAvailable(context)
     }
 
     RegisterActivityContracts {
@@ -113,6 +104,7 @@ class ExpoSpotifySDKModule : Module() {
           throw InvalidConfigException("`scopes` must contain at least one entry")
         }
         val manifest = readManifestConfig()
+        SpotifyAuthAvailability.ensureAuthAvailable(context)
 
         val responseType =
           if (config.tokenSwapURL != null) AuthorizationResponse.Type.CODE
